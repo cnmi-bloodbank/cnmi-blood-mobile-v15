@@ -1255,20 +1255,15 @@
       <div class="login-title">CNMI Donor</div>
       <div class="login-subtitle">Blood Donation System</div>
 
-      <div class="login-note">
-        <strong>ใช้บัญชีมหิดล:</strong> กรอกเฉพาะชื่อหน้าอีเมล ระบบเติม <strong>@mahidol.ac.th</strong> ให้อัตโนมัติ<br>
-        เช่น <strong>parichat.i</strong> → parichat.i@mahidol.ac.th<br>
-        ถ้า Admin รีเซ็ตรหัสผ่าน ระบบจะบังคับเปลี่ยนรหัสใหม่หลัง Login
-      </div>
-
       <div class="login-error" id="login-error"></div>
 
       <div class="mb-3">
-        <label class="fw-bold">อีเมลมหิดล</label>
+        <label class="fw-bold">Username</label>
         <div class="input-group input-group-lg">
-          <input type="text" id="login-username" class="form-control" placeholder="เช่น parichat.i" autocomplete="username" autocapitalize="none">
+          <input type="text" id="login-username" class="form-control" placeholder="เช่น parichat.ink" autocomplete="username" autocapitalize="none">
           <span class="input-group-text">@mahidol.ac.th</span>
         </div>
+        <div class="small text-muted mt-1">รูปแบบ: ชื่อจริง.นามสกุล 3 ตัวอักษร</div>
       </div>
 
       <div class="mb-3">
@@ -1419,7 +1414,7 @@
       <section class="page-section" id="page-donor-search">
         <div class="page-title-card">
           <h1 class="page-title">🔎 ค้นหาผู้บริจาค</h1>
-          <p class="page-desc">ค้นประวัติก่อนรับลงทะเบียน เพื่อดู Donor Note / Active Defer / Sero + NAT และเลือกข้อมูลไปหน้าลงทะเบียน</p>
+          <p class="page-desc">ค้นประวัติและใช้ข้อมูลเดิมลงทะเบียน</p>
         </div>
         <div class="container-fluid px-0">
           <div class="donor-search-sticky">
@@ -1480,9 +1475,9 @@
           <div class="main-card">
             <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
 
-      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
-        <div><strong>ก่อนลงทะเบียน:</strong> ถ้าเป็นผู้บริจาคเดิม แนะนำค้นประวัติก่อน เพื่อดู Donor Note / Active Defer / Sero + NAT</div>
-        <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นหาผู้บริจาคเดิม</button>
+      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap py-2 mb-3">
+        <div><strong>ผู้บริจาคเดิม:</strong> ค้นประวัติก่อนลงทะเบียน</div>
+        <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
       </div>
       <div id="register-event-location" class="alert alert-warning py-2 mb-3"><strong>📍 สถานที่ออกหน่วย:</strong> กำลังตรวจสอบ...</div>
 
@@ -1493,8 +1488,8 @@
             <input type="text" id="id_card" class="form-control" required autofocus inputmode="numeric" autocomplete="off">
             <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
           </div>
-          <div id="card-reader-status" class="small text-muted mt-1">อ่านบัตรได้ผ่าน CNMI Card Bridge (ถ้าเปิดอยู่บนเครื่องนี้) หรือกรอกเลขบัตรเองได้ตามปกติ</div>
-          <div id="preload-register-status" class="small text-muted mt-1">กรอกเลขบัตร 13 หลักเพื่อค้นประวัติจากฐานที่เตรียมไว้</div>
+          <div id="card-reader-status" class="small text-muted mt-1">อ่านผ่าน Card Bridge หรือกรอกเลขบัตรเอง</div>
+          <div id="preload-register-status" class="small text-muted mt-1">กรอกครบ 13 หลัก ระบบค้นประวัติอัตโนมัติ</div>
           <div id="donor-history-panel" hidden></div>
         </div>
 
@@ -1554,7 +1549,7 @@
       <section class="page-section" id="page-today">
   <div class="page-title-card">
     <h1 class="page-title">รายชื่อผู้บริจาคตามวันที่</h1>
-    <p class="page-desc">รวมรายการที่ลงทะเบียนผ่านแอป และประวัติการบริจาคจากรายงาน AI-LIS ที่ Import ไว้</p>
+    <p class="page-desc">ค้นรายการจาก Mobile + AI-LIS ตามวันที่</p>
   </div>
 
   <div class="container-fluid px-0" id="table-mount-today">
@@ -1593,7 +1588,7 @@
       <section class="page-section" id="page-print-a4">
         <div class="page-title-card">
           <h1 class="page-title">พิมพ์ใบสมัคร</h1>
-          <p class="page-desc">เลือกวันที่ย้อนหลังได้ · พิมพ์ใบสมัครจาก Visit ของ Blood Mobile ที่มี DN จริง</p>
+          <p class="page-desc">เลือกวันที่และพิมพ์ใบสมัครย้อนหลัง</p>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-print-a4"></div>
@@ -1633,14 +1628,11 @@
       <section class="page-section" id="page-preload">
         <div class="page-title-card">
           <h1 class="page-title">⚡ เตรียมออกหน่วย</h1>
-          <p class="page-desc">ฐานกลาง Supabase เดียวกันสำหรับทุกคอม · ลงทะเบียน/คัดกรอง/เลขถุง/ประวัติผู้บริจาคเห็นตรงกันแบบ Online</p>
+          <p class="page-desc">อัปเดตฐานกลาง สถานที่ และเลขถุงก่อนออกหน่วย</p>
         </div>
         <div class="main-card">
-          <h4 class="text-primary fw-bold">ฐานประวัติผู้บริจาคกลาง (Supabase)</h4>
-          <div class="preload-help mb-3">
-            ก่อนออกหน่วย เจ้าหน้าที่สามารถ Export รายงานล่าสุดจาก AI-LIS 4 ไฟล์ แล้วเลือกพร้อมกัน: <strong>รายชื่อผู้บริจาคทั้งหมด / Donor Note / Active Defer / Sero + NAT</strong><br>
-            การอัปเดตเป็นแบบ <strong>เพิ่ม/ปรับปรุงจากฐานเดิม</strong> ผู้บริจาคเก่าที่ยังไม่อยู่ในไฟล์รอบใหม่จะยังคงอยู่ และประวัติบริจาค/Donor Note เดิมจะถูกรวมไว้สำหรับการออกหน่วยครั้งถัดไป
-          </div>
+          <h4 class="text-primary fw-bold">ฐานประวัติผู้บริจาคกลาง</h4>
+          <div class="small text-muted mb-3">เลือก 4 รายงานล่าสุดพร้อมกัน: <strong>รายชื่อผู้บริจาค / Donor Note / Active Defer / Sero + NAT</strong></div>
           <div id="preload-summary" class="fw-bold text-danger mb-3">ยังไม่มีฐานประวัติ 4 Reports ใน Supabase</div>
           <div id="preload-coverage" class="mb-3"></div>
           <label class="fw-bold mb-1">เลือก Excel 4 ไฟล์พร้อมกัน</label>
@@ -1654,12 +1646,11 @@
             </div>
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
           </div>
-          <hr>
-          <div class="small text-muted">Excel 4 ไฟล์จะถูกประมวลผลใน Browser แล้วอัปเดตฐานกลาง Supabase โดยเก็บประวัติเดิมไว้ ไม่ต้องอัปเดตทุกคอม</div>
+          <hr class="my-3">
 
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f5fbff;">
             <h5 class="fw-bold text-primary mb-2">📍 สถานที่ออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
-            <div class="small text-muted mb-3">ตั้งครั้งเดียวใน Supabase แล้วคอมลงทะเบียน/คัดกรองทุกเครื่องใช้สถานที่เดียวกัน ทุก DN ใหม่จะจำสถานที่นี้ไว้ถาวร</div>
+            <div class="small text-muted mb-2">ตั้งครั้งเดียว ใช้ร่วมทุกคอม</div>
             <div class="row g-2 align-items-end">
               <div class="col-md-3"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="event-date" type="date" class="form-control" onchange="loadOutreachEvent().catch(()=>{})"></div>
               <div class="col-md-7"><label class="small fw-bold">ชื่อสถานที่ / หน่วย</label><input id="event-unit-name" class="form-control" placeholder="เช่น บริษัท ABC จำกัด"></div>
@@ -1670,7 +1661,7 @@
 
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f8fff8;">
             <h5 class="fw-bold text-success mb-2">🗂️ นำเข้างานออกหน่วยเดิมจาก Blood Donation App <span class="badge text-bg-secondary">ทำครั้งเดียว</span></h5>
-            <div class="small text-muted mb-3">เลือก Excel เดิมที่มีชีต <strong>Donors + Visits</strong> ระบบจะเก็บ DN/สถานที่/เลขถุง/ผลคัดกรองเดิมเข้า Supabase และสามารถเลือกไฟล์เดิมซ้ำได้โดยไม่สร้าง Visit ซ้ำ</div>
+            <div class="small text-muted mb-2">เลือก Excel เดิมที่มี <strong>Donors + Visits</strong> · Import ซ้ำได้โดยไม่สร้าง Visit ซ้ำ</div>
             <input id="legacy-workbook-file" type="file" class="form-control" accept=".xlsx,.xls">
             <div class="d-flex gap-2 mt-2 flex-wrap">
               <button id="legacy-import-btn" class="btn btn-success" onclick="importLegacyWorkbook()">นำเข้างานออกหน่วยเดิม</button>
@@ -1683,7 +1674,7 @@
               <h5 class="fw-bold text-warning-emphasis mb-0">🔢 ตั้งเลขถุงสำหรับออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
               <button class="btn btn-outline-primary btn-sm" onclick="loadBagStatus()">🔄 ดูเลขที่ใช้ไปแล้ว</button>
             </div>
-            <div class="alert alert-warning py-2 mb-3 small"><strong>สำคัญ:</strong> ระบบตรวจเลขซ้ำกับ <strong>Supabase ของแอปนี้</strong> และเลขที่เคยใช้ในแอปเท่านั้น ยังไม่ได้เชื่อมตรวจ AI-LIS แบบสด กรุณาตรวจช่วงเลขถุงใน AI-LIS ก่อนตั้งช่วงทุกครั้ง</div>
+            <div class="alert alert-warning py-2 mb-2 small"><strong>⚠ ตรวจช่วงเลขถุงกับ AI-LIS ก่อนตั้งทุกครั้ง</strong> · ระบบตรวจเลขซ้ำเฉพาะข้อมูลใน Blood Mobile</div>
             <div class="form-check mb-3">
               <input class="form-check-input" type="checkbox" id="bag-lis-confirm">
               <label class="form-check-label fw-bold" for="bag-lis-confirm">ตรวจสอบช่วงเลขถุงกับ AI-LIS แล้ว และยืนยันว่าเป็นช่วงที่ใช้ได้</label>
@@ -1709,12 +1700,12 @@
 
   <div class="main-card">
     <h4 class="text-primary fw-bold mb-3">➕ สร้างบัญชีเจ้าหน้าที่</h4>
-    <div class="alert alert-info small">ใช้เฉพาะอีเมล <strong>@mahidol.ac.th</strong> เท่านั้น · Admin ตั้งรหัสชั่วคราวให้น้อง 1 ครั้ง จากนั้นน้องเปลี่ยนเป็นรหัสของตนเอง ระบบไม่แสดงรหัสจริงให้อีก</div>
+    <div class="small text-muted mb-3">Username ใหม่ใช้รูปแบบ <strong>ชื่อจริง.นามสกุล 3 ตัว</strong> เช่น <strong>parichat.ink</strong></div>
     <div class="row g-2">
       <div class="col-md-3">
-        <label class="small fw-bold">ชื่อหน้าอีเมล</label>
+        <label class="small fw-bold">Username</label>
         <div class="input-group">
-          <input id="new-user-username" class="form-control" placeholder="เช่น somchai.s" autocapitalize="none">
+          <input id="new-user-username" class="form-control" placeholder="เช่น somchai.som" autocapitalize="none">
           <span class="input-group-text">@mahidol.ac.th</span>
         </div>
       </div>
@@ -2363,7 +2354,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6 - legacy reconcile + outreach location + v15.5 barcode preserved");
+    console.log("CNMI Blood Donation v15.6.1 - compact UI + username convention + v15.6 logic preserved");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3546,7 +3537,11 @@ function clearAuditFilters() {
   const position = (document.getElementById("new-user-position")?.value || "").trim();
   const temporaryPassword = document.getElementById("new-user-temp-password")?.value || "";
   if (!username || !fullName || temporaryPassword.length < 8) {
-    showSuccessPopup("ข้อมูลไม่ครบ", "กรอกชื่อหน้าอีเมล ชื่อ-นามสกุล และรหัสชั่วคราวอย่างน้อย 8 ตัวอักษร");
+    showSuccessPopup("ข้อมูลไม่ครบ", "กรอก Username ชื่อ-นามสกุล และรหัสชั่วคราวอย่างน้อย 8 ตัวอักษร");
+    return;
+  }
+  if (!/^[a-z0-9_-]+\.[a-z]{3}$/.test(username)) {
+    showSuccessPopup("รูปแบบ Username ไม่ถูกต้อง", "ใช้ชื่อจริง.นามสกุล 3 ตัว เช่น parichat.ink");
     return;
   }
   try {
