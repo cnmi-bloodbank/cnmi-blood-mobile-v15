@@ -1219,7 +1219,7 @@
 }
     
   
-    /* ===== Supabase v15.3: field baseline v10 + Supabase history ===== */
+    /* ===== Supabase v15.4: field baseline v10 + Supabase history ===== */
     .preload-status-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; background:#eef6ff; border:1px solid #b8dafc; font-size:13px; font-weight:700; color:#185abc; }
     #donor-history-panel { margin-top:12px; border:1px solid #cfe2ff; border-radius:14px; padding:12px; background:#f8fbff; }
     .preload-history-title { font-weight:700; color:#185abc; margin-bottom:8px; }
@@ -1229,12 +1229,25 @@
     .preload-danger { background:#fff0f0; border-color:#e39a9a; color:#7a1f1f; box-shadow:inset 4px 0 0 #dc3545; }
     .preload-help { background:#f7fbff; border:1px dashed #9cc9f5; border-radius:12px; padding:12px 14px; }
   
-/* v15.3: sidebar ไม่ตกขอบบนจอความสูงน้อย */
+/* v15.4: sidebar ไม่ตกขอบบนจอความสูงน้อย */
 @media (min-width: 769px) {
   .sidebar { overflow: hidden !important; }
   .sidebar-nav { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; scrollbar-width: thin; }
   .sidebar-footer { flex: 0 0 auto !important; max-height: 230px; overflow-y: auto !important; background: rgba(21,64,94,.18); }
 }
+
+
+/* v15.4: compact donor search + bag status */
+.donor-search-sticky { position: sticky; top: 10px; z-index: 20; background: rgba(248,251,255,.97); backdrop-filter: blur(5px); border:1px solid #cfe3ff; border-radius:16px; padding:14px; margin-bottom:14px; }
+.donor-search-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.donor-search-card { border:1px solid #d9e7f7; border-radius:14px; padding:12px; background:#fff; min-width:0; }
+.donor-search-name { font-size:1.05rem; font-weight:800; color:#154f9b; }
+.donor-search-warning { font-size:.88rem; border-radius:8px; padding:6px 8px; margin-top:6px; }
+.bag-status-batch { border:1px solid #ead9a5; border-radius:12px; padding:12px; margin-top:10px; background:#fff; }
+.bag-used-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.bag-used-chip { display:inline-flex; gap:5px; align-items:center; border-radius:999px; padding:5px 9px; background:#ffe8e8; border:1px solid #f0b8b8; color:#8a2020; font-size:.82rem; }
+@media (max-width: 1000px){ .donor-search-grid{grid-template-columns:1fr;} }
+
 </style>
 </head>
 
@@ -1290,6 +1303,11 @@
         <button class="nav-btn active" data-page="dashboard" data-roles="admin,sup_manager,manager,staff,physician" onclick="showPage('dashboard')">
           <span class="nav-icon">📊</span>
           <span class="nav-label">Dashboard</span>
+        </button>
+
+        <button class="nav-btn" data-page="donor-search" data-roles="admin,sup_manager,manager,staff" onclick="showPage('donor-search')">
+          <span class="nav-icon">🔎</span>
+          <span class="nav-label">ค้นหาผู้บริจาค</span>
         </button>
 
         <button class="nav-btn" data-page="register" data-roles="admin,sup_manager,manager,staff" onclick="showPage('register')">
@@ -1402,6 +1420,24 @@
         </div>
       </section>
 
+      <section class="page-section" id="page-donor-search">
+        <div class="page-title-card">
+          <h1 class="page-title">🔎 ค้นหาผู้บริจาค</h1>
+          <p class="page-desc">ค้นประวัติก่อนรับลงทะเบียน เพื่อดู Donor Note / Active Defer / Sero + NAT และเลือกข้อมูลไปหน้าลงทะเบียน</p>
+        </div>
+        <div class="container-fluid px-0">
+          <div class="donor-search-sticky">
+            <label class="fw-bold mb-1">เลขบัตรประชาชน / ชื่อ / นามสกุล / เบอร์โทร</label>
+            <div class="input-group input-group-lg">
+              <input id="donor-history-search" class="form-control" placeholder="เช่น 1234567890123 / สมชาย / อาทิตย์ / 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">🔍 ค้นหา</button>
+            </div>
+            <div id="donor-history-search-status" class="small text-muted mt-2">ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน</div>
+          </div>
+          <div id="donor-history-search-results" class="donor-search-grid"></div>
+        </div>
+      </section>
+
       <section class="page-section" id="page-register">
         <div class="page-title-card">
           <h1 class="page-title">ลงทะเบียนผู้บริจาค</h1>
@@ -1412,15 +1448,9 @@
           <div class="main-card">
             <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
 
-      <div class="main-card mb-3" style="background:#f8fbff; border:1px solid #cfe3ff;">
-        <h5 class="text-primary fw-bold mb-2">🔎 ค้นหาผู้บริจาคเดิมก่อนลงทะเบียน</h5>
-        <div class="small text-muted mb-2">ค้นด้วยเลขบัตรประชาชน ชื่อ นามสกุล หรือเบอร์โทร เพื่อดูประวัติ Donor Note / Active Defer / Sero-NAT ก่อนรับลงทะเบียน</div>
-        <div class="input-group">
-          <input id="donor-history-search" class="form-control" placeholder="เช่น 1234567890123 / สมชาย / 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
-          <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">ค้นหา</button>
-        </div>
-        <div id="donor-history-search-status" class="small text-muted mt-2"></div>
-        <div id="donor-history-search-results" class="mt-2"></div>
+      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+        <div><strong>ก่อนลงทะเบียน:</strong> ถ้าเป็นผู้บริจาคเดิม แนะนำค้นประวัติก่อน เพื่อดู Donor Note / Active Defer / Sero + NAT</div>
+        <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นหาผู้บริจาคเดิม</button>
       </div>
 
       <div class="row g-3">
@@ -1563,6 +1593,7 @@
             การอัปเดตเป็นแบบ <strong>เพิ่ม/ปรับปรุงจากฐานเดิม</strong> ผู้บริจาคเก่าที่ยังไม่อยู่ในไฟล์รอบใหม่จะยังคงอยู่ และประวัติบริจาค/Donor Note เดิมจะถูกรวมไว้สำหรับการออกหน่วยครั้งถัดไป
           </div>
           <div id="preload-summary" class="fw-bold text-danger mb-3">ยังไม่มีฐานประวัติ 4 Reports ใน Supabase</div>
+          <div id="preload-coverage" class="mb-3"></div>
           <label class="fw-bold mb-1">เลือก Excel 4 ไฟล์พร้อมกัน</label>
           <input id="preload-report-files" type="file" class="form-control" accept=".xlsx,.xls,.csv" multiple>
           <div id="preload-import-status" class="small text-muted mt-2"></div>
@@ -1578,16 +1609,20 @@
           <div class="small text-muted">Excel 4 ไฟล์จะถูกประมวลผลใน Browser แล้วอัปเดตฐานกลาง Supabase โดยเก็บประวัติเดิมไว้ ไม่ต้องอัปเดตทุกคอม</div>
 
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#fffaf2;">
-            <h5 class="fw-bold text-warning-emphasis mb-2">🔢 ตั้งเลขถุงสำหรับออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
+            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+              <h5 class="fw-bold text-warning-emphasis mb-0">🔢 ตั้งเลขถุงสำหรับออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
+              <button class="btn btn-outline-primary btn-sm" onclick="loadBagStatus()">🔄 ดูเลขที่ใช้ไปแล้ว</button>
+            </div>
             <div class="small text-muted mb-3">กำหนดช่วงเลขถุงของหน่วยและวันที่นี้ ระบบจะตรวจเลขซ้ำกับเลขถุงที่เคยอยู่ในฐานและเลขถุงที่เคยใช้งานก่อนบันทึก</div>
             <div class="row g-2 align-items-end">
               <div class="col-md-4"><label class="small fw-bold">ชื่อหน่วย</label><input id="bag-unit-name" class="form-control" placeholder="เช่น ออกหน่วย บริษัท ABC"></div>
-              <div class="col-md-2"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="bag-outreach-date" type="date" class="form-control"></div>
+              <div class="col-md-2"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="bag-outreach-date" type="date" class="form-control" onchange="loadBagStatus().catch(()=>{})"></div>
               <div class="col-md-2"><label class="small fw-bold">เลขเริ่มต้น</label><input id="bag-range-start" class="form-control" inputmode="numeric" placeholder="เช่น 001000"></div>
               <div class="col-md-2"><label class="small fw-bold">เลขสุดท้าย</label><input id="bag-range-end" class="form-control" inputmode="numeric" placeholder="เช่น 001100"></div>
               <div class="col-md-2"><button class="btn btn-warning w-100" onclick="saveBagRange()">ตั้งช่วงเลขถุง</button></div>
             </div>
             <div id="bag-range-status" class="small mt-2 text-muted">ยังไม่ได้ตรวจสอบช่วงเลขถุง</div>
+            <div id="bag-usage-status" class="mt-3"></div>
           </div>
         </div>
       </section>
@@ -2404,6 +2439,11 @@ function showPage(pageName) {
 
   if (pageName === "preload") {
     window.cnmiPreload?.refreshSummary?.().catch(()=>{});
+    if (isRealAdmin() && getAdminViewMode() !== 'staff') setTimeout(()=>loadBagStatus().catch(()=>{}),80);
+  }
+
+  if (pageName === "donor-search") {
+    setTimeout(()=>document.getElementById('donor-history-search')?.focus(),80);
   }
 
   if (pageName === "settings") {
@@ -4352,7 +4392,7 @@ async function adminResetPassword(username, fullName) {
   <script src="js/supabase-history.js"></script>
 
 <script>
-// ===== v15.3 workflow helpers =====
+// ===== v15.4 workflow helpers =====
 async function searchDonorHistory(){
   const q=(document.getElementById('donor-history-search')?.value||'').trim();
   const status=document.getElementById('donor-history-search-status');
@@ -4362,29 +4402,46 @@ async function searchDonorHistory(){
   try{
     const rows=await window.cnmiSupabaseApi.searchDonors(q,20);
     if(!rows.length){ if(status){status.className='small text-secondary mt-2';status.textContent='ไม่พบผู้บริจาคในฐานประวัติ';} if(box) box.innerHTML=''; return; }
-    if(status){status.className='small text-success mt-2';status.textContent=`พบ ${rows.length} รายการ`; }
+    if(status){status.className='small text-success mt-2';status.textContent=`พบ ${rows.length} รายการ${rows.length>=20?' · แสดง 20 รายการแรก กรุณาพิมพ์ชื่อ/เลขบัตรให้ละเอียดขึ้นถ้าต้องการ':' '}`; }
     if(box){
       box.innerHTML=rows.map(r=>{
-        const p=r.profile||{}; const a=p.alerts||{};
-        const flags=[(a.defers||[]).length?'Defer':'',(a.seroNat||[]).length?'Sero/NAT':'',(a.notes||[]).length?'Note':''].filter(Boolean);
-        const badge=flags.length?`<span class="badge text-bg-danger ms-2">${flags.join(' · ')}</span>`:'<span class="badge text-bg-success ms-2">ไม่พบคำเตือน</span>';
+        const p=r.profile||{},a=p.alerts||{},defers=a.defers||[],sero=a.seroNat||[],notes=a.notes||[];
+        const flags=[defers.length?'Active Defer':'',sero.length?'Sero + NAT':'',notes.length?'Donor Note':''].filter(Boolean);
+        const badge=flags.length?`<span class="badge text-bg-danger">${flags.join(' · ')}</span>`:'<span class="badge text-bg-success">ไม่พบคำเตือน</span>';
         const safeId=String(r.id_card||'').replace(/'/g,'');
-        const details=[];
-        if((a.defers||[]).length) details.push(`<div class="alert alert-danger py-1 px-2 mt-2 mb-1"><strong>Active Defer:</strong> ${escapeHtml((a.defers[0]?.reason||'ไม่ระบุเหตุผล'))}${a.defers[0]?.until?' · ถึง '+escapeHtml(a.defers[0].until):''}</div>`);
-        if((a.seroNat||[]).length) details.push(`<div class="alert alert-danger py-1 px-2 mt-1 mb-1"><strong>Sero/NAT:</strong> พบประวัติที่ต้องตรวจสอบก่อนรับบริจาค</div>`);
-        if((a.notes||[]).length) details.push(`<div class="alert alert-warning py-1 px-2 mt-1 mb-1"><strong>Donor Note:</strong> ${escapeHtml(a.notes[0]?.note||'มี Donor Note')}</div>`);
-        const hist=Array.isArray(p.donationHistory)&&p.donationHistory.length?`<div class="small text-muted mt-1">บริจาคล่าสุด ${escapeHtml(p.donationHistory[0].date||'-')} ${p.donationHistory[0].component?'· '+escapeHtml(p.donationHistory[0].component):''}</div>`:'';
-        return `<div class="border rounded p-2 mb-2 bg-white"><div class="d-flex justify-content-between gap-2 align-items-start flex-wrap"><div><strong>${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</strong>${badge}<div class="small text-muted">ID ${escapeHtml(r.id_card||'')} ${p.phone?'· '+escapeHtml(p.phone):''}</div>${hist}</div><button class="btn btn-sm btn-primary" onclick="selectHistoryDonor('${safeId}')">ลงทะเบียนคนนี้</button></div>${details.join('')}</div>`;
+        const warnings=[];
+        if(sero.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Sero + NAT ผิดปกติ</strong><br>ให้ติดต่อห้องบริจาคโลหิตในเวลาทำการ เพื่อดูข้อมูลในระบบ LIS ของโรงพยาบาล</div>`);
+        if(defers.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Active Defer:</strong> ${escapeHtml(defers[0]?.reason||'ไม่ระบุเหตุผล')}${defers[0]?.until?' · ถึง '+escapeHtml(defers[0].until):''}</div>`);
+        if(notes.length) warnings.push(`<div class="donor-search-warning bg-warning-subtle text-warning-emphasis"><strong>Donor Note:</strong> ${escapeHtml(notes[0]?.note||'มี Donor Note')}</div>`);
+        const last=Array.isArray(p.donationHistory)&&p.donationHistory.length?p.donationHistory[0]:null;
+        return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">ID ${escapeHtml(r.id_card||'')}${p.phone?' · '+escapeHtml(p.phone):''}</div>${last?`<div class="small text-muted">บริจาคล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:''}</div>${badge}</div>${warnings.join('')}<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button></div>`;
       }).join('');
     }
   }catch(err){console.error(err);if(status){status.className='small text-danger mt-2';status.textContent='ค้นหาไม่สำเร็จ: '+(err.message||err);}}
 }
 async function selectHistoryDonor(id){
-  showPage('register');
+  clearForm();
   const input=document.getElementById('id_card'); if(input) input.value=id;
+  showPage('register');
   await window.cnmiPreload.lookupFromRegister({fill:true});
-  document.getElementById('fname')?.focus();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+function fmtThaiDateTime(v){try{return v?new Date(v).toLocaleString('th-TH'):'-';}catch{return String(v||'-');}}
+async function loadBagStatus(){
+  if(!isRealAdmin() || getAdminViewMode()==='staff')return;
+  const date=document.getElementById('bag-outreach-date')?.value||'';
+  const box=document.getElementById('bag-usage-status');if(!box)return;
+  if(!date){box.innerHTML='<div class="small text-muted">เลือกวันที่เพื่อดูสถานะเลขถุง</div>';return;}
+  box.innerHTML='<div class="small text-primary">กำลังโหลดสถานะเลขถุง...</div>';
+  try{
+    const batches=await window.cnmiSupabaseApi.getBagBatchStatus(date);
+    if(!batches.length){box.innerHTML='<div class="alert alert-light border mb-0">วันที่นี้ยังไม่มีช่วงเลขถุงในระบบ</div>';return;}
+    box.innerHTML=batches.map(b=>{
+      const used=b.used||[],avail=b.available||[],disabled=b.disabled||[];
+      const usedHtml=used.length?used.map(x=>`<span class="bag-used-chip"><strong>${escapeHtml(x.bag_number)}</strong>${x.dn_ref?' · DN '+escapeHtml(x.dn_ref):''}</span>`).join(''):'<span class="text-success small">ยังไม่มีเลขถูกใช้จากช่วงนี้</span>';
+      return `<div class="bag-status-batch"><div class="d-flex justify-content-between align-items-start gap-2 flex-wrap"><div><strong>${escapeHtml(b.unit_name||'-')}</strong> <span class="badge ${b.active?'text-bg-success':'text-bg-secondary'}">${b.active?'ใช้งานอยู่':'ปิดแล้ว'}</span><div class="small text-muted">ช่วง ${escapeHtml(b.start_number)}–${escapeHtml(b.end_number)} · สร้าง ${fmtThaiDateTime(b.created_at)}</div></div><div class="text-end"><span class="badge text-bg-danger">ใช้แล้ว ${used.length}</span> <span class="badge text-bg-success">เหลือ ${avail.length}</span>${disabled.length?` <span class="badge text-bg-secondary">ปิด ${disabled.length}</span>`:''}<div class="small text-muted mt-1">ทั้งหมด ${Number(b.item_count||b.bags?.length||0).toLocaleString()} เลข</div></div></div><div class="small fw-bold mt-2">เลขที่ใช้ไปแล้ว${used.length?' ('+used.length+')':''}</div><div class="bag-used-list">${usedHtml}</div></div>`;
+    }).join('');
+  }catch(err){console.error(err);box.innerHTML=`<div class="alert alert-danger py-2 mb-0">โหลดสถานะเลขถุงไม่สำเร็จ: ${escapeHtml(err.message||err)}</div>`;}
 }
 async function saveBagRange(){
   if(!isRealAdmin() || getAdminViewMode()==='staff') return alert('ส่วนตั้งเลขถุงใช้ได้เฉพาะมุมมอง Admin');
@@ -4397,6 +4454,7 @@ async function saveBagRange(){
     if(st){st.className='small mt-2 text-primary';st.textContent='กำลังตรวจเลขซ้ำและสร้างช่วงเลขถุง...';}
     const r=await window.cnmiSupabaseApi.createBagRange({unitName:unit,outreachDate:date,startNumber:start,endNumber:end});
     if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`พร้อมใช้ ${r.count||0} เลข · ${r.startNumber}–${r.endNumber} · ${r.unitName}`;}
+    await loadBagStatus();
     alert(`ตั้งเลขถุงสำเร็จ\n${r.unitName}\nวันที่ ${r.outreachDate}\nช่วง ${r.startNumber}–${r.endNumber} (${r.count} เลข)`);
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='ตั้งเลขถุงไม่สำเร็จ: '+(err.message||err);} alert('ตั้งเลขถุงไม่สำเร็จ\n'+(err.message||err));}
 }
