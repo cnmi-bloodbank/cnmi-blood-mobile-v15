@@ -465,7 +465,7 @@
 
       .label-box {
         width: 50mm;
-        height: 30mm;
+        height: 28mm;
         padding: 2mm 2mm 0.5mm 2mm;
         box-sizing: border-box;
         overflow: hidden;
@@ -1602,7 +1602,7 @@
         </div>
 
         <div class="main-card py-3">
-          <div class="alert alert-info py-2 mb-0 small"><strong>รูปแบบพิมพ์:</strong> คืนค่าการพิมพ์ Sticker ตาม v10 ที่ใช้หน้างานจริง — ฉลาก 50 × 30 mm, Scale 100%, Margins None และปิด Fit/Shrink to page</div>
+          <div class="alert alert-info py-2 mb-0 small"><strong>รูปแบบพิมพ์:</strong> Barcode/Sticker ตาม v13 TSC TE310 300 dpi — ฉลากจริง 50 × 28 mm, Scale 100%, Margins None และปิด Fit/Shrink to page</div>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-sticker"></div>
@@ -4425,7 +4425,7 @@ async function adminResetPassword(username, fullName) {
         cert.style.visibility = "";
       }
 
-      setPrintPageSize("50mm 30mm");
+      setPrintPageSize("50mm 28mm");
 
       setTimeout(() => {
         document.querySelectorAll(".bc-bag-sticker").forEach(el => {
