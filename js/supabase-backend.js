@@ -57,7 +57,13 @@
       if(action==='login'){
         const {data:auth,error}=await sb.auth.signInWithPassword({email:authEmail(data.username),password:data.password}); if(error) return {status:'error',message:'username หรือรหัสผ่านไม่ถูกต้อง'};
         const p=await profile(); if(!p?.active){await sb.auth.signOut();return {status:'error',message:'บัญชีนี้ถูกปิดการใช้งาน'};}
-        await sb.rpc('touch_login',{p_user_agent:data.userAgent||ua()}).catch(()=>{}); startRealtime();
+        try {
+          const { error: touchLoginError } = await sb.rpc('touch_login',{p_user_agent:data.userAgent||ua()});
+          if (touchLoginError) console.warn('touch_login failed', touchLoginError);
+        } catch (touchLoginError) {
+          console.warn('touch_login failed', touchLoginError);
+        }
+        startRealtime();
         return {status:'success',token:auth.session?.access_token||'',user:mapUser(p),mustChangePassword:!!p.must_change_password};
       }
       if(action==='getSessionUser'){
