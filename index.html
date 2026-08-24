@@ -1573,19 +1573,19 @@
 
       <section class="page-section" id="page-today">
   <div class="page-title-card">
-    <h1 class="page-title">รายชื่อผู้บริจาควันนี้</h1>
-    <p class="page-desc">ค้นหา DN ดูสถานะ และเลือกเมนูที่เกี่ยวข้อง</p>
+    <h1 class="page-title">รายชื่อผู้บริจาคตามวันที่</h1>
+    <p class="page-desc">รวมรายการที่ลงทะเบียนผ่านแอป และประวัติการบริจาคจากรายงาน AI-LIS ที่ Import ไว้</p>
   </div>
 
   <div class="container-fluid px-0" id="table-mount-today">
     <div class="main-card" id="visit-table-card">
       <div class="row g-2 align-items-center mb-3">
         <div class="col-auto">
-          <h4 class="text-primary fw-bold m-0" id="visit-table-title">📋 รายชื่อผู้บริจาควันนี้</h4>
+          <h4 class="text-primary fw-bold m-0" id="visit-table-title">📋 รายชื่อผู้บริจาคตามวันที่</h4>
         </div>
 
         <div class="col-auto ms-auto d-flex gap-2 align-items-center">
-          <input type="text" id="dn-search" class="form-control form-control-sm" placeholder="ค้นหา DN" style="width: 170px;">
+          <input type="text" id="dn-search" class="form-control form-control-sm" placeholder="ค้นหา DN / Donor ID / เลขถุง" style="width: 220px;">
           <input type="date" id="table-date" class="form-control form-control-sm" style="width: 170px;">
           <button id="search-btn" class="btn btn-primary btn-sm" onclick="loadTable(true)">🔍 ค้นหา</button>
         </div>
@@ -1596,7 +1596,7 @@
           <thead class="table-light">
             <tr>
               <th style="width:70px;">ลำดับ</th>
-              <th>DN</th>
+              <th>DN / Donor ID</th>
               <th>ชื่อ-นามสกุล</th>
               <th>สถานะ</th>
               <th>เลขถุง</th>
@@ -2606,6 +2606,10 @@ function buildActionButtons(row, rowStr, disableScreen) {
   const mode = currentTableMode || "today";
 
   if (mode === "today") {
+    if (row?.source === 'lis-import') {
+      const safeId = String(row.idCard||'').replace(/'/g,'');
+      return `<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); selectHistoryDonor('${safeId}')">🔎 ดูประวัติ / ลงทะเบียน</button>`;
+    }
     return `
       <div class="btn-group">
         <button class="btn btn-sm action-btn action-btn-edit"
@@ -3654,6 +3658,21 @@ async function adminResetPassword(username, fullName) {
       return data;
     }
 
+    async function mergeImportedLisDonationsForTodayList(liveRows, dateInput) {
+      if ((currentTableMode || 'today') !== 'today' || !window.cnmiSupabaseApi?.getImportedDonationsForDate) return liveRows || [];
+      const imported = await window.cnmiSupabaseApi.getImportedDonationsForDate(dateInput);
+      if (!Array.isArray(imported) || !imported.length) return liveRows || [];
+      const live = Array.isArray(liveRows) ? liveRows : [];
+      const liveIds = new Set(live.map(r => String(r.idCard || '').replace(/\D/g,'')).filter(Boolean));
+      const liveBags = new Set(live.map(r => String(r.bag || '').trim().toUpperCase()).filter(x => x && x !== '-'));
+      const extra = imported.filter(r => {
+        const id = String(r.idCard || '').replace(/\D/g,'');
+        const bag = String(r.bag || '').trim().toUpperCase();
+        return !(id && liveIds.has(id)) && !(bag && bag !== '-' && liveBags.has(bag));
+      });
+      return [...live, ...extra];
+    }
+
     function renderVisitTable(data, dateInput, dnQuery) {
       const tbody = document.getElementById("visit-table-body");
       updateDashboard(data || []);
@@ -3663,7 +3682,7 @@ async function adminResetPassword(username, fullName) {
       }
 
       let filteredData = data;
-      if (dnQuery !== "") filteredData = data.filter(row => ((row.dn || "").toString().toLowerCase().includes(dnQuery)));
+      if (dnQuery !== "") filteredData = data.filter(row => [row.dn,row.donorId,row.bag].some(v=>String(v||'').toLowerCase().includes(dnQuery)));
       filteredData = filterByCurrentTableMode(filteredData);
       if (filteredData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลที่ตรงกับเมนูนี้</td></tr>';
@@ -3674,18 +3693,24 @@ async function adminResetPassword(username, fullName) {
       filteredData.forEach((row, index) => {
         let badgeClass = "bg-warning text-dark";
         let statusText = "รอคัดกรอง";
-        if (row.status === "ผ่าน") { badgeClass = "bg-success"; statusText = "ผ่าน"; }
+        if (row.source === 'lis-import') { badgeClass = "bg-info text-dark"; statusText = "AI-LIS"; }
+        else if (row.status === "ผ่าน") { badgeClass = "bg-success"; statusText = "ผ่าน"; }
         else if (row.status === "ไม่ผ่าน") { badgeClass = "bg-danger"; statusText = "ไม่ผ่าน"; }
         let rowStr = encodeURIComponent(JSON.stringify(row));
         let isPending = rowIsPending(row);
         let hasBag = rowHasBag(row);
         let disableScreen = (hasBag || !isPending) ? "disabled" : "";
+        const imported = row.source === 'lis-import';
+        const idLabel = imported ? `<strong>Donor ID ${escapeHtml(row.donorId||'-')}</strong>` : escapeHtml(row.dn||'-');
+        const detailLine = imported
+          ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
+          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}`;
         html += `
-          <tr onclick="openVisitDetail('${rowStr}')">
+          <tr ${imported?'':`onclick="openVisitDetail('${rowStr}')"`}>
             <td>${filteredData.length - index}</td>
-            <td>${escapeHtml(row.dn)}</td>
-            <td><strong>${escapeHtml(row.name || "ไม่พบชื่อ")}</strong><br><small class="text-muted">วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}</small></td>
-            <td><span class="badge ${badgeClass}" style="width:80px">${statusText}</span></td>
+            <td>${idLabel}</td>
+            <td><strong>${escapeHtml(row.name || "ไม่พบชื่อ")}</strong><br><small class="text-muted">${detailLine}</small></td>
+            <td><span class="badge ${badgeClass}" style="min-width:80px">${statusText}</span></td>
             <td><strong class="text-primary">${escapeHtml(row.bag || "-")}</strong></td>
             <td>${buildActionButtons(row, rowStr, disableScreen)}</td>
           </tr>`;
@@ -3705,12 +3730,14 @@ async function adminResetPassword(username, fullName) {
       const seq = ++visitLoadSeq;
       try {
         setButtonBusy("search-btn", true, "⏳ โหลด...");
-        const data = await getVisitDataFast(dateInput, force);
+        let data = await getVisitDataFast(dateInput, force);
         if (seq !== visitLoadSeq) return;
         if (data && data.status === "error") {
           tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">' + escapeHtml(data.message || "เกิดข้อผิดพลาด") + '</td></tr>';
           return;
         }
+        data = await mergeImportedLisDonationsForTodayList(data || [], dateInput);
+        if (seq !== visitLoadSeq) return;
         renderVisitTable(data || [], dateInput, dnQuery);
       } catch (err) {
         console.error("loadTable error =", err);

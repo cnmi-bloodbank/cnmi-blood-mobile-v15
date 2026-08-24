@@ -39,7 +39,7 @@
       if(ymd){if(!sourceFromDate||ymd<sourceFromDate)sourceFromDate=ymd;if(!sourceThroughDate||ymd>sourceThroughDate)sourceThroughDate=ymd;}
       if(rank>=(p._latestRank||0)){const latest=baseProfile(raw,id);latest.donorIds=p.donorIds;latest.donationHistory=p.donationHistory;latest.alerts=p.alerts;latest._latestRank=rank;p=latest;profiles.set(id,p);}
       if(donorId&&!p.donorIds.includes(donorId))p.donorIds.push(donorId);
-      p.donationHistory.push({date:excelDate(rawDate,true),component:String(pick(raw,['BloodComponent','Component','ส่วนประกอบ'])).trim(),unitNo:String(pick(raw,['Unit No','UnitNo','Bagnumber','BagNumber'])).trim(),donationNo:String(pick(raw,['ครั้งที่บริจาค','Donation No','DonationNo'])).trim(),group:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),_rank:rank});
+      p.donationHistory.push({date:excelDate(rawDate,true),ymd:ymd||'',component:String(pick(raw,['BloodComponent','Component','ส่วนประกอบ'])).trim(),unitNo:String(pick(raw,['Unit No','UnitNo','Bagnumber','BagNumber'])).trim(),donationNo:String(pick(raw,['ครั้งที่บริจาค','Donation No','DonationNo'])).trim(),group:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),_rank:rank});
     }
 
     // เก็บ Donor_ID ที่ mapping ชัดเจนเท่านั้น เพื่อไม่ผูกคนผิดเมื่อ LIS มี Donor_ID ซ้ำ/ชนกัน
