@@ -455,162 +455,139 @@
       }
 
       #tsc-template.active-print {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 50mm;
-        background: #fff;
-      }
-
-      .label-box {
-        width: 50mm;
-        height: 29.6mm;
-        padding: 2mm 2mm 0.5mm 2mm;
-        box-sizing: border-box;
-        overflow: hidden;
-        page-break-after: always;
-        break-after: page;
-        break-inside: avoid;
-        position: relative;
-        background: #fff;
-        font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif;
-      }
-
-      #tsc-template .label-box:last-child {
-        page-break-after: auto;
-        break-after: auto;
-      }
-
-      /* 50x25 mm media: keep the print page at 25 mm but make the content box
-         slightly shorter to avoid Chrome/driver rounding creating blank labels. */
-      #tsc-template.label-size-25 .label-box {
-        height: 24.6mm;
-        padding: 1.15mm 2mm 0.25mm 2mm;
-      }
-      #tsc-template.label-size-25 .st-name { font-size: 2.55mm; margin-bottom: 0.55mm; }
-      #tsc-template.label-size-25 .st-line { font-size: 2.45mm; margin-bottom: 0.30mm; }
-      #tsc-template.label-size-25 .st-bar-wrap { margin-bottom: 0.25mm; }
-      #tsc-template.label-size-25 .st-row-between { font-size: 3.15mm; }
-      #tsc-template.label-size-25 .st-type { font-size: 3.05mm; }
-      #tsc-template.label-size-25 .st-blood { font-size: 3.15mm; margin-top: 0.15mm; }
-      #tsc-template.label-size-25 .st-component-wrap { margin-top: 0.25mm; min-height: 7.5mm; }
-      #tsc-template.label-size-25 .st-component-tag { font-size: 3.35mm; }
-      #tsc-template.label-size-25 .bc-bag-sticker,
-      #tsc-template.label-size-25 .bc-main-sticker { height: 7.25mm; }
-      #tsc-template.label-size-25 .bc-component-sticker { height: 7.55mm; }
-
-      .st-name {
-        font-size: 2.8mm;
-        font-weight: 500;
-        line-height: 1.02;
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: clip;
-        margin: 0 0 1.02mm 0;
-      }
-
-      .st-line {
-        font-size: 2.8mm;
-        line-height: 1;
-        margin: 0 0 0.5mm 0;
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: clip;
-      }
-
-      .st-bar-wrap {
-        margin: 0 0 0.45mm 0.3mm;
-        line-height: 0;
-        text-align: left;
-        display: flex;
-        justify-content: flex-start;
-      }
-
-      .st-row-between {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        gap: 1.2mm;
-        width: 100%;
-        font-size: 3.5mm;
-        line-height: 1;
-        margin: 0;
-      }
-
-      .st-code {
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 40mm;
-      }
-
-      .st-type {
-        font-size: 3.4mm;
-        font-style: italic;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      .st-blood {
-        font-size: 3.5mm;
-        font-weight: 700;
-        line-height: 1;
-        margin-top: 0.3mm;
-        white-space: nowrap;
-      }
-
-      .st-component-wrap {
-        position: relative;
-        margin-top: 0.45mm;
-        min-height: 9.2mm;
-      }
-
-      .st-component-tag {
-        position: absolute;
-        right: 0;
-        bottom: 0.1mm;
-        font-size: 3.8mm;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-
-      /*
-       * TSC TE310 preset: 300 dpi = 12 dots/mm.
-       * The renderer calculates the physical SVG width from an exact 3-dot
-       * Code 128 module. This avoids fractional-dot bar widths in the driver.
-       */
-      .bc-bag-sticker {
-        width: auto;
-        max-width: 31mm;
-        height: 8.2mm;
-        display: block;
-        overflow: visible;
-        shape-rendering: crispEdges;
-      }
-
-      .bc-main-sticker {
-        width: auto;
-        max-width: 31mm;
-        height: 8.2mm;
-        display: block;
-        overflow: visible;
-        shape-rendering: crispEdges;
-      }
-
-      .bc-component-sticker {
-        width: 37mm;
-        height: 9.2mm;
-        display: block;
-        margin: 0 !important;
-      }
-
-      .bc-bag-sticker text,
-      .bc-main-sticker text,
-      .bc-component-sticker text {
-        display: none !important;
-      }
+              display: block !important;
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 50mm;
+              background: #fff;
+            }
+      
+            .label-box {
+              width: 50mm;
+              height: 30mm;
+              padding: 2mm 2mm 0.5mm 2mm;
+              box-sizing: border-box;
+              overflow: hidden;
+              page-break-after: always;
+              position: relative;
+              background: #fff;
+              font-family: 'Sarabun', sans-serif;
+            }
+      
+            .st-name {
+              font-size: 2.8mm;
+              font-weight: 500;
+              line-height: 1.02;
+              white-space: nowrap;
+              overflow: visible;
+              text-overflow: clip;
+              margin: 0 0 1.02mm 0;
+            }
+      
+            .st-line {
+              font-size: 2.8mm;
+              line-height: 1;
+              margin: 0 0 0.5mm 0;
+              white-space: nowrap;
+              overflow: visible;
+              text-overflow: clip;
+            }
+      
+            .st-bar-wrap {
+              margin: 0 0 0.45mm 0.3mm;
+              line-height: 0;
+              text-align: left;
+              display: flex;
+              justify-content: flex-start;
+            }
+      
+            .st-row-between {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+              gap: 1.2mm;
+              width: 100%;
+              font-size: 3.5mm;
+              line-height: 1;
+              margin: 0;
+            }
+      
+            .st-code {
+              font-weight: 700;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 40mm;
+            }
+      
+            .st-type {
+              font-size: 3.4mm;
+              font-style: italic;
+              white-space: nowrap;
+              flex-shrink: 0;
+            }
+      
+            .st-blood {
+              font-size: 3.5mm;
+              font-weight: 700;
+              line-height: 1;
+              margin-top: 0.3mm;
+              white-space: nowrap;
+            }
+      
+            .st-component-wrap {
+              position: relative;
+              margin-top: 0.45mm;
+              min-height: 9.2mm;
+            }
+      
+            .st-component-tag {
+              position: absolute;
+              right: 0;
+              bottom: 0.1mm;
+              font-size: 3.8mm;
+              font-weight: 600;
+              white-space: nowrap;
+            }
+      
+            /*
+             * Main specimen/bag barcode
+             * - Use the SVG intrinsic width so browser printing does not squeeze the bars.
+             * - Keep the intrinsic SVG width so barcode modules are not squeezed by CSS.
+             * - Crisp edges reduce uneven thermal-printer rasterisation.
+             */
+            .bc-bag-sticker {
+              width: auto;
+              max-width: 31mm;
+              height: 8.2mm;
+              display: block;
+              overflow: visible;
+              shape-rendering: crispEdges;
+            }
+      
+            .bc-main-sticker {
+              width: auto;
+              max-width: 31mm;
+              height: 8.2mm;
+              display: block;
+              overflow: visible;
+              shape-rendering: crispEdges;
+            }
+      
+            .bc-component-sticker {
+              width: 37mm;
+              height: 9.2mm;
+              display: block;
+              margin: 0 !important;
+            }
+      
+            .bc-bag-sticker text,
+            .bc-main-sticker text,
+            .bc-component-sticker text {
+              display: none !important;
+            }
+          }
     }
 
       .required-mark { color: #dc3545; font-weight: 700; margin-left: 2px; }
@@ -1554,7 +1531,7 @@
 
         <div class="col-md-4">
           <label>เบอร์โทร <span class="required-mark">*</span></label>
-          <input type="text" id="phone" class="form-control" required placeholder="เช่น 0812345678">
+          <input type="text" id="phone" class="form-control" required inputmode="numeric" maxlength="12" placeholder="เช่น 085-871-7556" oninput="formatPhoneInput(this)">
         </div>
 
         <div class="col-md-12 mt-2">
@@ -1635,18 +1612,7 @@
         </div>
 
         <div class="main-card py-3">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <label class="small fw-bold">ขนาดฉลากของเครื่องนี้</label>
-              <select id="sticker-label-size" class="form-select" onchange="saveStickerPrintSetting()">
-                <option value="25">50 × 25 mm — แนะนำจากฉลากที่ใช้อยู่</option>
-                <option value="30">50 × 30 mm — ค่าเดิม v10</option>
-              </select>
-            </div>
-            <div class="col-md-8">
-              <div class="alert alert-warning py-2 mb-0 small"><strong>ก่อนพิมพ์:</strong> Print scale = 100%, Margins = None และปิด Fit/Shrink to page หากมี หากฉลากข้ามดวงหรือมีดวงเปล่า ให้เลือกความสูงให้ตรงกับม้วนจริง</div>
-            </div>
-          </div>
+          <div class="alert alert-info py-2 mb-0 small"><strong>รูปแบบพิมพ์:</strong> คืนค่าการพิมพ์ Sticker ตาม v10 ที่ใช้หน้างานจริง — ฉลาก 50 × 30 mm, Scale 100%, Margins None และปิด Fit/Shrink to page</div>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-sticker"></div>
@@ -2175,7 +2141,7 @@
 
             <div class="col-md-4">
               <label>ความดัน</label>
-              <input type="text" id="sc-bp" class="form-control">
+              <input type="text" id="sc-bp" class="form-control" inputmode="numeric" maxlength="7" placeholder="เช่น 120/80" oninput="formatBpInput(this)">
             </div>
 
             <div class="col-md-4">
@@ -2373,7 +2339,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.5.2 - required registration + LIS range confirmation + sticker media profile");
+    console.log("CNMI Blood Donation v15.5.4 - input masks + Thai A4 date + v10 sticker rollback");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3183,6 +3149,37 @@ async function resetPasswordWithOtp() {
   initAuth();
 });
 
+    function formatPhoneValue(value) {
+      const digits = String(value || "").replace(/\D/g, "").slice(0, 10);
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return digits.slice(0, 3) + "-" + digits.slice(3);
+      return digits.slice(0, 3) + "-" + digits.slice(3, 6) + "-" + digits.slice(6);
+    }
+
+    function formatPhoneInput(el) {
+      if (!el) return;
+      el.value = formatPhoneValue(el.value);
+    }
+
+    function formatBpValue(value) {
+      const digits = String(value || "").replace(/\D/g, "").slice(0, 6);
+      if (digits.length <= 3) return digits;
+      return digits.slice(0, 3) + "/" + digits.slice(3);
+    }
+
+    function formatBpInput(el) {
+      if (!el) return;
+      el.value = formatBpValue(el.value);
+    }
+
+    function thaiBirthDateForPrint(value) {
+      const m = String(value || "").trim().match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if (!m) return value || "-";
+      const months = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const month = months[Number(m[2])] || m[2];
+      return `${Number(m[1])} ${month} ${m[3]}`;
+    }
+
     function toggleReason() {
       const status = document.getElementById("sc-status").value;
       const reasonBox = document.getElementById("reason-box");
@@ -3208,7 +3205,8 @@ async function resetPasswordWithOtp() {
         phone: document.getElementById('phone').value
       };
 
-      data.phone = (data.phone || "").trim();
+      data.phone = formatPhoneValue((data.phone || "").trim());
+      document.getElementById("phone").value = data.phone;
 
       const requiredFields = [
         ["id_card", "เลขบัตรประชาชน", data.idCard],
@@ -3823,6 +3821,9 @@ async function adminResetPassword(username, fullName) {
         reason: document.getElementById("sc-reason").value
       };
 
+      sData.bp = formatBpValue(sData.bp);
+      document.getElementById("sc-bp").value = sData.bp;
+
       if (!sData.status) {
         alert("กรุณาเลือกผลคัดกรอง");
         document.getElementById("sc-status").focus();
@@ -3844,6 +3845,12 @@ async function adminResetPassword(username, fullName) {
 
         if (!sData.weight || !sData.bp || !sData.pulse || !sData.temp || !sData.hb) {
           alert("กรุณากรอกข้อมูลคัดกรองให้ครบก่อนบันทึก");
+          return;
+        }
+
+        if (!/^\d{3}\/\d{2,3}$/.test(sData.bp)) {
+          alert("กรุณากรอกความดันให้ครบ เช่น 12080 ระบบจะแสดงเป็น 120/80");
+          document.getElementById("sc-bp").focus();
           return;
         }
       }
@@ -3997,7 +4004,7 @@ async function adminResetPassword(username, fullName) {
         pDn.innerText = "DN: " + (row.dn || "");
         pName.innerText = "ชื่อ-สกุล: " + (row.name || "");
         pId.innerText = "เลขบัตรประชาชน: " + (row.idCard || "");
-        pBirth.innerText = "วัน-เดือน-ปีเกิด: " + (row.birth || "-");
+        pBirth.innerText = "วัน-เดือน-ปีเกิด: " + thaiBirthDateForPrint(row.birth || "-");
         pAge.innerText = "อายุ: " + age + " ปี";
         pGender.innerText = "เพศ: " + genderToThai(row.gender || "-");
         pAddress.innerText = "ที่อยู่: " + (row.address || "-");
@@ -4318,29 +4325,6 @@ async function adminResetPassword(username, fullName) {
       });
     }
 
-    const STICKER_LABEL_SIZE_KEY = "cnmi-sticker-label-height-mm";
-
-    function getStickerLabelHeightMm() {
-      const el = document.getElementById("sticker-label-size");
-      const raw = Number(el?.value || localStorage.getItem(STICKER_LABEL_SIZE_KEY) || 25);
-      return raw === 30 ? 30 : 25;
-    }
-
-    function saveStickerPrintSetting() {
-      const mm = getStickerLabelHeightMm();
-      localStorage.setItem(STICKER_LABEL_SIZE_KEY, String(mm));
-    }
-
-    function applyStickerPrintProfile(tsc) {
-      const mm = getStickerLabelHeightMm();
-      if (tsc) {
-        tsc.classList.remove("label-size-25", "label-size-30");
-        tsc.classList.add(mm === 25 ? "label-size-25" : "label-size-30");
-      }
-      setPrintPageSize(`50mm ${mm}mm`);
-      return mm;
-    }
-
     async function printTSCFromRow(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
@@ -4451,7 +4435,7 @@ async function adminResetPassword(username, fullName) {
         cert.style.visibility = "";
       }
 
-      applyStickerPrintProfile(tsc);
+      setPrintPageSize("50mm 30mm");
 
       setTimeout(() => {
         document.querySelectorAll(".bc-bag-sticker").forEach(el => {
@@ -4498,7 +4482,7 @@ async function adminResetPassword(username, fullName) {
       }, 300);
     }
 
-    async function reprintTSCFromRow(encodedRow) {
+        async function reprintTSCFromRow(encodedRow) {
       await printTSCFromRow(encodedRow);
     }
 
@@ -4684,8 +4668,6 @@ async function saveBagRange(){
   document.addEventListener('DOMContentLoaded',()=>{
     const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
     ['lis-export-date','bag-outreach-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
-    const stickerSize=document.getElementById('sticker-label-size');
-    if(stickerSize){stickerSize.value=localStorage.getItem(STICKER_LABEL_SIZE_KEY)==='30'?'30':'25';}
   });
 })();
 </script>
