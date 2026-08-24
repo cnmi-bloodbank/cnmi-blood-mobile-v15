@@ -1318,7 +1318,7 @@
 
         <button class="nav-btn" data-page="today" data-roles="admin,sup_manager,manager,staff,physician" onclick="showPage('today')">
           <span class="nav-icon">📋</span>
-          <span class="nav-label">รายชื่อผู้บริจาควันนี้</span>
+          <span class="nav-label">รายชื่อผู้บริจาคตามวันที่</span>
         </button>
 
         <button class="nav-btn" data-page="screening" data-roles="admin,sup_manager,manager,staff" onclick="showPage('screening')">
@@ -1445,6 +1445,18 @@
                 <label class="small fw-bold">เบอร์โทร</label>
                 <input id="donor-search-phone" class="form-control" inputmode="tel" autocomplete="off" placeholder="เช่น 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
               </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">DN ออกหน่วย</label>
+                <input id="donor-search-dn" class="form-control" autocomplete="off" placeholder="เช่น 202606260012" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">เลขถุง</label>
+                <input id="donor-search-bag" class="form-control" autocomplete="off" placeholder="เช่น CN6910008" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">วันที่บริจาค</label>
+                <input id="donor-search-visit-date" type="date" class="form-control" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
               <div class="col-lg-2 col-md-4 d-grid">
                 <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">🔍 ค้นหา</button>
               </div>
@@ -1472,6 +1484,7 @@
         <div><strong>ก่อนลงทะเบียน:</strong> ถ้าเป็นผู้บริจาคเดิม แนะนำค้นประวัติก่อน เพื่อดู Donor Note / Active Defer / Sero + NAT</div>
         <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นหาผู้บริจาคเดิม</button>
       </div>
+      <div id="register-event-location" class="alert alert-warning py-2 mb-3"><strong>📍 สถานที่ออกหน่วย:</strong> กำลังตรวจสอบ...</div>
 
       <div class="row g-3">
         <div class="col-md-12">
@@ -1580,7 +1593,7 @@
       <section class="page-section" id="page-print-a4">
         <div class="page-title-card">
           <h1 class="page-title">พิมพ์ใบสมัคร</h1>
-          <p class="page-desc">เลือกผู้บริจาคจากรายชื่อวันนี้ แล้วกดปุ่มพิมพ์ใบสมัคร</p>
+          <p class="page-desc">เลือกวันที่ย้อนหลังได้ · พิมพ์ใบสมัครจาก Visit ของ Blood Mobile ที่มี DN จริง</p>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-print-a4"></div>
@@ -1589,7 +1602,7 @@
       <section class="page-section" id="page-screening">
         <div class="page-title-card">
           <h1 class="page-title">คัดกรองผู้บริจาค</h1>
-          <p class="page-desc">เลือก DN จากรายชื่อวันนี้ แล้วกดปุ่มลงผลคัดกรอง</p>
+          <p class="page-desc">แสดงเฉพาะ Visit ที่รอคัดกรองจาก Blood Mobile ของวันที่เลือก</p>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-screening"></div>
@@ -1643,6 +1656,27 @@
           </div>
           <hr>
           <div class="small text-muted">Excel 4 ไฟล์จะถูกประมวลผลใน Browser แล้วอัปเดตฐานกลาง Supabase โดยเก็บประวัติเดิมไว้ ไม่ต้องอัปเดตทุกคอม</div>
+
+          <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f5fbff;">
+            <h5 class="fw-bold text-primary mb-2">📍 สถานที่ออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
+            <div class="small text-muted mb-3">ตั้งครั้งเดียวใน Supabase แล้วคอมลงทะเบียน/คัดกรองทุกเครื่องใช้สถานที่เดียวกัน ทุก DN ใหม่จะจำสถานที่นี้ไว้ถาวร</div>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="event-date" type="date" class="form-control" onchange="loadOutreachEvent().catch(()=>{})"></div>
+              <div class="col-md-7"><label class="small fw-bold">ชื่อสถานที่ / หน่วย</label><input id="event-unit-name" class="form-control" placeholder="เช่น บริษัท ABC จำกัด"></div>
+              <div class="col-md-2"><button class="btn btn-primary w-100" onclick="saveOutreachEvent()">บันทึกสถานที่</button></div>
+            </div>
+            <div id="event-status" class="small mt-2 text-muted">ยังไม่ได้ตรวจสถานที่ของวันนี้</div>
+          </div>
+
+          <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f8fff8;">
+            <h5 class="fw-bold text-success mb-2">🗂️ นำเข้างานออกหน่วยเดิมจาก Blood Donation App <span class="badge text-bg-secondary">ทำครั้งเดียว</span></h5>
+            <div class="small text-muted mb-3">เลือก Excel เดิมที่มีชีต <strong>Donors + Visits</strong> ระบบจะเก็บ DN/สถานที่/เลขถุง/ผลคัดกรองเดิมเข้า Supabase และสามารถเลือกไฟล์เดิมซ้ำได้โดยไม่สร้าง Visit ซ้ำ</div>
+            <input id="legacy-workbook-file" type="file" class="form-control" accept=".xlsx,.xls">
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+              <button id="legacy-import-btn" class="btn btn-success" onclick="importLegacyWorkbook()">นำเข้างานออกหน่วยเดิม</button>
+            </div>
+            <div id="legacy-import-status" class="small mt-2 text-muted">ยังไม่ได้เลือกไฟล์ Legacy</div>
+          </div>
 
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#fffaf2;">
             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
@@ -2329,7 +2363,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.5.4 - input masks + Thai A4 date + v10 sticker rollback");
+    console.log("CNMI Blood Donation v15.6 - legacy reconcile + outreach location + v15.5 barcode preserved");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -2416,7 +2450,7 @@ function moveVisitTableTo(pageName) {
 
 function updateVisitTableTitle(mode) {
   const titleMap = {
-    "today": "📋 รายชื่อผู้บริจาควันนี้",
+    "today": "📋 รายชื่อผู้บริจาคตามวันที่",
     "print-a4": "📄 พิมพ์ใบสมัคร",
     "screening": "🩺 คัดกรองผู้บริจาค",
     "sticker": "🏷️ พิมพ์สติ๊กเกอร์",
@@ -2479,11 +2513,15 @@ function showPage(pageName) {
 
   if (pageName === "preload") {
     window.cnmiPreload?.refreshSummary?.().catch(()=>{});
-    if (isRealAdmin() && getAdminViewMode() !== 'staff') setTimeout(()=>loadBagStatus().catch(()=>{}),80);
+    if (isRealAdmin() && getAdminViewMode() !== 'staff') setTimeout(()=>{loadOutreachEvent().catch(()=>{});loadBagStatus().catch(()=>{});},80);
   }
 
   if (pageName === "donor-search") {
     setTimeout(()=>document.getElementById('donor-history-search')?.focus(),80);
+  }
+
+  if (pageName === "register") {
+    refreshRegisterEventLocation().catch(()=>{});
   }
 
   if (pageName === "settings") {
@@ -3651,12 +3689,12 @@ async function adminResetPassword(username, fullName) {
       const imported = await window.cnmiSupabaseApi.getImportedDonationsForDate(dateInput);
       if (!Array.isArray(imported) || !imported.length) return liveRows || [];
       const live = Array.isArray(liveRows) ? liveRows : [];
-      const liveIds = new Set(live.map(r => String(r.idCard || '').replace(/\D/g,'')).filter(Boolean));
+      const livePassedIds = new Set(live.filter(r=>r.status==='ผ่าน').map(r => String(r.idCard || '').replace(/\D/g,'')).filter(Boolean));
       const liveBags = new Set(live.map(r => String(r.bag || '').trim().toUpperCase()).filter(x => x && x !== '-'));
       const extra = imported.filter(r => {
         const id = String(r.idCard || '').replace(/\D/g,'');
         const bag = String(r.bag || '').trim().toUpperCase();
-        return !(id && liveIds.has(id)) && !(bag && bag !== '-' && liveBags.has(bag));
+        return !(id && livePassedIds.has(id)) && !(bag && bag !== '-' && liveBags.has(bag));
       });
       return [...live, ...extra];
     }
@@ -3692,7 +3730,7 @@ async function adminResetPassword(username, fullName) {
         const idLabel = imported ? `<strong>Donor ID ${escapeHtml(row.donorId||'-')}</strong>` : escapeHtml(row.dn||'-');
         const detailLine = imported
           ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
-          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}`;
+          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}`;
         html += `
           <tr ${imported?'':`onclick="openVisitDetail('${rowStr}')"`}>
             <td>${filteredData.length - index}</td>
@@ -4502,6 +4540,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
   <script src="js/supabase-history.js"></script>
+  <script src="js/legacy-import.js"></script>
 
 <script>
 // ===== v15.5 workflow helpers =====
@@ -4511,11 +4550,14 @@ function donorSearchFilters(){
     donorId:(document.getElementById('donor-search-donor-id')?.value||'').trim(),
     fname:(document.getElementById('donor-search-fname')?.value||'').trim(),
     lname:(document.getElementById('donor-search-lname')?.value||'').trim(),
-    phone:(document.getElementById('donor-search-phone')?.value||'').trim()
+    phone:(document.getElementById('donor-search-phone')?.value||'').trim(),
+    dn:(document.getElementById('donor-search-dn')?.value||'').trim(),
+    bag:(document.getElementById('donor-search-bag')?.value||'').trim(),
+    visitDate:(document.getElementById('donor-search-visit-date')?.value||'').trim()
   };
 }
 function clearDonorSearch(){
-  ['donor-search-id-card','donor-search-donor-id','donor-search-fname','donor-search-lname','donor-search-phone'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['donor-search-id-card','donor-search-donor-id','donor-search-fname','donor-search-lname','donor-search-phone','donor-search-dn','donor-search-bag','donor-search-visit-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const box=document.getElementById('donor-history-search-results');if(box)box.innerHTML='';
   const status=document.getElementById('donor-history-search-status');if(status){status.className='small text-muted';status.textContent='ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน';}
   document.getElementById('donor-search-id-card')?.focus();
@@ -4536,15 +4578,22 @@ async function searchDonorHistory(){
         const p=r.profile||{},a=p.alerts||{},defers=a.defers||[],sero=a.seroNat||[],notes=a.notes||[];
         const flags=[defers.length?'Active Defer':'',sero.length?'Sero + NAT':'',notes.length?'Donor Note':''].filter(Boolean);
         const badge=flags.length?`<span class="badge text-bg-danger">${flags.join(' · ')}</span>`:'<span class="badge text-bg-success">ไม่พบคำเตือน</span>';
-        const safeId=String(r.id_card||'').replace(/'/g,'');
+        const internalId=String(r.id_card||'');
+        const safeId=internalId.replace(/'/g,'');
+        const canRegister=/^\d{13}$/.test(internalId);
+        const displayIdentity=String(p.idCard||p.legacyIdentity||internalId.replace(/^LEGACY:/,'')||'');
         const warnings=[];
         if(sero.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Sero + NAT ผิดปกติ</strong><br>ให้ติดต่อห้องบริจาคโลหิตในเวลาทำการ เพื่อดูข้อมูลในระบบ LIS ของโรงพยาบาล</div>`);
         if(defers.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Active Defer:</strong> ${escapeHtml(defers[0]?.reason||'ไม่ระบุเหตุผล')}${defers[0]?.until?' · ถึง '+escapeHtml(defers[0].until):''}</div>`);
         if(notes.length) warnings.push(`<div class="donor-search-warning bg-warning-subtle text-warning-emphasis"><strong>Donor Note:</strong> ${escapeHtml(notes[0]?.note||'มี Donor Note')}</div>`);
         const last=Array.isArray(p.donationHistory)&&p.donationHistory.length?p.donationHistory[0]:null;
+        const mobileLast=Array.isArray(p.mobileVisits)&&p.mobileVisits.length?p.mobileVisits[0]:null;
         const donorIds=Array.isArray(p.donorIds)?p.donorIds.filter(Boolean):[];
         const donorIdLine=donorIds.length?`<div class="small text-muted">Donor ID ${escapeHtml(donorIds.slice(0,4).join(', '))}${donorIds.length>4?' …':''}</div>`:'';
-        return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">เลขบัตร ${escapeHtml(r.id_card||'')}${p.phone?' · '+escapeHtml(p.phone):''}</div>${donorIdLine}${last?`<div class="small text-muted">บริจาคล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:''}</div>${badge}</div>${warnings.join('')}<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button></div>`;
+        const lastLine=last?`<div class="small text-muted">AI-LIS ล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:(mobileLast?`<div class="small text-muted">Blood Mobile ล่าสุด ${escapeHtml(mobileLast.date||mobileLast.ymd||'-')}${mobileLast.dn?' · DN '+escapeHtml(mobileLast.dn):''}${mobileLast.location?' · '+escapeHtml(mobileLast.location):''}</div>`:'');
+        const identityLine=canRegister?`เลขบัตร ${escapeHtml(displayIdentity)}`:`รหัสเดิม ${escapeHtml(displayIdentity)} <span class="badge text-bg-warning">Legacy</span>`;
+        const actionButton=canRegister?`<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button>`:`<div class="alert alert-warning py-1 px-2 small mt-2 mb-0">ประวัติเดิมรายการนี้ไม่มีเลขบัตรประชาชน 13 หลักในไฟล์เก่า จึงแสดงประวัติได้ แต่ไม่เติมลงทะเบียนใหม่อัตโนมัติ</div>`;
+        return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">${identityLine}${p.phone?' · '+escapeHtml(p.phone):''}</div>${donorIdLine}${lastLine}</div>${badge}</div>${warnings.join('')}${actionButton}</div>`;
       }).join('');
     }
   }catch(err){console.error(err);if(status){status.className='small text-danger';status.textContent='ค้นหาไม่สำเร็จ: '+(err.message||err);}}
@@ -4588,6 +4637,26 @@ async function readThaiIdCard(){
   }finally{if(btn){btn.disabled=false;btn.innerHTML=oldText||'💳 อ่านบัตรประชาชน';}}
 }
 function fmtThaiDateTime(v){try{return v?new Date(v).toLocaleString('th-TH'):'-';}catch{return String(v||'-');}}
+async function refreshRegisterEventLocation(){
+  const box=document.getElementById('register-event-location');if(!box)return;
+  const date=getLocalDateInputValue();
+  try{const r=await window.cnmiSupabaseApi.getOutreachEvent(date);if(r?.unitName){box.className='alert alert-success py-2 mb-3';box.innerHTML='<strong>📍 สถานที่ออกหน่วยวันนี้:</strong> '+escapeHtml(r.unitName);}else{box.className='alert alert-danger py-2 mb-3';box.innerHTML='<strong>⚠ ยังไม่ได้ตั้งสถานที่ออกหน่วยวันนี้</strong> — กรุณาให้ Admin ตั้งที่เมนู เตรียมออกหน่วย ก่อนบันทึก DN';}}catch(err){box.className='alert alert-warning py-2 mb-3';box.textContent='ตรวจสถานที่ออกหน่วยไม่สำเร็จ: '+(err.message||err);}
+}
+
+async function loadOutreachEvent(){
+  if(!isRealAdmin() || getAdminViewMode()==='staff')return;
+  const date=document.getElementById('event-date')?.value||'';const st=document.getElementById('event-status');
+  if(!date){if(st)st.textContent='เลือกวันที่ก่อน';return;}
+  try{const r=await window.cnmiSupabaseApi.getOutreachEvent(date);if(r?.unitName){const n=document.getElementById('event-unit-name');if(n)n.value=r.unitName;if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`ใช้ร่วมทุกคอม: ${r.unitName}`;}const bd=document.getElementById('bag-outreach-date'),bn=document.getElementById('bag-unit-name');if(bd&&!bd.value)bd.value=date;if(bn&&!bn.value)bn.value=r.unitName;}else if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='วันที่นี้ยังไม่ได้ตั้งสถานที่ — ระบบจะไม่ออก DN ใหม่จนกว่า Admin จะตั้ง';}}catch(err){if(st){st.className='small mt-2 text-danger';st.textContent='โหลดสถานที่ไม่สำเร็จ: '+(err.message||err);}}
+}
+async function saveOutreachEvent(){
+  if(!isRealAdmin() || getAdminViewMode()==='staff')return alert('ใช้ได้เฉพาะมุมมอง Admin');
+  const date=document.getElementById('event-date')?.value||'',unit=(document.getElementById('event-unit-name')?.value||'').trim(),st=document.getElementById('event-status');
+  if(!date||!unit)return alert('กรุณากรอกวันที่และสถานที่ออกหน่วย');
+  try{const r=await window.cnmiSupabaseApi.setOutreachEvent({eventDate:date,unitName:unit});if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`บันทึกแล้ว · ${r.unitName||unit} · ทุกคอมใช้ร่วมกัน`;}const bd=document.getElementById('bag-outreach-date'),bn=document.getElementById('bag-unit-name');if(bd)bd.value=date;if(bn)bn.value=unit;alert('บันทึกสถานที่ออกหน่วยสำเร็จ\n'+unit);}
+  catch(err){if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='บันทึกไม่สำเร็จ: '+(err.message||err);}alert('บันทึกสถานที่ไม่สำเร็จ\n'+(err.message||err));}
+}
+
 async function loadBagStatus(){
   if(!isRealAdmin() || getAdminViewMode()==='staff')return;
   const date=document.getElementById('bag-outreach-date')?.value||'';
@@ -4615,7 +4684,10 @@ async function saveBagRange(){
   if(!lisConfirmed) return alert('กรุณาตรวจสอบช่วงเลขถุงกับ AI-LIS แล้วติ๊กยืนยันก่อนตั้งช่วงเลขถุง');
   try{
     if(st){st.className='small mt-2 text-primary';st.textContent='กำลังตรวจเลขซ้ำและสร้างช่วงเลขถุง...';}
+    await window.cnmiSupabaseApi.setOutreachEvent({eventDate:date,unitName:unit});
     const r=await window.cnmiSupabaseApi.createBagRange({unitName:unit,outreachDate:date,startNumber:start,endNumber:end});
+    const eventDate=document.getElementById('event-date'),eventName=document.getElementById('event-unit-name');
+    if(eventDate)eventDate.value=date;if(eventName)eventName.value=unit;loadOutreachEvent().catch(()=>{});
     if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`พร้อมใช้ ${r.count||0} เลข · ${r.startNumber}–${r.endNumber} · ${r.unitName}`;}
     await loadBagStatus();
     const lisConfirm=document.getElementById('bag-lis-confirm'); if(lisConfirm) lisConfirm.checked=false;
@@ -4631,7 +4703,7 @@ async function saveBagRange(){
   };
   document.addEventListener('DOMContentLoaded',()=>{
     const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-    ['lis-export-date','bag-outreach-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
+    ['lis-export-date','bag-outreach-date','event-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
   });
 })();
 </script>
