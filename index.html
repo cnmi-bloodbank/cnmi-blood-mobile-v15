@@ -1260,7 +1260,7 @@
       <div class="mb-3">
         <label class="fw-bold">Username</label>
         <div class="input-group input-group-lg">
-          <input type="text" id="login-username" class="form-control" placeholder="เช่น parichat.ink" autocomplete="username" autocapitalize="none">
+          <input type="text" id="login-username" class="form-control" placeholder="เช่น firstname.sur" autocomplete="username" autocapitalize="none">
           <span class="input-group-text">@mahidol.ac.th</span>
         </div>
         <div class="small text-muted mt-1">รูปแบบ: ชื่อจริง.นามสกุล 3 ตัวอักษร</div>
@@ -1700,7 +1700,7 @@
 
   <div class="main-card">
     <h4 class="text-primary fw-bold mb-3">➕ สร้างบัญชีเจ้าหน้าที่</h4>
-    <div class="small text-muted mb-3">Username ใหม่ใช้รูปแบบ <strong>ชื่อจริง.นามสกุล 3 ตัว</strong> เช่น <strong>parichat.ink</strong></div>
+    <div class="small text-muted mb-3">Username ใหม่ใช้รูปแบบ <strong>ชื่อจริง.นามสกุล 3 ตัว</strong> เช่น <strong>firstname.sur</strong></div>
     <div class="row g-2">
       <div class="col-md-3">
         <label class="small fw-bold">Username</label>
@@ -2354,7 +2354,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.1 - compact UI + username convention + v15.6 logic preserved");
+    console.log("CNMI Blood Donation v15.6.2 - compact UI + username convention + v15.6 logic preserved");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3541,7 +3541,7 @@ function clearAuditFilters() {
     return;
   }
   if (!/^[a-z0-9_-]+\.[a-z]{3}$/.test(username)) {
-    showSuccessPopup("รูปแบบ Username ไม่ถูกต้อง", "ใช้ชื่อจริง.นามสกุล 3 ตัว เช่น parichat.ink");
+    showSuccessPopup("รูปแบบ Username ไม่ถูกต้อง", "ใช้ชื่อจริง.นามสกุล 3 ตัว เช่น firstname.sur");
     return;
   }
   try {
