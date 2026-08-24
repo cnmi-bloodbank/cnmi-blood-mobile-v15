@@ -1511,7 +1511,11 @@
 
         <div class="col-md-6">
           <label>เพศ</label>
-          <input type="text" id="gender" class="form-control">
+          <select id="gender" class="form-select">
+            <option value="">-- เลือกเพศ --</option>
+            <option value="M">ชาย</option>
+            <option value="F">หญิง</option>
+          </select>
         </div>
 
         <div class="col-md-8">
@@ -3654,7 +3658,7 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("fname").value = row.fname || "";
       document.getElementById("lname").value = row.lname || "";
       document.getElementById("birth_date").value = row.birth || "";
-      document.getElementById("gender").value = row.gender || "";
+      document.getElementById("gender").value = sexToShort(row.gender || "");
       document.getElementById("address").value = row.address || "";
       document.getElementById('phone').value = row.phone || "";
       window.cnmiPreload?.lookupFromRegister?.({ fill: false }).catch(()=>{});
@@ -3800,7 +3804,7 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("vd-status").innerText = row.status || "รอคัดกรอง";
       document.getElementById("vd-name").innerText = row.name || "-";
       document.getElementById("vd-birth").innerText = row.birth || "-";
-      document.getElementById("vd-gender").innerText = row.gender || "-";
+      document.getElementById("vd-gender").innerText = genderToThai(row.gender || "-");
       document.getElementById('vd-phone').innerText = row.phone || '-';
       document.getElementById("vd-group").innerText = row.group || "-";
       document.getElementById("vd-type").innerText = row.type || "-";
@@ -3893,7 +3897,7 @@ async function adminResetPassword(username, fullName) {
         pId.innerText = "เลขบัตรประชาชน: " + (row.idCard || "");
         pBirth.innerText = "วัน-เดือน-ปีเกิด: " + (row.birth || "-");
         pAge.innerText = "อายุ: " + age + " ปี";
-        pGender.innerText = "เพศ: " + (row.gender || "-");
+        pGender.innerText = "เพศ: " + genderToThai(row.gender || "-");
         pAddress.innerText = "ที่อยู่: " + (row.address || "-");
 
         a4.className = "active-print";
@@ -4018,6 +4022,13 @@ async function adminResetPassword(username, fullName) {
       if (g === "ชาย" || g === "male" || g === "m") return "M";
       if (g === "หญิง" || g === "female" || g === "f") return "F";
 
+      return "-";
+    }
+
+    function genderToThai(gender) {
+      const code = sexToShort(gender);
+      if (code === "M") return "ชาย";
+      if (code === "F") return "หญิง";
       return "-";
     }
 
@@ -4494,7 +4505,7 @@ async function readThaiIdCard(){
     thaiCardSet('fname',payload.firstName);
     thaiCardSet('lname',payload.lastName);
     thaiCardSet('birth_date',payload.birthDate);
-    thaiCardSet('gender',payload.gender);
+    thaiCardSet('gender',sexToShort(payload.gender));
     thaiCardSet('address',payload.address);
     if(st){st.className='small fw-bold text-success mt-1';st.textContent=`อ่านบัตรสำเร็จ${payload.reader?' · '+payload.reader:''}`;}
     await window.cnmiPreload?.lookupFromRegister?.({fill:false});
