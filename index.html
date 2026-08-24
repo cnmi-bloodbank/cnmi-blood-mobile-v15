@@ -465,15 +465,40 @@
 
       .label-box {
         width: 50mm;
-        height: 30mm;
+        height: 29.6mm;
         padding: 2mm 2mm 0.5mm 2mm;
         box-sizing: border-box;
         overflow: hidden;
         page-break-after: always;
+        break-after: page;
+        break-inside: avoid;
         position: relative;
         background: #fff;
         font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif;
       }
+
+      #tsc-template .label-box:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+
+      /* 50x25 mm media: keep the print page at 25 mm but make the content box
+         slightly shorter to avoid Chrome/driver rounding creating blank labels. */
+      #tsc-template.label-size-25 .label-box {
+        height: 24.6mm;
+        padding: 1.15mm 2mm 0.25mm 2mm;
+      }
+      #tsc-template.label-size-25 .st-name { font-size: 2.55mm; margin-bottom: 0.55mm; }
+      #tsc-template.label-size-25 .st-line { font-size: 2.45mm; margin-bottom: 0.30mm; }
+      #tsc-template.label-size-25 .st-bar-wrap { margin-bottom: 0.25mm; }
+      #tsc-template.label-size-25 .st-row-between { font-size: 3.15mm; }
+      #tsc-template.label-size-25 .st-type { font-size: 3.05mm; }
+      #tsc-template.label-size-25 .st-blood { font-size: 3.15mm; margin-top: 0.15mm; }
+      #tsc-template.label-size-25 .st-component-wrap { margin-top: 0.25mm; min-height: 7.5mm; }
+      #tsc-template.label-size-25 .st-component-tag { font-size: 3.35mm; }
+      #tsc-template.label-size-25 .bc-bag-sticker,
+      #tsc-template.label-size-25 .bc-main-sticker { height: 7.25mm; }
+      #tsc-template.label-size-25 .bc-component-sticker { height: 7.55mm; }
 
       .st-name {
         font-size: 2.8mm;
@@ -587,6 +612,10 @@
         display: none !important;
       }
     }
+
+      .required-mark { color: #dc3545; font-weight: 700; margin-left: 2px; }
+      .registration-error-summary { display: none; }
+      .registration-error-summary.show { display: block; }
 
       /* ===== Login Page ===== */
 .login-screen {
@@ -1479,9 +1508,9 @@
 
       <div class="row g-3">
         <div class="col-md-12">
-          <label class="fw-bold">เลขบัตรประชาชน</label>
+          <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
           <div class="input-group input-group-lg">
-            <input type="text" id="id_card" class="form-control" autofocus inputmode="numeric" autocomplete="off">
+            <input type="text" id="id_card" class="form-control" required autofocus inputmode="numeric" autocomplete="off">
             <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
           </div>
           <div id="card-reader-status" class="small text-muted mt-1">อ่านบัตรได้ผ่าน CNMI Card Bridge (ถ้าเปิดอยู่บนเครื่องนี้) หรือกรอกเลขบัตรเองได้ตามปกติ</div>
@@ -1490,28 +1519,28 @@
         </div>
 
         <div class="col-md-2">
-          <label>คำนำหน้า</label>
-          <input type="text" id="prefix" class="form-control">
+          <label>คำนำหน้า <span class="required-mark">*</span></label>
+          <input type="text" id="prefix" class="form-control" required>
         </div>
 
         <div class="col-md-5">
-          <label>ชื่อ</label>
-          <input type="text" id="fname" class="form-control">
+          <label>ชื่อ <span class="required-mark">*</span></label>
+          <input type="text" id="fname" class="form-control" required>
         </div>
 
         <div class="col-md-5">
-          <label>นามสกุล</label>
-          <input type="text" id="lname" class="form-control">
+          <label>นามสกุล <span class="required-mark">*</span></label>
+          <input type="text" id="lname" class="form-control" required>
         </div>
 
         <div class="col-md-6">
-          <label>วันเกิด (วว-ดด-ปปปป พ.ศ.)</label>
-          <input type="text" id="birth_date" class="form-control" placeholder="เช่น 31-12-2530">
+          <label>วันเกิด (วว-ดด-ปปปป พ.ศ.) <span class="required-mark">*</span></label>
+          <input type="text" id="birth_date" class="form-control" required placeholder="เช่น 31-12-2530">
         </div>
 
         <div class="col-md-6">
-          <label>เพศ</label>
-          <select id="gender" class="form-select">
+          <label>เพศ <span class="required-mark">*</span></label>
+          <select id="gender" class="form-select" required>
             <option value="">-- เลือกเพศ --</option>
             <option value="M">ชาย</option>
             <option value="F">หญิง</option>
@@ -1519,13 +1548,17 @@
         </div>
 
         <div class="col-md-8">
-          <label>ที่อยู่</label>
-          <textarea id="address" class="form-control" rows="2"></textarea>
+          <label>ที่อยู่ <span class="required-mark">*</span></label>
+          <textarea id="address" class="form-control" rows="2" required></textarea>
         </div>
 
         <div class="col-md-4">
-          <label>เบอร์โทร</label>
-          <input type="text" id="phone" class="form-control" placeholder="เช่น 0812345678">
+          <label>เบอร์โทร <span class="required-mark">*</span></label>
+          <input type="text" id="phone" class="form-control" required placeholder="เช่น 0812345678">
+        </div>
+
+        <div class="col-md-12 mt-2">
+          <div id="registration-error-summary" class="registration-error-summary alert alert-danger py-2 mb-0"></div>
         </div>
 
         <div class="col-md-12 mt-3">
@@ -1601,6 +1634,21 @@
           <p class="page-desc">เลือกผู้บริจาคที่มีเลขถุงแล้วจากรายชื่อวันนี้</p>
         </div>
 
+        <div class="main-card py-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="small fw-bold">ขนาดฉลากของเครื่องนี้</label>
+              <select id="sticker-label-size" class="form-select" onchange="saveStickerPrintSetting()">
+                <option value="25">50 × 25 mm — แนะนำจากฉลากที่ใช้อยู่</option>
+                <option value="30">50 × 30 mm — ค่าเดิม v10</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <div class="alert alert-warning py-2 mb-0 small"><strong>ก่อนพิมพ์:</strong> Print scale = 100%, Margins = None และปิด Fit/Shrink to page หากมี หากฉลากข้ามดวงหรือมีดวงเปล่า ให้เลือกความสูงให้ตรงกับม้วนจริง</div>
+            </div>
+          </div>
+        </div>
+
         <div class="container-fluid px-0" id="table-mount-sticker"></div>
       </section>
 
@@ -1645,7 +1693,11 @@
               <h5 class="fw-bold text-warning-emphasis mb-0">🔢 ตั้งเลขถุงสำหรับออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
               <button class="btn btn-outline-primary btn-sm" onclick="loadBagStatus()">🔄 ดูเลขที่ใช้ไปแล้ว</button>
             </div>
-            <div class="small text-muted mb-3">กำหนดช่วงเลขถุงของหน่วยและวันที่นี้ ระบบจะตรวจเลขซ้ำกับเลขถุงที่เคยอยู่ในฐานและเลขถุงที่เคยใช้งานก่อนบันทึก</div>
+            <div class="alert alert-warning py-2 mb-3 small"><strong>สำคัญ:</strong> ระบบตรวจเลขซ้ำกับ <strong>Supabase ของแอปนี้</strong> และเลขที่เคยใช้ในแอปเท่านั้น ยังไม่ได้เชื่อมตรวจ AI-LIS แบบสด กรุณาตรวจช่วงเลขถุงใน AI-LIS ก่อนตั้งช่วงทุกครั้ง</div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="bag-lis-confirm">
+              <label class="form-check-label fw-bold" for="bag-lis-confirm">ตรวจสอบช่วงเลขถุงกับ AI-LIS แล้ว และยืนยันว่าเป็นช่วงที่ใช้ได้</label>
+            </div>
             <div class="row g-2 align-items-end">
               <div class="col-md-4"><label class="small fw-bold">ชื่อหน่วย</label><input id="bag-unit-name" class="form-control" placeholder="เช่น ออกหน่วย บริษัท ABC"></div>
               <div class="col-md-2"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="bag-outreach-date" type="date" class="form-control" onchange="loadBagStatus().catch(()=>{})"></div>
@@ -2321,7 +2373,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.3 - Supabase Realtime + FIELD barcode baseline v10 (31 mm)");
+    console.log("CNMI Blood Donation v15.5.2 - required registration + LIS range confirmation + sticker media profile");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3152,10 +3204,30 @@ async function resetPasswordWithOtp() {
         phone: document.getElementById('phone').value
       };
 
-      if (!data.idCard || !data.prefix || !data.fname || !data.lname || !data.birthDate || !data.gender) {
-        alert("กรุณากรอกข้อมูลสำคัญให้ครบ: เลขบัตรประชาชน, คำนำหน้า, ชื่อ, นามสกุล, วันเกิด, เพศ");
+      data.phone = (data.phone || "").trim();
+
+      const requiredFields = [
+        ["id_card", "เลขบัตรประชาชน", data.idCard],
+        ["prefix", "คำนำหน้า", data.prefix],
+        ["fname", "ชื่อ", data.fname],
+        ["lname", "นามสกุล", data.lname],
+        ["birth_date", "วันเกิด", data.birthDate],
+        ["gender", "เพศ", data.gender],
+        ["address", "ที่อยู่", data.address],
+        ["phone", "เบอร์โทร", data.phone]
+      ];
+      requiredFields.forEach(([id]) => document.getElementById(id)?.classList.remove("is-invalid"));
+      const missing = requiredFields.filter(([, , value]) => !String(value || "").trim());
+      const errorBox = document.getElementById("registration-error-summary");
+      if (missing.length) {
+        missing.forEach(([id]) => document.getElementById(id)?.classList.add("is-invalid"));
+        const text = "กรุณากรอกให้ครบทุกช่อง: " + missing.map(([, label]) => label).join(", ");
+        if (errorBox) { errorBox.textContent = text; errorBox.classList.add("show"); }
+        alert(text);
+        document.getElementById(missing[0][0])?.focus();
         return;
       }
+      if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
       if (!/^\d{13}$/.test(data.idCard)) {
         alert("เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก");
@@ -3670,8 +3742,11 @@ async function adminResetPassword(username, fullName) {
       const fields = ["id_card", "prefix", "fname", "lname", "birth_date", "gender", "address", "phone"];
 
       fields.forEach(id => {
-        document.getElementById(id).value = "";
+        const el = document.getElementById(id);
+        if (el) { el.value = ""; el.classList.remove("is-invalid"); }
       });
+      const errorBox = document.getElementById("registration-error-summary");
+      if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
       window.cnmiPreload?.clearPanel?.();
       const preloadStatus = document.getElementById("preload-register-status");
@@ -4216,6 +4291,29 @@ async function adminResetPassword(username, fullName) {
       });
     }
 
+    const STICKER_LABEL_SIZE_KEY = "cnmi-sticker-label-height-mm";
+
+    function getStickerLabelHeightMm() {
+      const el = document.getElementById("sticker-label-size");
+      const raw = Number(el?.value || localStorage.getItem(STICKER_LABEL_SIZE_KEY) || 25);
+      return raw === 30 ? 30 : 25;
+    }
+
+    function saveStickerPrintSetting() {
+      const mm = getStickerLabelHeightMm();
+      localStorage.setItem(STICKER_LABEL_SIZE_KEY, String(mm));
+    }
+
+    function applyStickerPrintProfile(tsc) {
+      const mm = getStickerLabelHeightMm();
+      if (tsc) {
+        tsc.classList.remove("label-size-25", "label-size-30");
+        tsc.classList.add(mm === 25 ? "label-size-25" : "label-size-30");
+      }
+      setPrintPageSize(`50mm ${mm}mm`);
+      return mm;
+    }
+
     async function printTSCFromRow(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
@@ -4326,7 +4424,7 @@ async function adminResetPassword(username, fullName) {
         cert.style.visibility = "";
       }
 
-      setPrintPageSize("50mm 30mm");
+      applyStickerPrintProfile(tsc);
 
       setTimeout(() => {
         document.querySelectorAll(".bc-bag-sticker").forEach(el => {
@@ -4538,11 +4636,14 @@ async function saveBagRange(){
   const start=(document.getElementById('bag-range-start')?.value||'').trim().toUpperCase().replace(/^CN\s*/,'');
   const end=(document.getElementById('bag-range-end')?.value||'').trim().toUpperCase().replace(/^CN\s*/,'');
   const st=document.getElementById('bag-range-status');
+  const lisConfirmed=!!document.getElementById('bag-lis-confirm')?.checked;
+  if(!lisConfirmed) return alert('กรุณาตรวจสอบช่วงเลขถุงกับ AI-LIS แล้วติ๊กยืนยันก่อนตั้งช่วงเลขถุง');
   try{
     if(st){st.className='small mt-2 text-primary';st.textContent='กำลังตรวจเลขซ้ำและสร้างช่วงเลขถุง...';}
     const r=await window.cnmiSupabaseApi.createBagRange({unitName:unit,outreachDate:date,startNumber:start,endNumber:end});
     if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`พร้อมใช้ ${r.count||0} เลข · ${r.startNumber}–${r.endNumber} · ${r.unitName}`;}
     await loadBagStatus();
+    const lisConfirm=document.getElementById('bag-lis-confirm'); if(lisConfirm) lisConfirm.checked=false;
     alert(`ตั้งเลขถุงสำเร็จ\n${r.unitName}\nวันที่ ${r.outreachDate}\nช่วง ${r.startNumber}–${r.endNumber} (${r.count} เลข)`);
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='ตั้งเลขถุงไม่สำเร็จ: '+(err.message||err);} alert('ตั้งเลขถุงไม่สำเร็จ\n'+(err.message||err));}
 }
@@ -4556,6 +4657,8 @@ async function saveBagRange(){
   document.addEventListener('DOMContentLoaded',()=>{
     const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
     ['lis-export-date','bag-outreach-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
+    const stickerSize=document.getElementById('sticker-label-size');
+    if(stickerSize){stickerSize.value=localStorage.getItem(STICKER_LABEL_SIZE_KEY)==='30'?'30':'25';}
   });
 })();
 </script>
