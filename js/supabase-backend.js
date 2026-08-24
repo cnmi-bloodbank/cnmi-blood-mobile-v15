@@ -124,17 +124,38 @@
     }catch(err){console.error('Supabase action failed',action,err); return {status:'error',message:err?.message||String(err)};}
   }
   async function getDonorHistory(id){const sb=init();const {data,error}=await sb.rpc('get_donor_history',{p_id_card:id});if(error)throw error;return data||null;}
+  function mergeUnique(listA,listB,keyFn){const m=new Map();[...(listA||[]),...(listB||[])].forEach(x=>{const k=keyFn(x||{});if(k)m.set(k,x);});return [...m.values()];}
+  function mergeProfiles(oldP,newP){
+    if(!oldP) return newP;
+    const pick=(n,o)=>String(n??'').trim()?n:o;
+    const out={...oldP,...newP};
+    ['prefix','fname','lname','birth','gender','address','addressLine','subdistrict','district','province','postalCode','phone','email','occupation','bloodGroupHistory'].forEach(k=>out[k]=pick(newP?.[k],oldP?.[k]));
+    out.donorIds=mergeUnique(oldP?.donorIds,newP?.donorIds,x=>String(x));
+    out.donationHistory=mergeUnique(oldP?.donationHistory,newP?.donationHistory,x=>`${x.date||''}|${x.unitNo||''}|${x.component||''}`);
+    out.alerts={
+      notes:mergeUnique(oldP?.alerts?.notes,newP?.alerts?.notes,x=>`${x.date||''}|${x.note||''}|${x.status||''}`),
+      defers:Array.isArray(newP?.alerts?.defers)?newP.alerts.defers:[],
+      seroNat:(oldP?.alerts?.seroNat?.length||newP?.alerts?.seroNat?.length)?[{flag:true}]:[]
+    };
+    return out;
+  }
   async function importSnapshot(profiles,summary,onProgress){
-    const sb=init(); const {data:importId,error:startErr}=await sb.rpc('start_history_import',{p_summary:summary||{}}); if(startErr) throw startErr;
-    const donorRows=profiles.map(p=>({id_card:p.idCard,prefix:p.prefix||'',fname:p.fname||'',lname:p.lname||'',birth:p.birth||'',gender:p.gender||'',address:p.address||'',address_line:p.addressLine||'',subdistrict:p.subdistrict||'',district:p.district||'',province:p.province||'',postal_code:p.postalCode||'',phone:p.phone||'',email:p.email||'',occupation:p.occupation||'',blood_group_history:p.bloodGroupHistory||''}));
-    const snapRows=profiles.map(p=>({import_id:importId,id_card:p.idCard,profile:p,has_note:!!p.alerts?.notes?.length,has_defer:!!p.alerts?.defers?.length,has_sero_nat:!!p.alerts?.seroNat?.length}));
+    const sb=init();
+    const ids=profiles.map(p=>p.idCard).filter(Boolean);
+    const oldMap=await getDonorHistories(ids);
+    const merged=profiles.map(p=>mergeProfiles(oldMap[p.idCard],p));
+    const {data:importId,error:startErr}=await sb.rpc('start_history_import',{p_summary:summary||{}}); if(startErr) throw startErr;
+    const donorRows=merged.map(p=>({id_card:p.idCard,prefix:p.prefix||'',fname:p.fname||'',lname:p.lname||'',birth:p.birth||'',gender:p.gender||'',address:p.address||'',address_line:p.addressLine||'',subdistrict:p.subdistrict||'',district:p.district||'',province:p.province||'',postal_code:p.postalCode||'',phone:p.phone||'',email:p.email||'',occupation:p.occupation||'',blood_group_history:p.bloodGroupHistory||''}));
+    const snapRows=merged.map(p=>({import_id:importId,id_card:p.idCard,profile:p,has_note:!!p.alerts?.notes?.length,has_defer:!!p.alerts?.defers?.length,has_sero_nat:!!p.alerts?.seroNat?.length}));
     const batch=100;
     for(let i=0;i<donorRows.length;i+=batch){const {error}=await sb.from('donors').upsert(donorRows.slice(i,i+batch),{onConflict:'id_card'});if(error)throw error;onProgress?.('donors',Math.min(i+batch,donorRows.length),donorRows.length);}
-    for(let i=0;i<snapRows.length;i+=batch){const {error}=await sb.from('donor_history_snapshots').insert(snapRows.slice(i,i+batch));if(error)throw error;onProgress?.('history',Math.min(i+batch,snapRows.length),snapRows.length);}
-    const {error:endErr}=await sb.rpc('complete_history_import',{p_import_id:importId,p_summary:summary||{},p_user_agent:ua()}); if(endErr) throw endErr;
-    return importId;
+    for(let i=0;i<snapRows.length;i+=batch){const {error}=await sb.from('donor_history_snapshots').upsert(snapRows.slice(i,i+batch),{onConflict:'import_id,id_card'});if(error)throw error;onProgress?.('history',Math.min(i+batch,snapRows.length),snapRows.length);}
+    const {data:finalSummary,error:endErr}=await sb.rpc('complete_history_import',{p_import_id:importId,p_summary:summary||{},p_user_agent:ua()}); if(endErr) throw endErr;
+    return {importId,summary:finalSummary?.summary||summary};
   }
   async function getHistorySummary(){const sb=init();const {data,error}=await sb.from('history_imports').select('*').eq('active',true).eq('status','complete').order('completed_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;return data||null;}
   async function getDonorHistories(ids){const sb=init();const clean=[...new Set((ids||[]).map(x=>String(x||'').replace(/\D/g,'')).filter(x=>/^\d{13}$/.test(x)))];if(!clean.length)return {};const imp=await getHistorySummary();if(!imp)return {};const out={};for(let i=0;i<clean.length;i+=100){const {data,error}=await sb.from('donor_history_snapshots').select('id_card,profile').eq('import_id',imp.id).in('id_card',clean.slice(i,i+100));if(error)throw error;(data||[]).forEach(r=>out[r.id_card]=r.profile);}return out;}
-  window.cnmiSupabaseApi={call,client:()=>init(),getDonorHistory,getDonorHistories,importSnapshot,getHistorySummary,startRealtime};
+  async function searchDonors(query,limit=20){const sb=init();const {data,error}=await sb.rpc('search_donor_history',{p_query:String(query||''),p_limit:Math.max(1,Math.min(Number(limit)||20,50))});if(error)throw error;return Array.isArray(data)?data:[];}
+  async function createBagRange({unitName,outreachDate,startNumber,endNumber}){const sb=init();const {data,error}=await sb.rpc('admin_create_bag_range',{p_unit_name:unitName,p_outreach_date:outreachDate,p_start_number:startNumber,p_end_number:endNumber,p_user_agent:ua()});if(error)throw error;return {status:data?.status||'success',unitName:data?.unitName||data?.unit_name||unitName,outreachDate:data?.outreachDate||data?.outreach_date||outreachDate,startNumber:data?.startNumber||data?.start_number||startNumber,endNumber:data?.endNumber||data?.end_number||endNumber,count:Number(data?.count||0)};}
+  window.cnmiSupabaseApi={call,client:()=>init(),getDonorHistory,getDonorHistories,importSnapshot,getHistorySummary,searchDonors,createBagRange,startRealtime};
 })();

@@ -1219,7 +1219,7 @@
 }
     
   
-    /* ===== Supabase v15.2: field baseline v10 + Supabase history ===== */
+    /* ===== Supabase v15.3: field baseline v10 + Supabase history ===== */
     .preload-status-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; background:#eef6ff; border:1px solid #b8dafc; font-size:13px; font-weight:700; color:#185abc; }
     #donor-history-panel { margin-top:12px; border:1px solid #cfe2ff; border-radius:14px; padding:12px; background:#f8fbff; }
     .preload-history-title { font-weight:700; color:#185abc; margin-bottom:8px; }
@@ -1228,7 +1228,14 @@
     .preload-note { background:#fff8e6; border-color:#f3cf76; }
     .preload-danger { background:#fff0f0; border-color:#e39a9a; color:#7a1f1f; box-shadow:inset 4px 0 0 #dc3545; }
     .preload-help { background:#f7fbff; border:1px dashed #9cc9f5; border-radius:12px; padding:12px 14px; }
-  </style>
+  
+/* v15.3: sidebar ไม่ตกขอบบนจอความสูงน้อย */
+@media (min-width: 769px) {
+  .sidebar { overflow: hidden !important; }
+  .sidebar-nav { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; scrollbar-width: thin; }
+  .sidebar-footer { flex: 0 0 auto !important; max-height: 230px; overflow-y: auto !important; background: rgba(21,64,94,.18); }
+}
+</style>
 </head>
 
 <body>
@@ -1315,7 +1322,7 @@
           <span class="nav-label">หนังสือรับรอง</span>
         </button>
 
-        <button class="nav-btn" data-page="preload" data-roles="admin,sup_manager" onclick="showPage('preload')">
+        <button class="nav-btn" data-page="preload" data-roles="admin,sup_manager,manager,staff" onclick="showPage('preload')">
           <span class="nav-icon">⚡</span>
           <span class="nav-label">เตรียมออกหน่วย</span>
         </button>
@@ -1404,6 +1411,17 @@
         <div class="container-fluid px-0">
           <div class="main-card">
             <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
+
+      <div class="main-card mb-3" style="background:#f8fbff; border:1px solid #cfe3ff;">
+        <h5 class="text-primary fw-bold mb-2">🔎 ค้นหาผู้บริจาคเดิมก่อนลงทะเบียน</h5>
+        <div class="small text-muted mb-2">ค้นด้วยเลขบัตรประชาชน ชื่อ นามสกุล หรือเบอร์โทร เพื่อดูประวัติ Donor Note / Active Defer / Sero-NAT ก่อนรับลงทะเบียน</div>
+        <div class="input-group">
+          <input id="donor-history-search" class="form-control" placeholder="เช่น 1234567890123 / สมชาย / 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+          <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">ค้นหา</button>
+        </div>
+        <div id="donor-history-search-status" class="small text-muted mt-2"></div>
+        <div id="donor-history-search-results" class="mt-2"></div>
+      </div>
 
       <div class="row g-3">
         <div class="col-md-12">
@@ -1541,20 +1559,36 @@
         <div class="main-card">
           <h4 class="text-primary fw-bold">ฐานประวัติผู้บริจาคกลาง (Supabase)</h4>
           <div class="preload-help mb-3">
-            ก่อนออกหน่วย ให้ Admin Export รายงานล่าสุดจาก AI-LIS 4 ไฟล์ แล้วเลือกพร้อมกัน: <strong>รายชื่อผู้บริจาคทั้งหมด / Donor Note / Active Defer / Sero + NAT</strong><br>
-            อัปเดตเพียงครั้งเดียว ทุกคอมที่ Login จะค้นประวัติชุดเดียวกันจาก Supabase
+            ก่อนออกหน่วย เจ้าหน้าที่สามารถ Export รายงานล่าสุดจาก AI-LIS 4 ไฟล์ แล้วเลือกพร้อมกัน: <strong>รายชื่อผู้บริจาคทั้งหมด / Donor Note / Active Defer / Sero + NAT</strong><br>
+            การอัปเดตเป็นแบบ <strong>เพิ่ม/ปรับปรุงจากฐานเดิม</strong> ผู้บริจาคเก่าที่ยังไม่อยู่ในไฟล์รอบใหม่จะยังคงอยู่ และประวัติบริจาค/Donor Note เดิมจะถูกรวมไว้สำหรับการออกหน่วยครั้งถัดไป
           </div>
           <div id="preload-summary" class="fw-bold text-danger mb-3">ยังไม่มีฐานประวัติ 4 Reports ใน Supabase</div>
           <label class="fw-bold mb-1">เลือก Excel 4 ไฟล์พร้อมกัน</label>
           <input id="preload-report-files" type="file" class="form-control" accept=".xlsx,.xls,.csv" multiple>
           <div id="preload-import-status" class="small text-muted mt-2"></div>
-          <div class="d-flex gap-2 flex-wrap mt-3">
+          <div class="d-flex gap-2 flex-wrap mt-3 align-items-end">
             <button id="preload-import-btn" class="btn btn-primary" onclick="importOnlinePreload()">อัปเดตฐานกลาง 4 Reports</button>
+            <div>
+              <label class="small fw-bold d-block">วันที่สำหรับ Export LIS</label>
+              <input id="lis-export-date" type="date" class="form-control form-control-sm" style="width:170px;">
+            </div>
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
-            <button class="btn btn-outline-danger" onclick="clearOnlinePreload()">ข้อมูลการล้างฐาน</button>
           </div>
           <hr>
-          <div class="small text-muted">Excel 4 ไฟล์จะถูกประมวลผลใน Browser แล้วส่งเฉพาะข้อมูลที่จำเป็นเข้าสู่ Supabase หลัง Login; ชุดใหม่จะเป็น Active และแทนชุดเดิมโดยไม่ต้องอัปเดตทุกคอม</div>
+          <div class="small text-muted">Excel 4 ไฟล์จะถูกประมวลผลใน Browser แล้วอัปเดตฐานกลาง Supabase โดยเก็บประวัติเดิมไว้ ไม่ต้องอัปเดตทุกคอม</div>
+
+          <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#fffaf2;">
+            <h5 class="fw-bold text-warning-emphasis mb-2">🔢 ตั้งเลขถุงสำหรับออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
+            <div class="small text-muted mb-3">กำหนดช่วงเลขถุงของหน่วยและวันที่นี้ ระบบจะตรวจเลขซ้ำกับเลขถุงที่เคยอยู่ในฐานและเลขถุงที่เคยใช้งานก่อนบันทึก</div>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4"><label class="small fw-bold">ชื่อหน่วย</label><input id="bag-unit-name" class="form-control" placeholder="เช่น ออกหน่วย บริษัท ABC"></div>
+              <div class="col-md-2"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="bag-outreach-date" type="date" class="form-control"></div>
+              <div class="col-md-2"><label class="small fw-bold">เลขเริ่มต้น</label><input id="bag-range-start" class="form-control" inputmode="numeric" placeholder="เช่น 001000"></div>
+              <div class="col-md-2"><label class="small fw-bold">เลขสุดท้าย</label><input id="bag-range-end" class="form-control" inputmode="numeric" placeholder="เช่น 001100"></div>
+              <div class="col-md-2"><button class="btn btn-warning w-100" onclick="saveBagRange()">ตั้งช่วงเลขถุง</button></div>
+            </div>
+            <div id="bag-range-status" class="small mt-2 text-muted">ยังไม่ได้ตรวจสอบช่วงเลขถุง</div>
+          </div>
         </div>
       </section>
 
@@ -2220,7 +2254,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.2 - Supabase Realtime + FIELD barcode baseline v10 (31 mm)");
+    console.log("CNMI Blood Donation v15.3 - Supabase Realtime + FIELD barcode baseline v10 (31 mm)");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4316,5 +4350,68 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
   <script src="js/supabase-history.js"></script>
+
+<script>
+// ===== v15.3 workflow helpers =====
+async function searchDonorHistory(){
+  const q=(document.getElementById('donor-history-search')?.value||'').trim();
+  const status=document.getElementById('donor-history-search-status');
+  const box=document.getElementById('donor-history-search-results');
+  if(!q){ if(status) status.textContent='กรอกเลขบัตร ชื่อ นามสกุล หรือเบอร์โทรก่อนค้นหา'; if(box) box.innerHTML=''; return; }
+  if(status){status.className='small text-primary mt-2';status.textContent='กำลังค้นหา...';}
+  try{
+    const rows=await window.cnmiSupabaseApi.searchDonors(q,20);
+    if(!rows.length){ if(status){status.className='small text-secondary mt-2';status.textContent='ไม่พบผู้บริจาคในฐานประวัติ';} if(box) box.innerHTML=''; return; }
+    if(status){status.className='small text-success mt-2';status.textContent=`พบ ${rows.length} รายการ`; }
+    if(box){
+      box.innerHTML=rows.map(r=>{
+        const p=r.profile||{}; const a=p.alerts||{};
+        const flags=[(a.defers||[]).length?'Defer':'',(a.seroNat||[]).length?'Sero/NAT':'',(a.notes||[]).length?'Note':''].filter(Boolean);
+        const badge=flags.length?`<span class="badge text-bg-danger ms-2">${flags.join(' · ')}</span>`:'<span class="badge text-bg-success ms-2">ไม่พบคำเตือน</span>';
+        const safeId=String(r.id_card||'').replace(/'/g,'');
+        const details=[];
+        if((a.defers||[]).length) details.push(`<div class="alert alert-danger py-1 px-2 mt-2 mb-1"><strong>Active Defer:</strong> ${escapeHtml((a.defers[0]?.reason||'ไม่ระบุเหตุผล'))}${a.defers[0]?.until?' · ถึง '+escapeHtml(a.defers[0].until):''}</div>`);
+        if((a.seroNat||[]).length) details.push(`<div class="alert alert-danger py-1 px-2 mt-1 mb-1"><strong>Sero/NAT:</strong> พบประวัติที่ต้องตรวจสอบก่อนรับบริจาค</div>`);
+        if((a.notes||[]).length) details.push(`<div class="alert alert-warning py-1 px-2 mt-1 mb-1"><strong>Donor Note:</strong> ${escapeHtml(a.notes[0]?.note||'มี Donor Note')}</div>`);
+        const hist=Array.isArray(p.donationHistory)&&p.donationHistory.length?`<div class="small text-muted mt-1">บริจาคล่าสุด ${escapeHtml(p.donationHistory[0].date||'-')} ${p.donationHistory[0].component?'· '+escapeHtml(p.donationHistory[0].component):''}</div>`:'';
+        return `<div class="border rounded p-2 mb-2 bg-white"><div class="d-flex justify-content-between gap-2 align-items-start flex-wrap"><div><strong>${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</strong>${badge}<div class="small text-muted">ID ${escapeHtml(r.id_card||'')} ${p.phone?'· '+escapeHtml(p.phone):''}</div>${hist}</div><button class="btn btn-sm btn-primary" onclick="selectHistoryDonor('${safeId}')">ลงทะเบียนคนนี้</button></div>${details.join('')}</div>`;
+      }).join('');
+    }
+  }catch(err){console.error(err);if(status){status.className='small text-danger mt-2';status.textContent='ค้นหาไม่สำเร็จ: '+(err.message||err);}}
+}
+async function selectHistoryDonor(id){
+  showPage('register');
+  const input=document.getElementById('id_card'); if(input) input.value=id;
+  await window.cnmiPreload.lookupFromRegister({fill:true});
+  document.getElementById('fname')?.focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function saveBagRange(){
+  if(!isRealAdmin() || getAdminViewMode()==='staff') return alert('ส่วนตั้งเลขถุงใช้ได้เฉพาะมุมมอง Admin');
+  const unit=(document.getElementById('bag-unit-name')?.value||'').trim();
+  const date=document.getElementById('bag-outreach-date')?.value||'';
+  const start=(document.getElementById('bag-range-start')?.value||'').trim();
+  const end=(document.getElementById('bag-range-end')?.value||'').trim();
+  const st=document.getElementById('bag-range-status');
+  try{
+    if(st){st.className='small mt-2 text-primary';st.textContent='กำลังตรวจเลขซ้ำและสร้างช่วงเลขถุง...';}
+    const r=await window.cnmiSupabaseApi.createBagRange({unitName:unit,outreachDate:date,startNumber:start,endNumber:end});
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`พร้อมใช้ ${r.count||0} เลข · ${r.startNumber}–${r.endNumber} · ${r.unitName}`;}
+    alert(`ตั้งเลขถุงสำเร็จ\n${r.unitName}\nวันที่ ${r.outreachDate}\nช่วง ${r.startNumber}–${r.endNumber} (${r.count} เลข)`);
+  }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='ตั้งเลขถุงไม่สำเร็จ: '+(err.message||err);} alert('ตั้งเลขถุงไม่สำเร็จ\n'+(err.message||err));}
+}
+(function(){
+  const oldApply=window.applyRoleBasedMenu||applyRoleBasedMenu;
+  window.applyRoleBasedMenu=applyRoleBasedMenu=function(){
+    oldApply();
+    const showAdmin=isRealAdmin() && getAdminViewMode()!=='staff';
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el=>el.style.display=showAdmin?'':'none');
+  };
+  document.addEventListener('DOMContentLoaded',()=>{
+    const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    ['lis-export-date','bag-outreach-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
+  });
+})();
+</script>
 </body>
 </html>
