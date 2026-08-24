@@ -1219,7 +1219,7 @@
 }
     
   
-    /* ===== Supabase v15.4: field baseline v10 + Supabase history ===== */
+    /* ===== Supabase v15.5: field baseline v10 + Supabase history ===== */
     .preload-status-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; background:#eef6ff; border:1px solid #b8dafc; font-size:13px; font-weight:700; color:#185abc; }
     #donor-history-panel { margin-top:12px; border:1px solid #cfe2ff; border-radius:14px; padding:12px; background:#f8fbff; }
     .preload-history-title { font-weight:700; color:#185abc; margin-bottom:8px; }
@@ -1229,7 +1229,7 @@
     .preload-danger { background:#fff0f0; border-color:#e39a9a; color:#7a1f1f; box-shadow:inset 4px 0 0 #dc3545; }
     .preload-help { background:#f7fbff; border:1px dashed #9cc9f5; border-radius:12px; padding:12px 14px; }
   
-/* v15.4: sidebar ไม่ตกขอบบนจอความสูงน้อย */
+/* v15.5: sidebar ไม่ตกขอบบนจอความสูงน้อย */
 @media (min-width: 769px) {
   .sidebar { overflow: hidden !important; }
   .sidebar-nav { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; scrollbar-width: thin; }
@@ -1237,7 +1237,7 @@
 }
 
 
-/* v15.4: compact donor search + bag status */
+/* v15.5: compact donor search + bag status */
 .donor-search-sticky { position: sticky; top: 10px; z-index: 20; background: rgba(248,251,255,.97); backdrop-filter: blur(5px); border:1px solid #cfe3ff; border-radius:16px; padding:14px; margin-bottom:14px; }
 .donor-search-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .donor-search-card { border:1px solid #d9e7f7; border-radius:14px; padding:12px; background:#fff; min-width:0; }
@@ -1427,12 +1427,36 @@
         </div>
         <div class="container-fluid px-0">
           <div class="donor-search-sticky">
-            <label class="fw-bold mb-1">เลขบัตรประชาชน / ชื่อ / นามสกุล / เบอร์โทร</label>
-            <div class="input-group input-group-lg">
-              <input id="donor-history-search" class="form-control" placeholder="เช่น 1234567890123 / สมชาย / อาทิตย์ / 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
-              <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">🔍 ค้นหา</button>
+            <div class="fw-bold mb-2">กรอกอย่างน้อย 1 ช่อง <span class="text-muted fw-normal">(ไม่จำเป็นต้องกรอกทุกช่อง)</span></div>
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">เลขบัตรประชาชน</label>
+                <input id="donor-search-id-card" class="form-control" inputmode="numeric" autocomplete="off" placeholder="13 หลัก" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">Donor ID</label>
+                <input id="donor-search-donor-id" class="form-control" autocomplete="off" placeholder="เช่น 123456" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">ชื่อ</label>
+                <input id="donor-search-fname" class="form-control" autocomplete="off" placeholder="เช่น อาทิตย์" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">นามสกุล</label>
+                <input id="donor-search-lname" class="form-control" autocomplete="off" placeholder="เช่น ใจดี" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">เบอร์โทร</label>
+                <input id="donor-search-phone" class="form-control" inputmode="tel" autocomplete="off" placeholder="เช่น 0812345678" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4 d-grid">
+                <button class="btn btn-primary" type="button" onclick="searchDonorHistory()">🔍 ค้นหา</button>
+              </div>
             </div>
-            <div id="donor-history-search-status" class="small text-muted mt-2">ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน</div>
+            <div class="d-flex justify-content-between gap-2 flex-wrap mt-2">
+              <div id="donor-history-search-status" class="small text-muted">ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน</div>
+              <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearDonorSearch()">ล้างช่องค้นหา</button>
+            </div>
           </div>
           <div id="donor-history-search-results" class="donor-search-grid"></div>
         </div>
@@ -1456,7 +1480,11 @@
       <div class="row g-3">
         <div class="col-md-12">
           <label class="fw-bold">เลขบัตรประชาชน</label>
-          <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
+          <div class="input-group input-group-lg">
+            <input type="text" id="id_card" class="form-control" autofocus inputmode="numeric" autocomplete="off">
+            <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
+          </div>
+          <div id="card-reader-status" class="small text-muted mt-1">อ่านบัตรได้ผ่าน CNMI Card Bridge (ถ้าเปิดอยู่บนเครื่องนี้) หรือกรอกเลขบัตรเองได้ตามปกติ</div>
           <div id="preload-register-status" class="small text-muted mt-1">กรอกเลขบัตร 13 หลักเพื่อค้นประวัติจากฐานที่เตรียมไว้</div>
           <div id="donor-history-panel" hidden></div>
         </div>
@@ -1617,8 +1645,8 @@
             <div class="row g-2 align-items-end">
               <div class="col-md-4"><label class="small fw-bold">ชื่อหน่วย</label><input id="bag-unit-name" class="form-control" placeholder="เช่น ออกหน่วย บริษัท ABC"></div>
               <div class="col-md-2"><label class="small fw-bold">วันที่ออกหน่วย</label><input id="bag-outreach-date" type="date" class="form-control" onchange="loadBagStatus().catch(()=>{})"></div>
-              <div class="col-md-2"><label class="small fw-bold">เลขเริ่มต้น</label><input id="bag-range-start" class="form-control" inputmode="numeric" placeholder="เช่น 001000"></div>
-              <div class="col-md-2"><label class="small fw-bold">เลขสุดท้าย</label><input id="bag-range-end" class="form-control" inputmode="numeric" placeholder="เช่น 001100"></div>
+              <div class="col-md-2"><label class="small fw-bold">เลขเริ่มต้น</label><div class="input-group"><span class="input-group-text fw-bold">CN</span><input id="bag-range-start" class="form-control" inputmode="numeric" placeholder="เช่น 6910100"></div></div>
+              <div class="col-md-2"><label class="small fw-bold">เลขสุดท้าย</label><div class="input-group"><span class="input-group-text fw-bold">CN</span><input id="bag-range-end" class="form-control" inputmode="numeric" placeholder="เช่น 6910150"></div></div>
               <div class="col-md-2"><button class="btn btn-warning w-100" onclick="saveBagRange()">ตั้งช่วงเลขถุง</button></div>
             </div>
             <div id="bag-range-status" class="small mt-2 text-muted">ยังไม่ได้ตรวจสอบช่วงเลขถุง</div>
@@ -4392,17 +4420,33 @@ async function adminResetPassword(username, fullName) {
   <script src="js/supabase-history.js"></script>
 
 <script>
-// ===== v15.4 workflow helpers =====
+// ===== v15.5 workflow helpers =====
+function donorSearchFilters(){
+  return {
+    idCard:(document.getElementById('donor-search-id-card')?.value||'').trim(),
+    donorId:(document.getElementById('donor-search-donor-id')?.value||'').trim(),
+    fname:(document.getElementById('donor-search-fname')?.value||'').trim(),
+    lname:(document.getElementById('donor-search-lname')?.value||'').trim(),
+    phone:(document.getElementById('donor-search-phone')?.value||'').trim()
+  };
+}
+function clearDonorSearch(){
+  ['donor-search-id-card','donor-search-donor-id','donor-search-fname','donor-search-lname','donor-search-phone'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const box=document.getElementById('donor-history-search-results');if(box)box.innerHTML='';
+  const status=document.getElementById('donor-history-search-status');if(status){status.className='small text-muted';status.textContent='ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน';}
+  document.getElementById('donor-search-id-card')?.focus();
+}
 async function searchDonorHistory(){
-  const q=(document.getElementById('donor-history-search')?.value||'').trim();
+  const filters=donorSearchFilters();
   const status=document.getElementById('donor-history-search-status');
   const box=document.getElementById('donor-history-search-results');
-  if(!q){ if(status) status.textContent='กรอกเลขบัตร ชื่อ นามสกุล หรือเบอร์โทรก่อนค้นหา'; if(box) box.innerHTML=''; return; }
-  if(status){status.className='small text-primary mt-2';status.textContent='กำลังค้นหา...';}
+  if(!Object.values(filters).some(v=>String(v||'').trim())){ if(status) status.textContent='กรอกอย่างน้อย 1 ช่องก่อนค้นหา'; if(box) box.innerHTML=''; return; }
+  if(filters.idCard && !/^\d{13}$/.test(filters.idCard.replace(/\D/g,''))){ if(status){status.className='small text-danger';status.textContent='เลขบัตรประชาชนต้องมี 13 หลัก';} return; }
+  if(status){status.className='small text-primary';status.textContent='กำลังค้นหา...';}
   try{
-    const rows=await window.cnmiSupabaseApi.searchDonors(q,20);
-    if(!rows.length){ if(status){status.className='small text-secondary mt-2';status.textContent='ไม่พบผู้บริจาคในฐานประวัติ';} if(box) box.innerHTML=''; return; }
-    if(status){status.className='small text-success mt-2';status.textContent=`พบ ${rows.length} รายการ${rows.length>=20?' · แสดง 20 รายการแรก กรุณาพิมพ์ชื่อ/เลขบัตรให้ละเอียดขึ้นถ้าต้องการ':' '}`; }
+    const rows=await window.cnmiSupabaseApi.searchDonorsAdvanced(filters,30);
+    if(!rows.length){ if(status){status.className='small text-secondary';status.textContent='ไม่พบผู้บริจาคในฐานประวัติ';} if(box) box.innerHTML=''; return; }
+    if(status){status.className='small text-success';status.textContent=`พบ ${rows.length} รายการ${rows.length>=30?' · แสดง 30 รายการแรก กรุณาเพิ่มข้อมูลค้นหาให้เฉพาะเจาะจงขึ้น':''}`; }
     if(box){
       box.innerHTML=rows.map(r=>{
         const p=r.profile||{},a=p.alerts||{},defers=a.defers||[],sero=a.seroNat||[],notes=a.notes||[];
@@ -4414,10 +4458,12 @@ async function searchDonorHistory(){
         if(defers.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Active Defer:</strong> ${escapeHtml(defers[0]?.reason||'ไม่ระบุเหตุผล')}${defers[0]?.until?' · ถึง '+escapeHtml(defers[0].until):''}</div>`);
         if(notes.length) warnings.push(`<div class="donor-search-warning bg-warning-subtle text-warning-emphasis"><strong>Donor Note:</strong> ${escapeHtml(notes[0]?.note||'มี Donor Note')}</div>`);
         const last=Array.isArray(p.donationHistory)&&p.donationHistory.length?p.donationHistory[0]:null;
-        return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">ID ${escapeHtml(r.id_card||'')}${p.phone?' · '+escapeHtml(p.phone):''}</div>${last?`<div class="small text-muted">บริจาคล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:''}</div>${badge}</div>${warnings.join('')}<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button></div>`;
+        const donorIds=Array.isArray(p.donorIds)?p.donorIds.filter(Boolean):[];
+        const donorIdLine=donorIds.length?`<div class="small text-muted">Donor ID ${escapeHtml(donorIds.slice(0,4).join(', '))}${donorIds.length>4?' …':''}</div>`:'';
+        return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">เลขบัตร ${escapeHtml(r.id_card||'')}${p.phone?' · '+escapeHtml(p.phone):''}</div>${donorIdLine}${last?`<div class="small text-muted">บริจาคล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:''}</div>${badge}</div>${warnings.join('')}<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button></div>`;
       }).join('');
     }
-  }catch(err){console.error(err);if(status){status.className='small text-danger mt-2';status.textContent='ค้นหาไม่สำเร็จ: '+(err.message||err);}}
+  }catch(err){console.error(err);if(status){status.className='small text-danger';status.textContent='ค้นหาไม่สำเร็จ: '+(err.message||err);}}
 }
 async function selectHistoryDonor(id){
   clearForm();
@@ -4425,6 +4471,37 @@ async function selectHistoryDonor(id){
   showPage('register');
   await window.cnmiPreload.lookupFromRegister({fill:true});
   window.scrollTo({top:0,behavior:'smooth'});
+}
+function thaiCardSet(id,value){const el=document.getElementById(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!=='')el.value=String(value).trim();}
+async function readThaiIdCard(){
+  const btn=document.getElementById('read-thai-id-btn'),st=document.getElementById('card-reader-status');
+  const oldText=btn?.innerHTML;
+  try{
+    if(btn){btn.disabled=true;btn.textContent='กำลังอ่านบัตร...';}
+    if(st){st.className='small text-primary mt-1';st.textContent='กำลังเชื่อมต่อเครื่องอ่านบัตรบนคอมเครื่องนี้...';}
+    let payload=null,lastErr=null;
+    for(const base of ['http://127.0.0.1:27100','http://localhost:27100']){
+      try{
+        const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),3500);
+        const res=await fetch(base+'/read',{method:'GET',cache:'no-store',signal:ctl.signal,targetAddressSpace:'loopback'});clearTimeout(tm);
+        if(!res.ok)throw new Error('HTTP '+res.status);
+        const j=await res.json();if(j?.ok){payload=j;break;}lastErr=new Error(j?.message||'อ่านบัตรไม่สำเร็จ');
+      }catch(e){lastErr=e;}
+    }
+    if(!payload)throw lastErr||new Error('ไม่พบ CNMI Card Bridge');
+    thaiCardSet('id_card',payload.citizenId);
+    thaiCardSet('prefix',payload.prefix);
+    thaiCardSet('fname',payload.firstName);
+    thaiCardSet('lname',payload.lastName);
+    thaiCardSet('birth_date',payload.birthDate);
+    thaiCardSet('gender',payload.gender);
+    thaiCardSet('address',payload.address);
+    if(st){st.className='small fw-bold text-success mt-1';st.textContent=`อ่านบัตรสำเร็จ${payload.reader?' · '+payload.reader:''}`;}
+    await window.cnmiPreload?.lookupFromRegister?.({fill:false});
+  }catch(err){
+    console.error('Thai ID card read failed',err);
+    if(st){st.className='small fw-bold text-danger mt-1';st.innerHTML='อ่านบัตรไม่ได้ — ตรวจว่าเสียบบัตร/เครื่องอ่านแล้ว และเปิด <strong>CNMI Card Bridge</strong> บนคอมเครื่องนี้อยู่ หากคอม รพ. บล็อก PowerShell ยังสามารถกรอกหรือค้นหาผู้บริจาคด้วยเลขบัตรได้ตามปกติ';}
+  }finally{if(btn){btn.disabled=false;btn.innerHTML=oldText||'💳 อ่านบัตรประชาชน';}}
 }
 function fmtThaiDateTime(v){try{return v?new Date(v).toLocaleString('th-TH'):'-';}catch{return String(v||'-');}}
 async function loadBagStatus(){
@@ -4447,8 +4524,8 @@ async function saveBagRange(){
   if(!isRealAdmin() || getAdminViewMode()==='staff') return alert('ส่วนตั้งเลขถุงใช้ได้เฉพาะมุมมอง Admin');
   const unit=(document.getElementById('bag-unit-name')?.value||'').trim();
   const date=document.getElementById('bag-outreach-date')?.value||'';
-  const start=(document.getElementById('bag-range-start')?.value||'').trim();
-  const end=(document.getElementById('bag-range-end')?.value||'').trim();
+  const start=(document.getElementById('bag-range-start')?.value||'').trim().toUpperCase().replace(/^CN\s*/,'');
+  const end=(document.getElementById('bag-range-end')?.value||'').trim().toUpperCase().replace(/^CN\s*/,'');
   const st=document.getElementById('bag-range-status');
   try{
     if(st){st.className='small mt-2 text-primary';st.textContent='กำลังตรวจเลขซ้ำและสร้างช่วงเลขถุง...';}
