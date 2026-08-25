@@ -47,9 +47,9 @@
   }
   async function visitsForDate(date){
     const sb=init();
-    const {data,error}=await sb.from('visits').select('dn,bag_number,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,c1,c2,e1,e2,location,source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,phone,legacy_identity)').eq('visit_date',date).order('created_at',{ascending:false});
+    const {data,error}=await sb.from('visits').select('dn,bag_number,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,c1,c2,e1,e2,location,source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,phone,occupation,legacy_identity)').eq('visit_date',date).order('created_at',{ascending:false});
     if(error) throw error;
-    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim();return {dn:r.dn,idCard:d.legacy_identity||r.id_card,dbIdCard:r.id_card,identityType:d.legacy_identity?'legacy':'thai',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',address:d.address||'-',phone:d.phone||'-',bag:r.bag_number||'-',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
+    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim();return {dn:r.dn,idCard:d.legacy_identity||r.id_card,dbIdCard:r.id_card,identityType:d.legacy_identity?'legacy':'thai',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',address:d.address||'-',phone:d.phone||'-',occupation:d.occupation||'',bag:r.bag_number||'-',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
   }
   async function call(action, params={}){
     const sb=init(); const data=parse(params.data);
@@ -90,12 +90,12 @@
         return r;
       }
       if(action==='saveDataToSheet'){
-        const {data:r,error}=await sb.rpc('register_donor_visit_v1566',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_donor_id:data.donorId||'',p_donation_no:data.donationNo?Number(data.donationNo):null,p_user_agent:ua()}); if(error) throw error; return r;
+        const {data:r,error}=await sb.rpc('register_donor_visit_v15611',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_occupation:data.occupation||'',p_donor_id:data.donorId||'',p_donation_no:data.donationNo?Number(data.donationNo):null,p_user_agent:ua()}); if(error) throw error; return r;
       }
       if(action==='getRecentVisits'||action==='getRecentVisitsFast') return await visitsForDate(params.targetDate);
       if(action==='getDonorsByIds'){
         const ids=(data.ids||[]).slice(0,50); const {data:rows,error}=await sb.from('donors').select('*').in('id_card',ids); if(error) throw error;
-        return {status:'success',donors:(rows||[]).map(d=>({idCard:d.id_card,prefix:d.prefix,fname:d.fname,lname:d.lname,birth:d.birth,gender:d.gender,address:d.address,phone:d.phone}))};
+        return {status:'success',donors:(rows||[]).map(d=>({idCard:d.id_card,prefix:d.prefix,fname:d.fname,lname:d.lname,birth:d.birth,gender:d.gender,address:d.address,phone:d.phone,occupation:d.occupation||''}))};
       }
       if(action==='saveScreeningResult'){
         const sc=data && Object.keys(data).length?data:parse(params.data); const {data:r,error}=await sb.rpc('save_screening_result',{p_dn:params.dn,p_type:sc.type||'',p_group:sc.group||'',p_weight:sc.weight||'',p_bp:sc.bp||'',p_pulse:sc.pulse||'',p_temp:sc.temp||'',p_hb:sc.hb||'',p_status:sc.status||'',p_reason:sc.reason||'',p_user_agent:ua()}); if(error) throw error; return r;
@@ -123,7 +123,7 @@
       throw new Error(`ยังไม่รองรับ action: ${action}`);
     }catch(err){console.error('Supabase action failed',action,err); return {status:'error',message:err?.message||String(err)};}
   }
-  async function getDonorHistory(id){const sb=init();const {data,error}=await sb.rpc('get_donor_history_v1563',{p_id_card:id});if(error)throw error;return data||null;}
+  async function getDonorHistory(id){const sb=init();const {data,error}=await sb.rpc('get_donor_history_v1563',{p_id_card:id});if(error)throw error;const profile=data||null;if(!profile)return null;try{const {data:d}=await sb.from('donors').select('occupation').eq('id_card',String(id||'').replace(/\D/g,'')).maybeSingle();if(String(d?.occupation||'').trim())profile.occupation=d.occupation;}catch{}return profile;}
   function mergeUnique(listA,listB,keyFn){const m=new Map();[...(listA||[]),...(listB||[])].forEach(x=>{const k=keyFn(x||{});if(k)m.set(k,x);});return [...m.values()];}
   function mergeProfiles(oldP,newP){
     if(!oldP) return newP;

@@ -380,6 +380,26 @@
       #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
       #p-address { top: 68mm; left: 10mm; width: 190mm; }
 
+      /* v15.6.11: mark occupation on the preprinted FM-CNBBC-009 form.
+         These are intentionally isolated so alignment can be tuned without touching other A4 fields. */
+      .p-occ-mark {
+        position: absolute;
+        color: #000;
+        font-size: 12pt;
+        font-weight: 700;
+        line-height: 1;
+      }
+      #p-occ-student   { top: 101.5mm; left: 15.0mm; }
+      #p-occ-gov       { top: 101.5mm; left: 55.0mm; }
+      #p-occ-employee  { top: 101.5mm; left: 112.0mm; }
+      #p-occ-religious { top: 101.5mm; left: 164.5mm; }
+      #p-occ-business  { top: 109.5mm; left: 15.0mm; }
+      #p-occ-farmer    { top: 109.5mm; left: 55.0mm; }
+      #p-occ-rama      { top: 109.5mm; left: 76.0mm; }
+      #p-occ-other     { top: 109.5mm; left: 164.5mm; }
+      #p-occ-rama-detail { top: 108.4mm; left: 122.0mm; width: 38mm; font-size: 10.5pt; white-space: nowrap; overflow: hidden; }
+      #p-occ-other-detail { top: 108.4mm; left: 181.0mm; width: 25mm; font-size: 10.5pt; white-space: nowrap; overflow: hidden; }
+
       #cert-template.active-print {
         display: block !important;
         position: fixed;
@@ -1534,6 +1554,25 @@
           </select>
         </div>
 
+        <div class="col-md-7">
+          <label>อาชีพ</label>
+          <select id="occupation_type" class="form-select" onchange="toggleOccupationDetail(true)">
+            <option value="">-- เลือกอาชีพ --</option>
+            <option value="student">นักเรียน/นักศึกษา</option>
+            <option value="gov">ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ</option>
+            <option value="employee">พนักงานบริษัท/รับจ้าง</option>
+            <option value="religious">พระภิกษุ/สามเณร/นักบวช</option>
+            <option value="business">ธุรกิจส่วนตัว/ค้าขาย</option>
+            <option value="farmer">เกษตรกร</option>
+            <option value="rama">บุคลากรใน ร.พ.รามาฯ</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="col-md-5" id="occupation-detail-box" style="display:none;">
+          <label id="occupation-detail-label">รายละเอียดอาชีพ</label>
+          <input type="text" id="occupation_detail" class="form-control" maxlength="100" oninput="this.dataset.userEdited='1';">
+        </div>
+
         <div class="col-md-8">
           <label>ที่อยู่ <span class="required-mark">*</span></label>
           <textarea id="address" class="form-control" rows="2" required></textarea>
@@ -2310,6 +2349,32 @@
     </div>
   </div>
 
+  <div class="modal fade" id="stickerPrintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">🏷️ เลือกสติ๊กเกอร์ที่จะพิมพ์</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="sticker-print-row-json">
+          <div id="sticker-print-donor" class="fw-bold mb-3"></div>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-primary btn-lg" onclick="printStickerChoice('full')">🧾 ครบชุด 11 ดวง</button>
+            <button type="button" class="btn btn-outline-primary" onclick="printStickerChoice('name')">👤 ชื่อ 1 ดวง</button>
+            <div class="row g-2">
+              <div class="col-6"><button id="print-choice-c1" type="button" class="btn btn-outline-secondary w-100" onclick="printStickerChoice('C1')">C1 1 ดวง</button></div>
+              <div class="col-6"><button id="print-choice-c2" type="button" class="btn btn-outline-secondary w-100" onclick="printStickerChoice('C2')">C2 1 ดวง</button></div>
+              <div class="col-6"><button id="print-choice-e1" type="button" class="btn btn-outline-secondary w-100" onclick="printStickerChoice('E1')">E1 1 ดวง</button></div>
+              <div class="col-6"><button id="print-choice-e2" type="button" class="btn btn-outline-secondary w-100" onclick="printStickerChoice('E2')">E2 1 ดวง</button></div>
+            </div>
+          </div>
+          <div class="small text-muted mt-3">ครบชุดยังคงเป็น 11 ดวงตามเดิม · พิมพ์ซ่อม C1/C2/E1/E2 จะออกครั้งละ 1 ดวง</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="a4-template">
     <div id="p-dn" class="print-data"></div>
     <svg id="p-barcode" class="print-data"></svg>
@@ -2319,6 +2384,16 @@
     <div id="p-age" class="print-data"></div>
     <div id="p-gender" class="print-data"></div>
     <div id="p-address" class="print-data"></div>
+    <div id="p-occ-student" class="p-occ-mark"></div>
+    <div id="p-occ-gov" class="p-occ-mark"></div>
+    <div id="p-occ-employee" class="p-occ-mark"></div>
+    <div id="p-occ-religious" class="p-occ-mark"></div>
+    <div id="p-occ-business" class="p-occ-mark"></div>
+    <div id="p-occ-farmer" class="p-occ-mark"></div>
+    <div id="p-occ-rama" class="p-occ-mark"></div>
+    <div id="p-occ-other" class="p-occ-mark"></div>
+    <div id="p-occ-rama-detail" class="print-data"></div>
+    <div id="p-occ-other-detail" class="print-data"></div>
   </div>
 
   <div id="cert-template">
@@ -2649,7 +2724,7 @@ function buildActionButtons(row, rowStr, disableScreen) {
     return `
       <div class="btn-group">
         <button class="btn btn-sm action-btn action-btn-sticker"
-          onclick="event.stopPropagation(); reprintTSCFromRow('${rowStr}')">
+          onclick="event.stopPropagation(); openStickerPrintOptions('${rowStr}')">
           🏷️ พิมพ์สติ๊กเกอร์
         </button>
       </div>
@@ -3263,6 +3338,75 @@ async function resetPasswordWithOtp() {
       }
     }
 
+    const OCCUPATION_LABELS = Object.freeze({
+      student: "นักเรียน/นักศึกษา",
+      gov: "ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ",
+      employee: "พนักงานบริษัท/รับจ้าง",
+      religious: "พระภิกษุ/สามเณร/นักบวช",
+      business: "ธุรกิจส่วนตัว/ค้าขาย",
+      farmer: "เกษตรกร",
+      rama: "บุคลากรใน ร.พ.รามาฯ",
+      other: "อื่นๆ"
+    });
+
+    function parseOccupationStored(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return { type: "", detail: "", text: "" };
+      const entries = Object.entries(OCCUPATION_LABELS);
+      for (const [type, label] of entries) {
+        if (raw === label) return { type, detail: "", text: raw };
+        if (raw.startsWith(label + " :") || raw.startsWith(label + ":")) {
+          const detail = raw.slice(raw.indexOf(":") + 1).trim();
+          return { type, detail, text: raw };
+        }
+        if (raw.startsWith(label + " |")) {
+          return { type, detail: raw.slice(raw.indexOf("|") + 1).trim(), text: raw };
+        }
+      }
+      return { type: "other", detail: raw, text: raw };
+    }
+
+    function getOccupationStored() {
+      const type = document.getElementById("occupation_type")?.value || "";
+      const detail = document.getElementById("occupation_detail")?.value.trim() || "";
+      if (!type) return "";
+      const label = OCCUPATION_LABELS[type] || "";
+      if ((type === "rama" || type === "other") && detail) return `${label} : ${detail}`;
+      return label;
+    }
+
+    function toggleOccupationDetail(markEdited = false) {
+      const typeEl = document.getElementById("occupation_type");
+      const box = document.getElementById("occupation-detail-box");
+      const detailEl = document.getElementById("occupation_detail");
+      const labelEl = document.getElementById("occupation-detail-label");
+      if (!typeEl || !box || !detailEl) return;
+      const type = typeEl.value;
+      const show = type === "rama" || type === "other";
+      box.style.display = show ? "block" : "none";
+      if (labelEl) labelEl.textContent = type === "rama" ? "ตำแหน่ง" : "รายละเอียดอื่นๆ";
+      detailEl.placeholder = type === "rama" ? "เช่น นักเทคนิคการแพทย์" : "ระบุอาชีพ";
+      if (!show) detailEl.value = "";
+      if (markEdited) {
+        typeEl.dataset.userEdited = "1";
+        if (!show) detailEl.dataset.userEdited = "0";
+      }
+    }
+
+    function setOccupationUiFromStored(value, force = false) {
+      const typeEl = document.getElementById("occupation_type");
+      const detailEl = document.getElementById("occupation_detail");
+      if (!typeEl || !detailEl) return;
+      if (!force && typeEl.dataset.userEdited === "1") return;
+      const parsed = parseOccupationStored(value);
+      typeEl.value = parsed.type || "";
+      detailEl.value = parsed.detail || "";
+      typeEl.dataset.userEdited = "0";
+      detailEl.dataset.userEdited = "0";
+      toggleOccupationDetail(false);
+    }
+    window.setOccupationUiFromStored = setOccupationUiFromStored;
+
     async function saveData() {
       const data = {
         idCard: document.getElementById("id_card").value.trim(),
@@ -3274,7 +3418,8 @@ async function resetPasswordWithOtp() {
         address: document.getElementById("address").value.trim(),
         phone: document.getElementById('phone').value,
         donorId: (document.getElementById('donor_id')?.value || '').trim(),
-        donationNo: document.getElementById('donation_no')?.dataset.userEdited === '1' ? (document.getElementById('donation_no')?.value || '').trim() : ''
+        donationNo: document.getElementById('donation_no')?.dataset.userEdited === '1' ? (document.getElementById('donation_no')?.value || '').trim() : '',
+        occupation: getOccupationStored()
       };
 
       data.phone = formatPhoneValue((data.phone || "").trim());
@@ -3333,14 +3478,14 @@ async function resetPasswordWithOtp() {
 
         window.cnmiPreload?.upsertBasic?.({
           idCard: data.idCard, prefix: data.prefix, fname: data.fname, lname: data.lname,
-          birth: data.birthDate, gender: data.gender, address: data.address, phone: data.phone || "",
+          birth: data.birthDate, gender: data.gender, address: data.address, phone: data.phone || "", occupation: data.occupation || "",
           donorId: res.donorId || data.donorId || "", donationNo: res.donationNo || data.donationNo || ""
         }).catch(()=>{});
         invalidateVisitCache(getLocalDateInputValue());
 
         alert(`บันทึกสำเร็จ!\nDN: ${res.dn || "-"}\nDonor ID: ${res.donorId || "-"}\nครั้งที่บริจาค: ${res.donationNo || "-"}`);
 
-        const rowStr = encodeURIComponent(JSON.stringify(res));
+        const rowStr = encodeURIComponent(JSON.stringify({ ...res, occupation: res.occupation || data.occupation || "" }));
         printA4FromRow(rowStr);
 
         clearForm();
@@ -3699,7 +3844,8 @@ async function adminResetPassword(username, fullName) {
         birth: donor.birth || row.birth || "-",
         gender: donor.gender || row.gender || "-",
         address: donor.address || row.address || "-",
-        phone: donor.phone || row.phone || "-"
+        phone: donor.phone || row.phone || "-",
+        occupation: row.occupation || donor.occupation || ""
       };
     }
 
@@ -3849,6 +3995,7 @@ async function adminResetPassword(username, fullName) {
       const donationNoEl = document.getElementById('donation_no');
       if (donorIdEl) { donorIdEl.value = row.donorId || ''; donorIdEl.dataset.userEdited = row.donorId ? '1' : '0'; }
       if (donationNoEl) { donationNoEl.value = row.donationNo || '1'; donationNoEl.dataset.userEdited = row.donationNo ? '1' : '0'; }
+      setOccupationUiFromStored(row.occupation || '', true);
       window.cnmiPreload?.lookupFromRegister?.({ fill: false }).catch(()=>{});
 
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3863,6 +4010,11 @@ async function adminResetPassword(username, fullName) {
       });
       const donationNoEl = document.getElementById("donation_no");
       if (donationNoEl) { donationNoEl.value = "1"; donationNoEl.dataset.userEdited = "0"; }
+      const occupationTypeEl = document.getElementById("occupation_type");
+      const occupationDetailEl = document.getElementById("occupation_detail");
+      if (occupationTypeEl) { occupationTypeEl.value = ""; occupationTypeEl.dataset.userEdited = "0"; }
+      if (occupationDetailEl) { occupationDetailEl.value = ""; occupationDetailEl.dataset.userEdited = "0"; }
+      toggleOccupationDetail(false);
       const errorBox = document.getElementById("registration-error-summary");
       if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
@@ -4124,6 +4276,10 @@ async function adminResetPassword(username, fullName) {
         let pAge = document.getElementById("p-age");
         let pGender = document.getElementById("p-gender");
         let pAddress = document.getElementById("p-address");
+        const occupationMarkIds = ["student","gov","employee","religious","business","farmer","rama","other"];
+        const occupationMarks = Object.fromEntries(occupationMarkIds.map(k => [k, document.getElementById(`p-occ-${k}`)]));
+        const pOccRamaDetail = document.getElementById("p-occ-rama-detail");
+        const pOccOtherDetail = document.getElementById("p-occ-other-detail");
         let a4 = document.getElementById("a4-template");
         let tsc = document.getElementById("tsc-template");
         let cert = document.getElementById("cert-template");
@@ -4151,6 +4307,14 @@ async function adminResetPassword(username, fullName) {
         pAge.innerText = "อายุ: " + age + " ปี";
         pGender.innerText = "เพศ: " + genderToThai(row.gender || "-");
         pAddress.innerText = "ที่อยู่: " + (row.address || "-");
+
+        Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
+        if (pOccRamaDetail) pOccRamaDetail.innerText = "";
+        if (pOccOtherDetail) pOccOtherDetail.innerText = "";
+        const occupation = parseOccupationStored(row.occupation || "");
+        if (occupation.type && occupationMarks[occupation.type]) occupationMarks[occupation.type].innerText = "✓";
+        if (occupation.type === "rama" && pOccRamaDetail) pOccRamaDetail.innerText = occupation.detail || "";
+        if (occupation.type === "other" && pOccOtherDetail) pOccOtherDetail.innerText = occupation.detail || "";
 
         a4.className = "active-print";
 
@@ -4468,15 +4632,43 @@ async function adminResetPassword(username, fullName) {
       });
     }
 
-    async function printTSCFromRow(encodedRow) {
+    function openStickerPrintOptions(encodedRow) {
+      let row;
+      try { row = JSON.parse(decodeURIComponent(encodedRow)); }
+      catch { return alert("อ่านข้อมูลสติ๊กเกอร์ไม่สำเร็จ"); }
+      if (!row?.bag || row.bag === "-") return alert("ยังไม่มีเลขถุง");
+      const hidden = document.getElementById("sticker-print-row-json");
+      const title = document.getElementById("sticker-print-donor");
+      if (hidden) hidden.value = encodedRow;
+      if (title) title.textContent = `${row.name || ""} · ${String(row.bag || "").startsWith("CN") ? row.bag : "CN" + row.bag}`;
+      [["c1","C1"],["c2","C2"],["e1","E1"],["e2","E2"]].forEach(([key,tag]) => {
+        const btn = document.getElementById(`print-choice-${key}`);
+        if (btn) {
+          const has = !!String(row[key] || "").trim();
+          btn.disabled = !has;
+          btn.title = has ? "" : `ไม่มีรหัส ${tag}`;
+        }
+      });
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("stickerPrintModal")).show();
+    }
+
+    async function printStickerChoice(mode) {
+      const encoded = document.getElementById("sticker-print-row-json")?.value || "";
+      if (!encoded) return;
+      bootstrap.Modal.getInstance(document.getElementById("stickerPrintModal"))?.hide();
+      setTimeout(() => printTSCFromRow(encoded, mode), 180);
+    }
+
+    async function printTSCFromRow(encodedRow, printMode = "full") {
       let row = JSON.parse(decodeURIComponent(encodedRow));
+      const mode = String(printMode || "full");
 
       if (!row.bag || row.bag === "-") {
         return alert("ยังไม่มีเลขถุง");
       }
 
       try {
-        await logPrintAction("PRINT_STICKER", row);
+        await logPrintAction(`PRINT_STICKER_${mode.toUpperCase()}`, row);
       } catch (err) {
         alert("ไม่สามารถพิมพ์สติ๊กเกอร์ได้: " + (err.message || err));
         return;
@@ -4521,8 +4713,7 @@ async function adminResetPassword(username, fullName) {
 
       let html = "";
 
-      for (let i = 0; i < 5; i++) {
-        html += `
+      const buildNameSticker = () => `
           <div class="label-box">
             <div class="st-name">${fullName}</div>
             <div class="st-line">วันที่เจาะ: ${saveTimeShort}</div>
@@ -4539,10 +4730,8 @@ async function adminResetPassword(username, fullName) {
             <div class="st-blood">${group} (${sexShort})</div>
           </div>
         `;
-      }
 
-      componentList.forEach(item => {
-        html += `
+      const buildComponentSticker = item => `
           <div class="label-box">
             <div class="st-bar-wrap">
               <svg class="bc-main-sticker" data-value="${bag}"></svg>
@@ -4559,7 +4748,19 @@ async function adminResetPassword(username, fullName) {
             </div>
           </div>
         `;
-      });
+
+      if (mode === "full") {
+        for (let i = 0; i < 5; i++) html += buildNameSticker();
+        componentList.forEach(item => { html += buildComponentSticker(item); });
+      } else if (mode === "name") {
+        html = buildNameSticker();
+      } else if (["C1","C2","E1","E2"].includes(mode)) {
+        const item = componentList.find(x => x.tag === mode);
+        if (!item?.code) return alert(`ไม่มีรหัส ${mode} สำหรับผู้บริจาครายนี้`);
+        html = buildComponentSticker(item);
+      } else {
+        return alert("ไม่รู้จักรูปแบบการพิมพ์สติ๊กเกอร์");
+      }
 
       tsc.innerHTML = html;
       tsc.className = "active-print";
@@ -4600,7 +4801,7 @@ async function adminResetPassword(username, fullName) {
     }
 
         async function reprintTSCFromRow(encodedRow) {
-      await printTSCFromRow(encodedRow);
+      openStickerPrintOptions(encodedRow);
     }
 
     function resetPrintTemplates() {
