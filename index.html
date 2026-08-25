@@ -474,6 +474,24 @@
         color: #444;
       }
 
+      /* v15.6.12: isolate TSC printing from the application DOM.
+         Without this, Chrome can paginate hidden/active app sections together with a single repair sticker. */
+      body.printing-tsc > *:not(#tsc-template):not(script) {
+        display: none !important;
+      }
+
+      body.printing-tsc #tsc-template.active-print {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 50mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff;
+        z-index: 2147483647;
+      }
+
       #tsc-template.active-print {
         display: block !important;
         position: absolute;
@@ -490,9 +508,16 @@
         box-sizing: border-box;
         overflow: hidden;
         page-break-after: always;
+        break-after: page;
         position: relative;
         background: #fff;
         font-family: 'Sarabun', sans-serif;
+      }
+
+      /* Do not create a trailing blank sheet after the final/single label. */
+      #tsc-template.active-print .label-box:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
 
       .st-name {
@@ -4766,6 +4791,7 @@ async function adminResetPassword(username, fullName) {
       tsc.className = "active-print";
       tsc.style.display = "";
       tsc.style.visibility = "";
+      document.body.classList.add("printing-tsc");
 
       if (a4) {
         a4.className = "";
@@ -4805,6 +4831,7 @@ async function adminResetPassword(username, fullName) {
     }
 
     function resetPrintTemplates() {
+      document.body.classList.remove("printing-tsc");
       const a4 = document.getElementById("a4-template");
       const tsc = document.getElementById("tsc-template");
       const cert = document.getElementById("cert-template");
