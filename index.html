@@ -1541,8 +1541,8 @@
 
         <div class="col-md-6">
           <label>Donor ID</label>
-          <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="ถ้าไม่มี ระบบออกเลขให้อัตโนมัติ" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
-          <div class="small text-muted mt-1">ถ้ามีบัตร Donor ให้กรอกตามบัตร · ถ้าเว้นว่าง ระบบจะออกเลข 6 หลักที่ยังไม่ถูกใช้</div>
+          <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
+          <div class="small text-muted mt-1">กรอก Donor ID จริงตามบัตร/AI-LIS ถ้ามี · ถ้าไม่มีให้เว้นว่าง ระบบจะเติมภายหลังจาก AI-LIS</div>
         </div>
 
         <div class="col-md-6">
@@ -2233,7 +2233,7 @@
 
             <div class="col-md-4">
               <label>ความดัน</label>
-              <input type="text" id="sc-bp" class="form-control" inputmode="numeric" maxlength="7" placeholder="เช่น 120/80" oninput="formatBpInput(this)">
+              <input type="text" id="sc-bp" class="form-control" inputmode="numeric" maxlength="7" placeholder="เช่น 9359 → 93/59 · 12080 → 120/80" oninput="formatBpInput(this)" onblur="finalizeBpInput(this)">
             </div>
 
             <div class="col-md-4">
@@ -2243,12 +2243,12 @@
 
             <div class="col-md-6">
               <label>อุณหภูมิ</label>
-              <input type="text" inputmode="decimal" id="sc-temp" class="form-control" placeholder="เช่น 365 → 36.5" oninput="formatOneDecimalInput(this)" onblur="finalizeOneDecimalInput(this)">
+              <input type="text" inputmode="decimal" id="sc-temp" class="form-control" placeholder="เช่น 366 → 36.6" oninput="sanitizeDecimalInput(this)" onblur="finalizeTemperatureInput(this)">
             </div>
 
             <div class="col-md-6">
               <label>ความเข้มเลือด</label>
-              <input type="text" inputmode="decimal" id="sc-hb" class="form-control" placeholder="เช่น 145 → 14.5" oninput="formatOneDecimalInput(this)" onblur="finalizeOneDecimalInput(this)">
+              <input type="text" inputmode="decimal" id="sc-hb" class="form-control" placeholder="เช่น 96 → 9.6 · 145 → 14.5" oninput="sanitizeDecimalInput(this)" onblur="finalizeHbInput(this)">
             </div>
 
             <div class="col-md-6">
@@ -3299,10 +3299,28 @@ async function resetPasswordWithOtp() {
       el.value = formatPhoneValue(el.value);
     }
 
+    // ความดัน: รองรับทั้ง systolic 2 และ 3 หลัก
+    // 9359 → 93/59, 12080 → 120/80, 99100 → 99/100
     function formatBpValue(value) {
-      const digits = String(value || "").replace(/\D/g, "").slice(0, 6);
+      let raw = String(value ?? "").trim().replace(/[^0-9/]/g, "");
+      if (!raw) return "";
+
+      // ถ้าผู้ใช้ใส่ / เอง ให้คงตำแหน่งไว้และจำกัดแต่ละฝั่งไม่เกิน 3 หลัก
+      if (raw.includes("/")) {
+        const parts = raw.split("/");
+        const sys = String(parts[0] || "").replace(/\D/g, "").slice(0, 3);
+        const dia = String(parts.slice(1).join("") || "").replace(/\D/g, "").slice(0, 3);
+        return sys + "/" + dia;
+      }
+
+      const digits = raw.replace(/\D/g, "").slice(0, 6);
       if (digits.length <= 3) return digits;
-      return digits.slice(0, 3) + "/" + digits.slice(3);
+
+      // ถ้า 3 หลักแรกอยู่ในช่วงที่เป็น systolic ได้ ให้แบ่ง 3/ที่เหลือ
+      // ไม่เช่นนั้นให้ถือว่า systolic มี 2 หลัก เช่น 9359 → 93/59
+      const first3 = Number(digits.slice(0, 3));
+      if (first3 >= 100 && first3 <= 250) return digits.slice(0, 3) + "/" + digits.slice(3);
+      return digits.slice(0, 2) + "/" + digits.slice(2);
     }
 
     function formatBpInput(el) {
@@ -3310,32 +3328,64 @@ async function resetPasswordWithOtp() {
       el.value = formatBpValue(el.value);
     }
 
-    // อุณหภูมิ / Hb: พิมพ์เลข 3 หลักได้เลย เช่น 365 → 36.5, 145 → 14.5
-    // หากพิมพ์จุดเอง เช่น 36.7 หรือ 14.5 ระบบจะคงรูปแบบไว้
-    function formatOneDecimalValue(value, finalize = false) {
-      let raw = String(value ?? "").trim().replace(/,/g, ".");
-      if (!raw) return "";
+    function finalizeBpInput(el) {
+      if (!el || !String(el.value || "").trim()) return;
+      el.value = formatBpValue(el.value);
+    }
 
-      // ผู้ใช้พิมพ์ทศนิยมเอง: อนุญาตเลขหน้า 1-2 หลัก และทศนิยม 0-1 หลัก
-      if (/^\d{1,2}\.\d?$/.test(raw)) {
-        if (finalize && raw.endsWith(".")) return raw.slice(0, -1) + ".0";
-        return raw;
+    // ระหว่างพิมพ์ยังไม่รีบใส่จุด เพื่อไม่ให้ 145 กลายเป็น 1.4 ก่อนพิมพ์หลักที่ 3
+    function sanitizeDecimalInput(el) {
+      if (!el) return;
+      let raw = String(el.value ?? "").replace(/,/g, ".").replace(/[^0-9.]/g, "");
+      const dot = raw.indexOf(".");
+      if (dot >= 0) {
+        raw = raw.slice(0, dot + 1) + raw.slice(dot + 1).replace(/\./g, "");
+        const [a, b = ""] = raw.split(".");
+        raw = a.slice(0, 2) + "." + b.slice(0, 1);
+      } else {
+        raw = raw.slice(0, 3);
       }
+      el.value = raw;
+    }
 
-      const digits = raw.replace(/\D/g, "").slice(0, 3);
+    function normalizeTypedDecimal(value) {
+      let raw = String(value ?? "").trim().replace(/,/g, ".");
+      if (!raw) return null;
+      if (/^\d{1,2}(?:\.\d?)?$/.test(raw) && raw.includes(".")) {
+        const n = Number(raw.endsWith(".") ? raw.slice(0, -1) : raw);
+        return Number.isFinite(n) ? n.toFixed(1) : "";
+      }
+      return null;
+    }
+
+    function formatTemperatureValue(value) {
+      const typed = normalizeTypedDecimal(value);
+      if (typed !== null) return typed;
+      const digits = String(value ?? "").replace(/\D/g, "").slice(0, 3);
       if (!digits) return "";
-      if (digits.length <= 2) return finalize ? `${Number(digits)}.0` : digits;
+      if (digits.length === 1) return `${Number(digits)}.0`;
+      if (digits.length === 2) return `${Number(digits)}.0`;
       return `${digits.slice(0, 2)}.${digits.slice(2)}`;
     }
 
-    function formatOneDecimalInput(el) {
-      if (!el) return;
-      el.value = formatOneDecimalValue(el.value, false);
+    function formatHbValue(value) {
+      const typed = normalizeTypedDecimal(value);
+      if (typed !== null) return typed;
+      const digits = String(value ?? "").replace(/\D/g, "").slice(0, 3);
+      if (!digits) return "";
+      if (digits.length === 1) return `${Number(digits)}.0`;
+      if (digits.length === 2) return `${digits.slice(0, 1)}.${digits.slice(1)}`;
+      return `${digits.slice(0, 2)}.${digits.slice(2)}`;
     }
 
-    function finalizeOneDecimalInput(el) {
+    function finalizeTemperatureInput(el) {
       if (!el || !String(el.value || "").trim()) return;
-      el.value = formatOneDecimalValue(el.value, true);
+      el.value = formatTemperatureValue(el.value);
+    }
+
+    function finalizeHbInput(el) {
+      if (!el || !String(el.value || "").trim()) return;
+      el.value = formatHbValue(el.value);
     }
 
     function thaiBirthDateForPrint(value) {
@@ -3534,7 +3584,7 @@ async function resetPasswordWithOtp() {
         }).catch(()=>{});
         invalidateVisitCache(getLocalDateInputValue());
 
-        alert(`บันทึกสำเร็จ!\nDN: ${res.dn || "-"}\nDonor ID: ${res.donorId || "-"}\nครั้งที่บริจาค: ${res.donationNo || "-"}`);
+        alert(`บันทึกสำเร็จ!\nDN: ${res.dn || "-"}\nDonor ID: ${res.donorId || "รอเติมจาก AI-LIS"}\nครั้งที่บริจาค: ${res.donationNo || "-"}`);
 
         const rowStr = encodeURIComponent(JSON.stringify({ ...res, occupation: res.occupation || data.occupation || "" }));
         printA4FromRow(rowStr);
@@ -4164,8 +4214,8 @@ async function adminResetPassword(username, fullName) {
       };
 
       sData.bp = formatBpValue(sData.bp);
-      sData.temp = formatOneDecimalValue(sData.temp, true);
-      sData.hb = formatOneDecimalValue(sData.hb, true);
+      sData.temp = formatTemperatureValue(sData.temp);
+      sData.hb = formatHbValue(sData.hb);
       document.getElementById("sc-bp").value = sData.bp;
       document.getElementById("sc-temp").value = sData.temp;
       document.getElementById("sc-hb").value = sData.hb;
@@ -4194,8 +4244,8 @@ async function adminResetPassword(username, fullName) {
           return;
         }
 
-        if (!/^\d{3}\/\d{2,3}$/.test(sData.bp)) {
-          alert("กรุณากรอกความดันให้ครบ เช่น 12080 ระบบจะแสดงเป็น 120/80");
+        if (!/^\d{2,3}\/\d{2,3}$/.test(sData.bp)) {
+          alert("กรุณากรอกความดันให้ครบ เช่น 9359 → 93/59 หรือ 12080 → 120/80");
           document.getElementById("sc-bp").focus();
           return;
         }
