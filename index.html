@@ -19,7 +19,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.6"></script>
+  <script src="js/supabase-backend.js?v=15.6.7"></script>
 
   <style>
     :root { --cnmi-blue: #2f80ed; --cnmi-blue-soft: #eaf4ff; --cnmi-blue-border: #b8dafc; --cnmi-blue-dark: #185abc; --cnmi-text: #18324a; --cnmi-muted: #6b7a8a; --cnmi-card: #ffffff; }
@@ -375,9 +375,9 @@
       #p-barcode { top: 48mm; left: 140mm; width: 42mm; height: 14mm; }
       #p-name { top: 38mm; left: 10mm; }
       #p-id { top: 48mm; left: 10mm; }
-      #p-birth { top: 58mm; left: 10mm; }
-      #p-age { top: 58mm; left: 72mm; }
-      #p-gender { top: 58mm; left: 95mm; }
+      #p-birth { top: 58mm; left: 10mm; width: 92mm; white-space: nowrap; }
+      #p-age { top: 58mm; left: 108mm; white-space: nowrap; }
+      #p-gender { top: 58mm; left: 145mm; white-space: nowrap; }
       #p-address { top: 68mm; left: 10mm; width: 190mm; }
 
       #cert-template.active-print {
@@ -2366,7 +2366,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.6 - Donor ID + donation number registration");
+    console.log("CNMI Blood Donation v15.6.7 - A4 birthdate layout fix");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4565,7 +4565,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.6"></script>
+  <script src="js/supabase-history.js?v=15.6.7"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
