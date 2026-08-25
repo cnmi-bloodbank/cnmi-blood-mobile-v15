@@ -19,7 +19,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.7"></script>
+  <script src="js/supabase-backend.js?v=15.6.8"></script>
 
   <style>
     :root { --cnmi-blue: #2f80ed; --cnmi-blue-soft: #eaf4ff; --cnmi-blue-border: #b8dafc; --cnmi-blue-dark: #185abc; --cnmi-text: #18324a; --cnmi-muted: #6b7a8a; --cnmi-card: #ffffff; }
@@ -375,9 +375,9 @@
       #p-barcode { top: 48mm; left: 140mm; width: 42mm; height: 14mm; }
       #p-name { top: 38mm; left: 10mm; }
       #p-id { top: 48mm; left: 10mm; }
-      #p-birth { top: 58mm; left: 10mm; width: 92mm; white-space: nowrap; }
-      #p-age { top: 58mm; left: 108mm; white-space: nowrap; }
-      #p-gender { top: 58mm; left: 145mm; white-space: nowrap; }
+      #p-birth { top: 58mm; left: 10mm; width: 80mm; white-space: nowrap; font-size: 13pt; }
+      #p-age { top: 58mm; left: 92mm; white-space: nowrap; font-size: 13pt; }
+      #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
       #p-address { top: 68mm; left: 10mm; width: 190mm; }
 
       #cert-template.active-print {
@@ -2199,6 +2199,12 @@
               <label class="text-danger">เหตุผลที่ไม่ผ่าน</label>
               <input type="text" id="sc-reason" class="form-control border-danger">
             </div>
+
+            <div class="col-md-12" id="bag-note-reminder" style="display:none;">
+              <div class="alert alert-warning mb-0 py-2 px-3" role="alert" style="font-weight:700; border-left:5px solid #f59e0b;">
+                ✍️ ก่อนบันทึก: ถ้ามี ให้เขียนบนถุง — <strong>ตั้งครรภ์ / อาหารเสริม</strong>
+              </div>
+            </div>
           </div>
 
           <hr>
@@ -2366,7 +2372,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.7 - A4 birthdate layout fix");
+    console.log("CNMI Blood Donation v15.6.8 - A4 alignment + screening bag reminder");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3215,12 +3221,17 @@ async function resetPasswordWithOtp() {
       const status = document.getElementById("sc-status").value;
       const reasonBox = document.getElementById("reason-box");
       const reasonInput = document.getElementById("sc-reason");
+      const bagReminder = document.getElementById("bag-note-reminder");
 
       if (status === "ไม่ผ่าน") {
         reasonBox.style.display = "block";
       } else {
         reasonBox.style.display = "none";
         reasonInput.value = "";
+      }
+
+      if (bagReminder) {
+        bagReminder.style.display = status === "ผ่าน" ? "block" : "none";
       }
     }
 
@@ -3844,6 +3855,8 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("sc-status").value = "";
       document.getElementById("sc-reason").value = "";
       document.getElementById("reason-box").style.display = "none";
+      const bagReminder = document.getElementById("bag-note-reminder");
+      if (bagReminder) bagReminder.style.display = "none";
     }
 
     function openScreening(encodedRow) {
@@ -4565,7 +4578,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.7"></script>
+  <script src="js/supabase-history.js?v=15.6.8"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
