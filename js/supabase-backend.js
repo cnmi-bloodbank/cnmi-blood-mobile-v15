@@ -90,7 +90,7 @@
         return r;
       }
       if(action==='saveDataToSheet'){
-        const {data:r,error}=await sb.rpc('register_donor_visit_v15611',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_occupation:data.occupation||'',p_donor_id:data.donorId||'',p_donation_no:data.donationNo?Number(data.donationNo):null,p_user_agent:ua()}); if(error) throw error; return r;
+        const {data:r,error}=await sb.rpc('register_donor_visit_v15613',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_occupation:data.occupation||'',p_donor_id:data.donorId||'',p_last_donation_no:Number.isFinite(Number(data.lastDonationNo))?Number(data.lastDonationNo):0,p_user_agent:ua()}); if(error) throw error; return r;
       }
       if(action==='getRecentVisits'||action==='getRecentVisitsFast') return await visitsForDate(params.targetDate);
       if(action==='getDonorsByIds'){

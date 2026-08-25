@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- CNMI Blood Mobile v15.6.13: required occupation + last donation input -->
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -1545,9 +1546,9 @@
         </div>
 
         <div class="col-md-6">
-          <label>ครั้งที่บริจาค</label>
-          <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="1" max="9999" value="1" data-user-edited="0" oninput="this.dataset.userEdited='1';">
-          <div class="small text-muted mt-1">ระบบเสนอจากประวัติล่าสุด + 1 และเจ้าหน้าที่แก้ตามบัตร Donor ได้</div>
+          <label>ครั้งล่าสุดที่เคยบริจาค</label>
+          <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="0" max="9998" value="0" data-user-edited="0" oninput="this.dataset.userEdited='1'; updateDonationNoHint();">
+          <div id="donation-no-hint" class="small text-muted mt-1">ถ้าไม่เคยบริจาคให้เป็น 0 · ระบบจะบันทึกครั้งนี้เป็น <strong>ครั้งที่ 1</strong></div>
         </div>
 
         <div class="col-md-2">
@@ -1580,8 +1581,8 @@
         </div>
 
         <div class="col-md-7">
-          <label>อาชีพ</label>
-          <select id="occupation_type" class="form-select" onchange="toggleOccupationDetail(true)">
+          <label>อาชีพ <span class="required-mark">*</span></label>
+          <select id="occupation_type" class="form-select" required onchange="toggleOccupationDetail(true)">
             <option value="">-- เลือกอาชีพ --</option>
             <option value="student">นักเรียน/นักศึกษา</option>
             <option value="gov">ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ</option>
@@ -1594,7 +1595,7 @@
           </select>
         </div>
         <div class="col-md-5" id="occupation-detail-box" style="display:none;">
-          <label id="occupation-detail-label">รายละเอียดอาชีพ</label>
+          <label id="occupation-detail-label">รายละเอียดอาชีพ <span class="required-mark">*</span></label>
           <input type="text" id="occupation_detail" class="form-control" maxlength="100" oninput="this.dataset.userEdited='1';">
         </div>
 
@@ -3363,6 +3364,16 @@ async function resetPasswordWithOtp() {
       }
     }
 
+    function updateDonationNoHint() {
+      const input = document.getElementById("donation_no");
+      const hint = document.getElementById("donation-no-hint");
+      if (!input || !hint) return;
+      const last = Number.parseInt(String(input.value || "0"), 10);
+      const safeLast = Number.isInteger(last) && last >= 0 ? last : 0;
+      hint.innerHTML = `ครั้งล่าสุด <strong>${safeLast}</strong> → ระบบจะบันทึกครั้งนี้เป็น <strong>ครั้งที่ ${safeLast + 1}</strong>`;
+    }
+    window.updateDonationNoHint = updateDonationNoHint;
+
     const OCCUPATION_LABELS = Object.freeze({
       student: "นักเรียน/นักศึกษา",
       gov: "ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ",
@@ -3409,9 +3420,10 @@ async function resetPasswordWithOtp() {
       const type = typeEl.value;
       const show = type === "rama" || type === "other";
       box.style.display = show ? "block" : "none";
-      if (labelEl) labelEl.textContent = type === "rama" ? "ตำแหน่ง" : "รายละเอียดอื่นๆ";
+      detailEl.required = show;
+      if (labelEl) labelEl.innerHTML = (type === "rama" ? "ตำแหน่ง" : "รายละเอียดอื่นๆ") + (show ? ' <span class="required-mark">*</span>' : '');
       detailEl.placeholder = type === "rama" ? "เช่น นักเทคนิคการแพทย์" : "ระบุอาชีพ";
-      if (!show) detailEl.value = "";
+      if (!show) { detailEl.value = ""; detailEl.classList.remove("is-invalid"); }
       if (markEdited) {
         typeEl.dataset.userEdited = "1";
         if (!show) detailEl.dataset.userEdited = "0";
@@ -3443,7 +3455,9 @@ async function resetPasswordWithOtp() {
         address: document.getElementById("address").value.trim(),
         phone: document.getElementById('phone').value,
         donorId: (document.getElementById('donor_id')?.value || '').trim(),
-        donationNo: document.getElementById('donation_no')?.dataset.userEdited === '1' ? (document.getElementById('donation_no')?.value || '').trim() : '',
+        lastDonationNo: (document.getElementById('donation_no')?.value || '0').trim(),
+        occupationType: document.getElementById('occupation_type')?.value || '',
+        occupationDetail: document.getElementById('occupation_detail')?.value.trim() || '',
         occupation: getOccupationStored()
       };
 
@@ -3458,7 +3472,8 @@ async function resetPasswordWithOtp() {
         ["birth_date", "วันเกิด", data.birthDate],
         ["gender", "เพศ", data.gender],
         ["address", "ที่อยู่", data.address],
-        ["phone", "เบอร์โทร", data.phone]
+        ["phone", "เบอร์โทร", data.phone],
+        ["occupation_type", "อาชีพ", data.occupationType]
       ];
       requiredFields.forEach(([id]) => document.getElementById(id)?.classList.remove("is-invalid"));
       const missing = requiredFields.filter(([, , value]) => !String(value || "").trim());
@@ -3469,6 +3484,17 @@ async function resetPasswordWithOtp() {
         if (errorBox) { errorBox.textContent = text; errorBox.classList.add("show"); }
         alert(text);
         document.getElementById(missing[0][0])?.focus();
+        return;
+      }
+      const occupationDetailRequired = data.occupationType === "rama" || data.occupationType === "other";
+      const occupationDetailEl = document.getElementById("occupation_detail");
+      occupationDetailEl?.classList.remove("is-invalid");
+      if (occupationDetailRequired && !data.occupationDetail) {
+        occupationDetailEl?.classList.add("is-invalid");
+        const text = data.occupationType === "rama" ? "กรุณากรอกตำแหน่งของบุคลากรใน ร.พ.รามาฯ" : "กรุณาระบุอาชีพในช่องรายละเอียดอื่นๆ";
+        if (errorBox) { errorBox.textContent = text; errorBox.classList.add("show"); }
+        alert(text);
+        occupationDetailEl?.focus();
         return;
       }
       if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
@@ -3483,8 +3509,8 @@ async function resetPasswordWithOtp() {
         document.getElementById("donor_id")?.focus();
         return;
       }
-      if (data.donationNo && (!/^\d+$/.test(data.donationNo) || Number(data.donationNo) < 1 || Number(data.donationNo) > 9999)) {
-        alert("ครั้งที่บริจาคต้องเป็นตัวเลขตั้งแต่ 1–9999");
+      if (!/^\d+$/.test(data.lastDonationNo) || Number(data.lastDonationNo) < 0 || Number(data.lastDonationNo) > 9998) {
+        alert("ครั้งล่าสุดที่เคยบริจาคต้องเป็นตัวเลข 0–9998 (ถ้าไม่เคยบริจาคให้กรอก 0)");
         document.getElementById("donation_no")?.focus();
         return;
       }
@@ -3504,7 +3530,7 @@ async function resetPasswordWithOtp() {
         window.cnmiPreload?.upsertBasic?.({
           idCard: data.idCard, prefix: data.prefix, fname: data.fname, lname: data.lname,
           birth: data.birthDate, gender: data.gender, address: data.address, phone: data.phone || "", occupation: data.occupation || "",
-          donorId: res.donorId || data.donorId || "", donationNo: res.donationNo || data.donationNo || ""
+          donorId: res.donorId || data.donorId || "", donationNo: res.donationNo || ""
         }).catch(()=>{});
         invalidateVisitCache(getLocalDateInputValue());
 
@@ -4019,7 +4045,7 @@ async function adminResetPassword(username, fullName) {
       const donorIdEl = document.getElementById('donor_id');
       const donationNoEl = document.getElementById('donation_no');
       if (donorIdEl) { donorIdEl.value = row.donorId || ''; donorIdEl.dataset.userEdited = row.donorId ? '1' : '0'; }
-      if (donationNoEl) { donationNoEl.value = row.donationNo || '1'; donationNoEl.dataset.userEdited = row.donationNo ? '1' : '0'; }
+      if (donationNoEl) { const currentNo = Number.parseInt(String(row.donationNo || '0'),10); donationNoEl.value = Number.isInteger(currentNo) && currentNo > 0 ? String(currentNo - 1) : '0'; donationNoEl.dataset.userEdited = '0'; updateDonationNoHint(); }
       setOccupationUiFromStored(row.occupation || '', true);
       window.cnmiPreload?.lookupFromRegister?.({ fill: false }).catch(()=>{});
 
@@ -4034,7 +4060,7 @@ async function adminResetPassword(username, fullName) {
         if (el) { el.value = ""; el.classList.remove("is-invalid"); if (id === "donor_id") el.dataset.userEdited = "0"; }
       });
       const donationNoEl = document.getElementById("donation_no");
-      if (donationNoEl) { donationNoEl.value = "1"; donationNoEl.dataset.userEdited = "0"; }
+      if (donationNoEl) { donationNoEl.value = "0"; donationNoEl.dataset.userEdited = "0"; updateDonationNoHint(); }
       const occupationTypeEl = document.getElementById("occupation_type");
       const occupationDetailEl = document.getElementById("occupation_detail");
       if (occupationTypeEl) { occupationTypeEl.value = ""; occupationTypeEl.dataset.userEdited = "0"; }
