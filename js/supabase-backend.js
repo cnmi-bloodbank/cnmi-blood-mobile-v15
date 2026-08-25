@@ -47,9 +47,9 @@
   }
   async function visitsForDate(date){
     const sb=init();
-    const {data,error}=await sb.from('visits').select('dn,bag_number,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,c1,c2,e1,e2,location,source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,donors!inner(prefix,fname,lname,birth,gender,address,phone,legacy_identity)').eq('visit_date',date).order('created_at',{ascending:false});
+    const {data,error}=await sb.from('visits').select('dn,bag_number,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,c1,c2,e1,e2,location,source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,phone,legacy_identity)').eq('visit_date',date).order('created_at',{ascending:false});
     if(error) throw error;
-    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim();return {dn:r.dn,idCard:d.legacy_identity||r.id_card,dbIdCard:r.id_card,identityType:d.legacy_identity?'legacy':'thai',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',address:d.address||'-',phone:d.phone||'-',bag:r.bag_number||'-',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),donorId:r.lis_donor_id||'',donationNo:r.lis_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
+    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim();return {dn:r.dn,idCard:d.legacy_identity||r.id_card,dbIdCard:r.id_card,identityType:d.legacy_identity?'legacy':'thai',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',address:d.address||'-',phone:d.phone||'-',bag:r.bag_number||'-',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
   }
   async function call(action, params={}){
     const sb=init(); const data=parse(params.data);
@@ -90,7 +90,7 @@
         return r;
       }
       if(action==='saveDataToSheet'){
-        const {data:r,error}=await sb.rpc('register_donor_visit',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_user_agent:ua()}); if(error) throw error; return r;
+        const {data:r,error}=await sb.rpc('register_donor_visit_v1566',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_phone:data.phone||'',p_donor_id:data.donorId||'',p_donation_no:data.donationNo?Number(data.donationNo):null,p_user_agent:ua()}); if(error) throw error; return r;
       }
       if(action==='getRecentVisits'||action==='getRecentVisitsFast') return await visitsForDate(params.targetDate);
       if(action==='getDonorsByIds'){

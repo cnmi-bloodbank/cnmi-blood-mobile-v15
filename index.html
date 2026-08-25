@@ -19,7 +19,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.5"></script>
+  <script src="js/supabase-backend.js?v=15.6.6"></script>
 
   <style>
     :root { --cnmi-blue: #2f80ed; --cnmi-blue-soft: #eaf4ff; --cnmi-blue-border: #b8dafc; --cnmi-blue-dark: #185abc; --cnmi-text: #18324a; --cnmi-muted: #6b7a8a; --cnmi-card: #ffffff; }
@@ -1493,6 +1493,18 @@
           <div id="donor-history-panel" hidden></div>
         </div>
 
+        <div class="col-md-6">
+          <label>Donor ID</label>
+          <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="ถ้าไม่มี ระบบออกเลขให้อัตโนมัติ" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
+          <div class="small text-muted mt-1">ถ้ามีบัตร Donor ให้กรอกตามบัตร · ถ้าเว้นว่าง ระบบจะออกเลข 6 หลักที่ยังไม่ถูกใช้</div>
+        </div>
+
+        <div class="col-md-6">
+          <label>ครั้งที่บริจาค</label>
+          <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="1" max="9999" value="1" data-user-edited="0" oninput="this.dataset.userEdited='1';">
+          <div class="small text-muted mt-1">ระบบเสนอจากประวัติล่าสุด + 1 และเจ้าหน้าที่แก้ตามบัตร Donor ได้</div>
+        </div>
+
         <div class="col-md-2">
           <label>คำนำหน้า <span class="required-mark">*</span></label>
           <input type="text" id="prefix" class="form-control" required>
@@ -2354,7 +2366,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.4 - donation number from AI-LIS");
+    console.log("CNMI Blood Donation v15.6.6 - Donor ID + donation number registration");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3221,7 +3233,9 @@ async function resetPasswordWithOtp() {
         birthDate: document.getElementById("birth_date").value.trim(),
         gender: document.getElementById("gender").value.trim(),
         address: document.getElementById("address").value.trim(),
-        phone: document.getElementById('phone').value
+        phone: document.getElementById('phone').value,
+        donorId: (document.getElementById('donor_id')?.value || '').trim(),
+        donationNo: document.getElementById('donation_no')?.dataset.userEdited === '1' ? (document.getElementById('donation_no')?.value || '').trim() : ''
       };
 
       data.phone = formatPhoneValue((data.phone || "").trim());
@@ -3255,6 +3269,16 @@ async function resetPasswordWithOtp() {
         document.getElementById("id_card").focus();
         return;
       }
+      if (data.donorId && !/^\d{1,16}$/.test(data.donorId)) {
+        alert("Donor ID ต้องเป็นตัวเลขเท่านั้น");
+        document.getElementById("donor_id")?.focus();
+        return;
+      }
+      if (data.donationNo && (!/^\d+$/.test(data.donationNo) || Number(data.donationNo) < 1 || Number(data.donationNo) > 9999)) {
+        alert("ครั้งที่บริจาคต้องเป็นตัวเลขตั้งแต่ 1–9999");
+        document.getElementById("donation_no")?.focus();
+        return;
+      }
 
       try {
         setButtonBusy("save-btn", true, "⏳ กำลังบันทึก...");
@@ -3270,11 +3294,12 @@ async function resetPasswordWithOtp() {
 
         window.cnmiPreload?.upsertBasic?.({
           idCard: data.idCard, prefix: data.prefix, fname: data.fname, lname: data.lname,
-          birth: data.birthDate, gender: data.gender, address: data.address, phone: data.phone || ""
+          birth: data.birthDate, gender: data.gender, address: data.address, phone: data.phone || "",
+          donorId: res.donorId || data.donorId || "", donationNo: res.donationNo || data.donationNo || ""
         }).catch(()=>{});
         invalidateVisitCache(getLocalDateInputValue());
 
-        alert("บันทึกสำเร็จ!");
+        alert(`บันทึกสำเร็จ!\nDN: ${res.dn || "-"}\nDonor ID: ${res.donorId || "-"}\nครั้งที่บริจาค: ${res.donationNo || "-"}`);
 
         const rowStr = encodeURIComponent(JSON.stringify(res));
         printA4FromRow(rowStr);
@@ -3722,10 +3747,10 @@ async function adminResetPassword(username, fullName) {
         let hasBag = rowHasBag(row);
         let disableScreen = (hasBag || !isPending) ? "disabled" : "";
         const imported = row.source === 'lis-import';
-        const idLabel = imported ? `<strong>Donor ID ${escapeHtml(row.donorId||'-')}</strong>` : escapeHtml(row.dn||'-');
+        const idLabel = imported ? `<strong>Donor ID ${escapeHtml(row.donorId||'-')}</strong>` : `${escapeHtml(row.dn||'-')}${row.donorId?`<br><small class=\"text-muted\">Donor ID ${escapeHtml(row.donorId)}</small>`:''}`;
         const detailLine = imported
           ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
-          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}`;
+          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`;
         html += `
           <tr ${imported?'':`onclick="openVisitDetail('${rowStr}')"`}>
             <td>${filteredData.length - index}</td>
@@ -3781,18 +3806,24 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("gender").value = sexToShort(row.gender || "");
       document.getElementById("address").value = row.address || "";
       document.getElementById('phone').value = row.phone || "";
+      const donorIdEl = document.getElementById('donor_id');
+      const donationNoEl = document.getElementById('donation_no');
+      if (donorIdEl) { donorIdEl.value = row.donorId || ''; donorIdEl.dataset.userEdited = row.donorId ? '1' : '0'; }
+      if (donationNoEl) { donationNoEl.value = row.donationNo || '1'; donationNoEl.dataset.userEdited = row.donationNo ? '1' : '0'; }
       window.cnmiPreload?.lookupFromRegister?.({ fill: false }).catch(()=>{});
 
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function clearForm() {
-      const fields = ["id_card", "prefix", "fname", "lname", "birth_date", "gender", "address", "phone"];
+      const fields = ["id_card", "prefix", "fname", "lname", "birth_date", "gender", "address", "phone", "donor_id"];
 
       fields.forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.value = ""; el.classList.remove("is-invalid"); }
+        if (el) { el.value = ""; el.classList.remove("is-invalid"); if (id === "donor_id") el.dataset.userEdited = "0"; }
       });
+      const donationNoEl = document.getElementById("donation_no");
+      if (donationNoEl) { donationNoEl.value = "1"; donationNoEl.dataset.userEdited = "0"; }
       const errorBox = document.getElementById("registration-error-summary");
       if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
@@ -4534,7 +4565,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.5"></script>
+  <script src="js/supabase-history.js?v=15.6.6"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -4583,7 +4614,7 @@ async function searchDonorHistory(){
         if(notes.length) warnings.push(`<div class="donor-search-warning bg-warning-subtle text-warning-emphasis"><strong>Donor Note:</strong> ${escapeHtml(notes[0]?.note||'มี Donor Note')}</div>`);
         const last=Array.isArray(p.donationHistory)&&p.donationHistory.length?p.donationHistory[0]:null;
         const mobileLast=Array.isArray(p.mobileVisits)&&p.mobileVisits.length?p.mobileVisits[0]:null;
-        const donorIds=Array.isArray(p.donorIds)?p.donorIds.filter(Boolean):[];
+        const donorIds=[...new Set([...(Array.isArray(p.donorIdsAll)?p.donorIdsAll:[]),...(Array.isArray(p.donorIds)?p.donorIds:[]),...(Array.isArray(p.mobileVisits)?p.mobileVisits.map(x=>x?.donorId||''):[])].filter(Boolean))];
         const donorIdLine=donorIds.length?`<div class="small text-muted">Donor ID ${escapeHtml(donorIds.slice(0,4).join(', '))}${donorIds.length>4?' …':''}</div>`:'';
         const lastLine=last?`<div class="small text-muted">AI-LIS ล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}${last.donationNo?' · บริจาคครั้งที่ '+escapeHtml(String(last.donationNo).replace(/\.0+$/,'')):''}</div>`:(mobileLast?`<div class="small text-muted">Blood Mobile ล่าสุด ${escapeHtml(mobileLast.date||mobileLast.ymd||'-')}${mobileLast.dn?' · DN '+escapeHtml(mobileLast.dn):''}${mobileLast.location?' · '+escapeHtml(mobileLast.location):''}</div>`:'');
         const identityLine=canRegister?`เลขบัตร ${escapeHtml(displayIdentity)}`:`รหัสเดิม ${escapeHtml(displayIdentity)} <span class="badge text-bg-warning">Legacy</span>`;
@@ -4625,7 +4656,7 @@ async function readThaiIdCard(){
     thaiCardSet('gender',sexToShort(payload.gender));
     thaiCardSet('address',payload.address);
     if(st){st.className='small fw-bold text-success mt-1';st.textContent=`อ่านบัตรสำเร็จ${payload.reader?' · '+payload.reader:''}`;}
-    await window.cnmiPreload?.lookupFromRegister?.({fill:false});
+    await window.cnmiPreload?.lookupFromRegister?.({fill:true});
   }catch(err){
     console.error('Thai ID card read failed',err);
     if(st){st.className='small fw-bold text-danger mt-1';st.innerHTML='อ่านบัตรไม่ได้ — ตรวจว่าเสียบบัตร/เครื่องอ่านแล้ว และเปิด <strong>CNMI Card Bridge</strong> บนคอมเครื่องนี้อยู่ หากคอม รพ. บล็อก PowerShell ยังสามารถกรอกหรือค้นหาผู้บริจาคด้วยเลขบัตรได้ตามปกติ';}
