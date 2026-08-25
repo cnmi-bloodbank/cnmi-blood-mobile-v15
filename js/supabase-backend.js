@@ -131,6 +131,7 @@
     const out={...oldP,...newP};
     ['prefix','fname','lname','birth','gender','address','addressLine','subdistrict','district','province','postalCode','phone','email','occupation','bloodGroupHistory'].forEach(k=>out[k]=pick(newP?.[k],oldP?.[k]));
     out.donorIds=mergeUnique(oldP?.donorIds,newP?.donorIds,x=>String(x));
+    out.donorIdsAll=mergeUnique(oldP?.donorIdsAll||oldP?.donorIds,newP?.donorIdsAll||newP?.donorIds,x=>String(x));
     out.donationHistory=mergeUnique(oldP?.donationHistory,newP?.donationHistory,x=>`${x.date||''}|${x.unitNo||''}|${x.component||''}`);
     out.alerts={
       notes:mergeUnique(oldP?.alerts?.notes,newP?.alerts?.notes,x=>`${x.date||''}|${x.note||''}|${x.status||''}`),

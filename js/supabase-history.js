@@ -24,7 +24,7 @@
   function classify(rows){if(!rows.length)return '';const k=new Set(Object.keys(rows[0]||{}).map(norm));if(k.has('donorid')&&k.has('idcard'))return'donors';if(k.has('donorid')&&k.has('deferreason'))return'defers';if(k.has('donorid')&&k.has('note'))return'notes';if(k.has('donorid')&&k.has('bagnumber'))return'sero';return'';}
   function parseCsvMatrix(text){const rows=[];let row=[],cell='',q=false;const src=String(text||'').replace(/^\uFEFF/,'');for(let i=0;i<src.length;i++){const ch=src[i],next=src[i+1];if(ch==='"'&&q&&next==='"'){cell+='"';i++;}else if(ch==='"')q=!q;else if(ch===','&&!q){row.push(cell);cell='';}else if((ch==='\n'||ch==='\r')&&!q){if(ch==='\r'&&next==='\n')i++;row.push(cell);cell='';if(row.some(v=>String(v).trim()!==''))rows.push(row);row=[];}else cell+=ch;}row.push(cell);if(row.some(v=>String(v).trim()!==''))rows.push(row);return rows;}
   async function readReportFile(file){let matrix;if(/\.xlsx?$/i.test(file.name)){if(!window.XLSX)throw new Error('ตัวอ่าน Excel ยังไม่พร้อม');const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false}),ws=wb.Sheets[wb.SheetNames[0]];matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});}else matrix=parseCsvMatrix(await file.text());const rows=matrixToObjects(matrix),type=classify(rows);if(!type)throw new Error(`ไม่รู้จักรูปแบบรายงาน: ${file.name}`);return{type,rows,name:file.name};}
-  function baseProfile(raw,idCard){const p={idCard,prefix:String(pick(raw,['Prefix','คำนำหน้า'])).trim(),fname:String(pick(raw,['Name','FirstName','ชื่อ'])).trim(),lname:String(pick(raw,['Lastname','LastName','นามสกุล'])).trim(),birth:excelDate(pick(raw,['DOB','BirthDate','วันเกิด'])),gender:genderCode(pick(raw,['Sex','Gender','เพศ'])),addressLine:String(pick(raw,['Address','ที่อยู่'])).trim(),subdistrict:String(pick(raw,['Tambol','Subdistrict','ตำบล'])).trim(),district:String(pick(raw,['Amper','District','อำเภอ'])).trim(),province:String(pick(raw,['Province','จังหวัด'])).trim(),postalCode:String(pick(raw,['Post','PostalCode','Zip','รหัสไปรษณีย์'])).trim(),phone:phoneText(pick(raw,['Tel','Phone','Telephone','โทรศัพท์'])),email:String(pick(raw,['email','Email','E-mail','อีเมล'])).trim(),occupation:String(pick(raw,['Occupation','อาชีพ'])).trim(),bloodGroupHistory:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),donorIds:[],donationHistory:[],alerts:{notes:[],defers:[],seroNat:[]},_latestRank:0,updatedAt:new Date().toISOString()};p.address=joinAddress(p);return p;}
+  function baseProfile(raw,idCard){const p={idCard,prefix:String(pick(raw,['Prefix','คำนำหน้า'])).trim(),fname:String(pick(raw,['Name','FirstName','ชื่อ'])).trim(),lname:String(pick(raw,['Lastname','LastName','นามสกุล'])).trim(),birth:excelDate(pick(raw,['DOB','BirthDate','วันเกิด'])),gender:genderCode(pick(raw,['Sex','Gender','เพศ'])),addressLine:String(pick(raw,['Address','ที่อยู่'])).trim(),subdistrict:String(pick(raw,['Tambol','Subdistrict','ตำบล'])).trim(),district:String(pick(raw,['Amper','District','อำเภอ'])).trim(),province:String(pick(raw,['Province','จังหวัด'])).trim(),postalCode:String(pick(raw,['Post','PostalCode','Zip','รหัสไปรษณีย์'])).trim(),phone:phoneText(pick(raw,['Tel','Phone','Telephone','โทรศัพท์'])),email:String(pick(raw,['email','Email','E-mail','อีเมล'])).trim(),occupation:String(pick(raw,['Occupation','อาชีพ'])).trim(),bloodGroupHistory:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),donorIds:[],donorIdsAll:[],donationHistory:[],alerts:{notes:[],defers:[],seroNat:[]},_latestRank:0,updatedAt:new Date().toISOString()};p.address=joinAddress(p);return p;}
   async function buildProfiles(files){
     const parsed=await Promise.all(files.map(readReportFile)),g={};
     parsed.forEach(x=>{if(g[x.type])throw new Error(`พบรายงานชนิด ${x.type} ซ้ำ`);g[x.type]=x;});
@@ -37,13 +37,14 @@
       let p=profiles.get(id);if(!p){p=baseProfile(raw,id);profiles.set(id,p);}
       const rawDate=pick(raw,['DonateDate','DonationDate','วันที่บริจาค']),ymd=valueToYmd(rawDate),rank=dateRank(rawDate);
       if(ymd){if(!sourceFromDate||ymd<sourceFromDate)sourceFromDate=ymd;if(!sourceThroughDate||ymd>sourceThroughDate)sourceThroughDate=ymd;}
-      if(rank>=(p._latestRank||0)){const latest=baseProfile(raw,id);latest.donorIds=p.donorIds;latest.donationHistory=p.donationHistory;latest.alerts=p.alerts;latest._latestRank=rank;p=latest;profiles.set(id,p);}
+      if(rank>=(p._latestRank||0)){const latest=baseProfile(raw,id);latest.donorIds=p.donorIds;latest.donorIdsAll=p.donorIdsAll;latest.donationHistory=p.donationHistory;latest.alerts=p.alerts;latest._latestRank=rank;p=latest;profiles.set(id,p);}
       if(donorId&&!p.donorIds.includes(donorId))p.donorIds.push(donorId);
-      p.donationHistory.push({date:excelDate(rawDate,true),ymd:ymd||'',component:String(pick(raw,['BloodComponent','Component','ส่วนประกอบ'])).trim(),unitNo:String(pick(raw,['Unit No','UnitNo','Bagnumber','BagNumber'])).trim(),donationNo:String(pick(raw,['ครั้งที่บริจาค','Donation No','DonationNo'])).trim(),group:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),_rank:rank});
+      if(donorId&&!p.donorIdsAll.includes(donorId))p.donorIdsAll.push(donorId);
+      p.donationHistory.push({date:excelDate(rawDate,true),ymd:ymd||'',component:String(pick(raw,['BloodComponent','Component','ส่วนประกอบ'])).trim(),unitNo:String(pick(raw,['Unit No','UnitNo','Bagnumber','BagNumber'])).trim(),donorId:donorId,donationNo:String(pick(raw,['ครั้งที่บริจาค','Donation No','DonationNo'])).trim(),group:String(pick(raw,['BloodGroup','Blood Group','หมู่เลือด'])).trim(),_rank:rank});
     }
 
     // เก็บ Donor_ID ที่ mapping ชัดเจนเท่านั้น เพื่อไม่ผูกคนผิดเมื่อ LIS มี Donor_ID ซ้ำ/ชนกัน
-    for(const p of profiles.values())p.donorIds=(p.donorIds||[]).filter(d=>links.get(d)?.size===1);
+    for(const p of profiles.values()){p.donorIdsAll=[...new Set((p.donorIdsAll||p.donorIds||[]).filter(Boolean))];p.donorIds=(p.donorIds||[]).filter(d=>links.get(d)?.size===1);}
 
     const noteRows=g.notes.rows.map(raw=>({raw,id:donorIdText(pick(raw,['Donor_ID','Donor_id','DonorID']))})).filter(x=>x.id);
     const deferRows=g.defers.rows.map(raw=>({raw,id:donorIdText(pick(raw,['Donor_ID','Donor_id','DonorID']))})).filter(x=>x.id);
@@ -76,9 +77,72 @@
   function setText(id,text,cls){const n=$(id);if(!n)return;n.textContent=text;if(cls)n.className=cls;}
   function clearPanel(){const p=$('donor-history-panel');if(p){p.hidden=true;p.replaceChildren();}}
   const line=(text,cls='')=>{const d=document.createElement('div');d.className=cls;d.textContent=text;return d;};
-  function listBox(title,items,formatter,cls,max=5){const box=document.createElement('div');box.className=`preload-alert ${cls}`;box.appendChild(line(title,'fw-bold'));const ul=document.createElement('ul');ul.className='mb-0 mt-1 ps-4';items.slice(0,max).forEach(x=>{const li=document.createElement('li');li.textContent=formatter(x);ul.appendChild(li);});if(items.length>max){const li=document.createElement('li');li.textContent=`และอีก ${items.length-max} รายการ`;ul.appendChild(li);}box.appendChild(ul);return box;}
+  function listBox(title,items,formatter,cls,max=5){const box=document.createElement('div');box.className=`preload-alert ${cls}`;box.appendChild(line(title,'fw-bold'));const ul=document.createElement('ul');ul.className='mb-0 mt-1 ps-4';items.slice(0,max).forEach(x=>{const li=document.createElement('li');li.textContent=formatter(x);ul.appendChild(li);});if(items.length>max){const li=document.createElement('li');li.textContent=`ดูเพิ่มเติมได้ในประวัติทั้งหมด (${items.length.toLocaleString()} รายการ)`;li.className='text-muted';ul.appendChild(li);}box.appendChild(ul);return box;}
   function donationOrdinal(hist){const rows=Array.isArray(hist)?hist:[];const first=rows.find(x=>String(x?.donationNo||'').trim());if(!first)return '';return String(first.donationNo).trim().replace(/\.0+$/,'');}
-  function renderProfile(p){clearPanel();const panel=$('donor-history-panel');if(!panel||!p)return;panel.hidden=false;const hist=Array.isArray(p.donationHistory)?p.donationHistory:[],mobile=Array.isArray(p.mobileVisits)?p.mobileVisits:[],a=p.alerts||{},ordinal=donationOrdinal(hist);panel.appendChild(line(`พบประวัติผู้บริจาคเดิม${ordinal?` · บริจาคครั้งที่ ${ordinal}`:''} · มีประวัติ AI-LIS ${hist.length.toLocaleString()} รายการ${mobile.length?` · Blood Mobile ${mobile.length.toLocaleString()} Visit`:''}${p.bloodGroupHistory?` · หมู่เลือดเดิม ${p.bloodGroupHistory}`:''}`,'preload-history-title'));if(mobile.length)panel.appendChild(listBox('ประวัติ Blood Mobile / ออกหน่วย',mobile,x=>`${x.date||x.ymd||'-'} · DN ${x.dn||'-'}${x.location?` · ${x.location}`:''}${x.status?` · ${x.status}`:''}${x.bag?` · ${x.bag}`:''}`,'preload-history',6));if(hist.length)panel.appendChild(listBox('ประวัติบริจาคจาก AI-LIS ล่าสุด',hist,x=>`${x.date||'-'} · ${x.component||'-'}${x.donationNo?` · ครั้งที่ ${String(x.donationNo).trim().replace(/\.0+$/,'')}`:''}${x.unitNo?` · Unit ${x.unitNo}`:''}`,'preload-history',5));if((a.defers||[]).length)panel.appendChild(listBox(`ติด Defer ปัจจุบัน (${a.defers.length}) — กรุณาตรวจสอบก่อนดำเนินการ`,a.defers,x=>`${x.reason||'ไม่ระบุเหตุผล'}${x.until?` · ถึง ${x.until}`:''}`,'preload-danger',4));if((a.seroNat||[]).length)panel.appendChild(listBox('Sero + NAT ผิดปกติ',a.seroNat,()=>`ให้ติดต่อห้องบริจาคโลหิตในเวลาทำการ เพื่อดูข้อมูลในระบบ LIS ของโรงพยาบาล`,'preload-danger',1));if((a.notes||[]).length)panel.appendChild(listBox(`Donor Note (${a.notes.length})`,a.notes,x=>`${x.note||'ไม่มีข้อความ'}${x.date?` · ${x.date}`:''}`,'preload-note',5));}
+  const bagKey=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const ymdFromItem=x=>String(x?.ymd||'').trim()||valueToYmd(x?.date||'');
+  function combinedHistory(hist,mobile){
+    const ai=(Array.isArray(hist)?hist:[]).map(x=>({...x,source:'AI-LIS'}));
+    const used=new Set();
+    const out=[];
+    for(const m of (Array.isArray(mobile)?mobile:[])){
+      const mb=bagKey(m.bag),my=ymdFromItem(m);
+      let ix=-1;
+      if(mb) ix=ai.findIndex((h,i)=>!used.has(i)&&bagKey(h.unitNo)===mb);
+      if(ix<0&&my&&String(m.status||'').includes('ผ่าน')){
+        const candidates=ai.map((h,i)=>({h,i})).filter(z=>!used.has(z.i)&&ymdFromItem(z.h)===my);
+        if(candidates.length===1) ix=candidates[0].i;
+      }
+      if(ix>=0){
+        used.add(ix);const h=ai[ix];
+        out.push({...h,source:'Mobile + AI-LIS',dn:m.dn||'',location:m.location||'',status:m.status||'',bag:m.bag||h.unitNo||'',date:h.date||m.date||'',ymd:h.ymd||m.ymd||''});
+      }else out.push({date:m.date||m.ymd||'',ymd:m.ymd||valueToYmd(m.date),component:m.component||'',unitNo:m.bag||'',bag:m.bag||'',donationNo:'',donorId:'',group:m.group||'',dn:m.dn||'',location:m.location||'',status:m.status||'',source:m.source==='mobile+lis'?'Mobile + AI-LIS':'Blood Mobile'});
+    }
+    ai.forEach((h,i)=>{if(!used.has(i))out.push(h);});
+    return out.sort((a,b)=>String(ymdFromItem(b)).localeCompare(String(ymdFromItem(a)))||String(b.date||'').localeCompare(String(a.date||'')));
+  }
+  function historyTable(items){
+    const box=document.createElement('div');box.className='preload-alert preload-history';
+    const head=document.createElement('div');head.className='d-flex flex-wrap justify-content-between align-items-center gap-2';
+    const title=document.createElement('div');title.className='fw-bold';title.textContent=`ประวัติย้อนหลังทั้งหมด (${items.length.toLocaleString()} รายการ)`;head.appendChild(title);
+    const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline-primary btn-sm';btn.textContent=items.length>5?`ดูทั้งหมด ${items.length.toLocaleString()} รายการ`:'แสดงทั้งหมด';head.appendChild(btn);box.appendChild(head);
+    const wrap=document.createElement('div');wrap.className='table-responsive mt-2';box.appendChild(wrap);
+    const render=all=>{
+      const rows=all?items:items.slice(0,5);
+      const tbl=document.createElement('table');tbl.className='table table-sm table-bordered align-middle mb-0';
+      tbl.innerHTML='<thead><tr><th style="white-space:nowrap">วันที่</th><th style="white-space:nowrap">ครั้งที่</th><th>รายการ</th><th style="white-space:nowrap">Unit / Bag</th><th>ออกหน่วย</th><th style="white-space:nowrap">แหล่งข้อมูล</th></tr></thead>';
+      const tb=document.createElement('tbody');
+      rows.forEach(x=>{
+        const tr=document.createElement('tr');
+        const unit=String(x.unitNo||x.bag||'').trim();
+        const cant=/บริจาคไม่ได้|ไม่ได้บริจาค/i.test(unit);
+        const cols=[x.date||'-',x.donationNo?String(x.donationNo).replace(/\.0+$/,''):'-',x.component||x.status||'-',cant?'บริจาคไม่ได้':(unit||'-'),[x.dn?`DN ${x.dn}`:'',x.location||''].filter(Boolean).join(' · ')||'-',x.source||'-'];
+        cols.forEach((v,i)=>{const td=document.createElement('td');td.textContent=v;if(i===3&&cant)td.className='text-danger fw-bold';tr.appendChild(td);});tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);wrap.replaceChildren(tbl);
+      btn.textContent=all?'ย่อประวัติ':'ดูทั้งหมด '+items.length.toLocaleString()+' รายการ';btn.dataset.expanded=all?'1':'0';
+    };
+    btn.addEventListener('click',()=>render(btn.dataset.expanded!=='1'));
+    render(items.length<=5);
+    if(items.length<=5)btn.hidden=true;
+    return box;
+  }
+  function renderProfile(p){
+    clearPanel();const panel=$('donor-history-panel');if(!panel||!p)return;panel.hidden=false;
+    const hist=Array.isArray(p.donationHistory)?p.donationHistory:[],mobile=Array.isArray(p.mobileVisits)?p.mobileVisits:[],a=p.alerts||{},ordinal=donationOrdinal(hist);
+    const ids=[...new Set([...(p.donorIdsAll||[]),...(p.donorIds||[])].filter(Boolean))];
+    // คำเตือนต้องอยู่ก่อนประวัติ เพื่อไม่ให้ถูกกลบด้วยรายการย้อนหลัง
+    if((a.defers||[]).length)panel.appendChild(listBox(`ติด Defer ปัจจุบัน (${a.defers.length}) — กรุณาตรวจสอบก่อนดำเนินการ`,a.defers,x=>`${x.reason||'ไม่ระบุเหตุผล'}${x.until?` · ถึง ${x.until}`:''}`,'preload-danger',4));
+    if((a.seroNat||[]).length)panel.appendChild(listBox('Sero + NAT ผิดปกติ',a.seroNat,()=>`ให้ติดต่อห้องบริจาคโลหิตในเวลาทำการ เพื่อดูข้อมูลในระบบ LIS ของโรงพยาบาล`,'preload-danger',1));
+    if((a.notes||[]).length)panel.appendChild(listBox(`Donor Note (${a.notes.length})`,a.notes,x=>`${x.note||'ไม่มีข้อความ'}${x.date?` · ${x.date}`:''}`,'preload-note',5));
+    const summary=document.createElement('div');summary.className='preload-alert preload-history';
+    const title=document.createElement('div');title.className='preload-history-title';title.textContent='พบประวัติผู้บริจาคเดิม';summary.appendChild(title);
+    const grid=document.createElement('div');grid.className='row g-2 mt-1';
+    const cards=[['ครั้งบริจาคสะสม',ordinal?`ครั้งที่ ${ordinal}`:'ไม่พบค่าในรายงาน'],['ประวัติ AI-LIS ที่นำเข้า',`${hist.length.toLocaleString()} รายการ`],['ประวัติ Blood Mobile',`${mobile.length.toLocaleString()} Visit`],['หมู่เลือดเดิม',p.bloodGroupHistory||'-']];
+    cards.forEach(([k,v])=>{const c=document.createElement('div');c.className='col-6 col-lg-3';c.innerHTML=`<div class="border rounded p-2 h-100"><div class="small text-muted">${k}</div><div class="fw-bold">${v}</div></div>`;grid.appendChild(c);});summary.appendChild(grid);
+    if(ids.length){const d=document.createElement('div');d.className='small mt-2';d.innerHTML=`<strong>Donor ID:</strong> ${ids.map(x=>escapeHtml(String(x))).join(', ')}`;summary.appendChild(d);}panel.appendChild(summary);
+    const all=combinedHistory(hist,mobile);if(all.length)panel.appendChild(historyTable(all));
+  }
   async function findDonor(id){const clean=String(id||'').replace(/\D/g,'');if(!/^\d{13}$/.test(clean))return null;if(mem.has(clean))return mem.get(clean);const p=await window.cnmiSupabaseApi.getDonorHistory(clean);if(p)mem.set(clean,p);return p;}
   async function findMany(ids){const clean=[...new Set((ids||[]).map(x=>String(x||'').replace(/\D/g,'')).filter(x=>/^\d{13}$/.test(x)))];const missing=clean.filter(x=>!mem.has(x));if(missing.length){const got=await window.cnmiSupabaseApi.getDonorHistories(missing);Object.entries(got||{}).forEach(([k,v])=>mem.set(k,v));}return Object.fromEntries(clean.filter(x=>mem.has(x)).map(x=>[x,mem.get(x)]));}
   async function upsertBasic(){return;}
