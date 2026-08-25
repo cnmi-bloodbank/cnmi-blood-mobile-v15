@@ -2178,12 +2178,12 @@
 
             <div class="col-md-6">
               <label>อุณหภูมิ</label>
-              <input type="number" step="0.1" id="sc-temp" class="form-control">
+              <input type="text" inputmode="decimal" id="sc-temp" class="form-control" placeholder="เช่น 365 → 36.5" oninput="formatOneDecimalInput(this)" onblur="finalizeOneDecimalInput(this)">
             </div>
 
             <div class="col-md-6">
               <label>ความเข้มเลือด</label>
-              <input type="number" step="0.1" id="sc-hb" class="form-control">
+              <input type="text" inputmode="decimal" id="sc-hb" class="form-control" placeholder="เช่น 145 → 14.5" oninput="formatOneDecimalInput(this)" onblur="finalizeOneDecimalInput(this)">
             </div>
 
             <div class="col-md-6">
@@ -3209,6 +3209,34 @@ async function resetPasswordWithOtp() {
       el.value = formatBpValue(el.value);
     }
 
+    // อุณหภูมิ / Hb: พิมพ์เลข 3 หลักได้เลย เช่น 365 → 36.5, 145 → 14.5
+    // หากพิมพ์จุดเอง เช่น 36.7 หรือ 14.5 ระบบจะคงรูปแบบไว้
+    function formatOneDecimalValue(value, finalize = false) {
+      let raw = String(value ?? "").trim().replace(/,/g, ".");
+      if (!raw) return "";
+
+      // ผู้ใช้พิมพ์ทศนิยมเอง: อนุญาตเลขหน้า 1-2 หลัก และทศนิยม 0-1 หลัก
+      if (/^\d{1,2}\.\d?$/.test(raw)) {
+        if (finalize && raw.endsWith(".")) return raw.slice(0, -1) + ".0";
+        return raw;
+      }
+
+      const digits = raw.replace(/\D/g, "").slice(0, 3);
+      if (!digits) return "";
+      if (digits.length <= 2) return finalize ? `${Number(digits)}.0` : digits;
+      return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+    }
+
+    function formatOneDecimalInput(el) {
+      if (!el) return;
+      el.value = formatOneDecimalValue(el.value, false);
+    }
+
+    function finalizeOneDecimalInput(el) {
+      if (!el || !String(el.value || "").trim()) return;
+      el.value = formatOneDecimalValue(el.value, true);
+    }
+
     function thaiBirthDateForPrint(value) {
       const m = String(value || "").trim().match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
       if (!m) return value || "-";
@@ -3933,7 +3961,11 @@ async function adminResetPassword(username, fullName) {
       };
 
       sData.bp = formatBpValue(sData.bp);
+      sData.temp = formatOneDecimalValue(sData.temp, true);
+      sData.hb = formatOneDecimalValue(sData.hb, true);
       document.getElementById("sc-bp").value = sData.bp;
+      document.getElementById("sc-temp").value = sData.temp;
+      document.getElementById("sc-hb").value = sData.hb;
 
       if (!sData.status) {
         alert("กรุณาเลือกผลคัดกรอง");
