@@ -2354,7 +2354,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.3 - AI-LIS history search hotfix + alerts");
+    console.log("CNMI Blood Donation v15.6.4 - donation number from AI-LIS");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4585,7 +4585,7 @@ async function searchDonorHistory(){
         const mobileLast=Array.isArray(p.mobileVisits)&&p.mobileVisits.length?p.mobileVisits[0]:null;
         const donorIds=Array.isArray(p.donorIds)?p.donorIds.filter(Boolean):[];
         const donorIdLine=donorIds.length?`<div class="small text-muted">Donor ID ${escapeHtml(donorIds.slice(0,4).join(', '))}${donorIds.length>4?' …':''}</div>`:'';
-        const lastLine=last?`<div class="small text-muted">AI-LIS ล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}</div>`:(mobileLast?`<div class="small text-muted">Blood Mobile ล่าสุด ${escapeHtml(mobileLast.date||mobileLast.ymd||'-')}${mobileLast.dn?' · DN '+escapeHtml(mobileLast.dn):''}${mobileLast.location?' · '+escapeHtml(mobileLast.location):''}</div>`:'');
+        const lastLine=last?`<div class="small text-muted">AI-LIS ล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}${last.donationNo?' · บริจาคครั้งที่ '+escapeHtml(String(last.donationNo).replace(/\.0+$/,'')):''}</div>`:(mobileLast?`<div class="small text-muted">Blood Mobile ล่าสุด ${escapeHtml(mobileLast.date||mobileLast.ymd||'-')}${mobileLast.dn?' · DN '+escapeHtml(mobileLast.dn):''}${mobileLast.location?' · '+escapeHtml(mobileLast.location):''}</div>`:'');
         const identityLine=canRegister?`เลขบัตร ${escapeHtml(displayIdentity)}`:`รหัสเดิม ${escapeHtml(displayIdentity)} <span class="badge text-bg-warning">Legacy</span>`;
         const actionButton=canRegister?`<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button>`:`<div class="alert alert-warning py-1 px-2 small mt-2 mb-0">ประวัติเดิมรายการนี้ไม่มีเลขบัตรประชาชน 13 หลักในไฟล์เก่า จึงแสดงประวัติได้ แต่ไม่เติมลงทะเบียนใหม่อัตโนมัติ</div>`;
         return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">${identityLine}${p.phone?' · '+escapeHtml(p.phone):''}</div>${donorIdLine}${lastLine}</div>${badge}</div>${warnings.join('')}${actionButton}</div>`;
