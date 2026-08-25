@@ -2372,7 +2372,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.8 - A4 alignment + screening bag reminder");
+    console.log("CNMI Blood Donation v15.6.9 - Auto New/Recent donor type");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3859,6 +3859,47 @@ async function adminResetPassword(username, fullName) {
       if (bagReminder) bagReminder.style.display = "none";
     }
 
+    function hasPriorSuccessfulDonation(profile, currentDn = "") {
+      const aiHistory = Array.isArray(profile?.donationHistory) ? profile.donationHistory : [];
+      const mobileHistory = Array.isArray(profile?.mobileVisits) ? profile.mobileVisits : [];
+
+      const aiSuccess = aiHistory.some(item => {
+        const unit = String(item?.unitNo || item?.bag || "").trim();
+        if (!unit || unit === "-") return false;
+        return !unit.toLowerCase().includes("บริจาคไม่ได้");
+      });
+
+      const mobileSuccess = mobileHistory.some(item => {
+        if (currentDn && String(item?.dn || "") === String(currentDn)) return false;
+        const status = String(item?.status || "").trim();
+        const bag = String(item?.bag || item?.unitNo || "").trim();
+        return status === "ผ่าน" || (!!bag && bag !== "-" && !bag.toLowerCase().includes("บริจาคไม่ได้"));
+      });
+
+      return aiSuccess || mobileSuccess;
+    }
+
+    async function autoSelectDonorType(row) {
+      const typeEl = document.getElementById("sc-type");
+      if (!typeEl) return;
+
+      // Fallback จากครั้งที่บริจาค หากโหลดประวัติไม่ได้ชั่วคราว
+      const donationNo = Number(String(row?.donationNo || "").replace(/\.0+$/, ""));
+      let suggested = Number.isFinite(donationNo) && donationNo > 1 ? "Recent" : "New";
+
+      try {
+        const idCard = String(row?.dbIdCard || row?.idCard || "").replace(/\D/g, "");
+        if (/^\d{13}$/.test(idCard) && window.cnmiPreload?.findDonor) {
+          const profile = await window.cnmiPreload.findDonor(idCard);
+          if (profile) suggested = hasPriorSuccessfulDonation(profile, row?.dn || "") ? "Recent" : "New";
+        }
+      } catch (err) {
+        console.warn("autoSelectDonorType fallback", err);
+      }
+
+      typeEl.value = suggested;
+    }
+
     function openScreening(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
@@ -3867,6 +3908,9 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("modal-dn").value = row.dn || "";
       document.getElementById("modal-name").innerText = row.name || "";
       document.getElementById("modal-row-json").value = encodedRow || "";
+
+      // เลือก New / Recent อัตโนมัติจากประวัติจริง แต่เจ้าหน้าที่ยังแก้ได้
+      autoSelectDonorType(row);
 
       new bootstrap.Modal(document.getElementById("screeningModal")).show();
     }
