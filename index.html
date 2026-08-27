@@ -1887,9 +1887,8 @@
             <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
           </div>
           <div class="id-input-actions">
-            <button type="button" class="btn btn-primary mobile-camera-btn" onclick="openSmartCaptureModal()">📷 ถ่ายรูป / เลือกรูปจากมือถือ</button>
-            <button type="button" class="btn btn-outline-secondary mobile-camera-btn" onclick="triggerIdDocPicker()">🪪 อ่านจากรูปบัตร/ใบขับขี่</button>
-            <input type="file" id="id-doc-input" accept="image/*" capture="environment" hidden onchange="handleIdDocFile(event)">
+            <button id="scan-id-doc-btn" type="button" class="btn btn-primary mobile-camera-btn" onclick="scanIdDocument()">🖨️ สแกนบัตร / ใบขับขี่</button>
+            <button type="button" class="btn btn-outline-secondary mobile-camera-btn" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
             <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
             <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
           </div>
@@ -2129,6 +2128,7 @@
             </div>
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
             <button type="button" class="btn btn-outline-secondary" onclick="downloadLisAssistantBundle()">ดาวน์โหลด LIS Assistant</button>
+            <a class="btn btn-outline-primary" href="CNMI-Scan-Bridge-v1.0.zip" download>🖨️ ดาวน์โหลด Scan Bridge</a>
           </div>
           <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.12 → ค้น/ยืนยันคนก่อน Auto → ส่วนที่ 1 ถึงอาชีพ/โทรศัพท์ → ส่วนที่ 2: ผ่าน = ยิงถุงยืนยัน + Bag/V/Group/Bag Lot · ไม่ผ่าน = Auto 5 ค่าคัดกรองแล้วจบ</div>
           <hr class="my-3">
@@ -2186,13 +2186,14 @@
   <div class="main-card">
     <div class="guide-grid">
       <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร ชื่อ Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">กรอกหรืออ่านเลขบัตร 13 หลัก → ระบบดึงประวัติเดิม → ตรวจข้อมูล → ถ่ายรูปได้ถ้าต้องการ → บันทึกและพิมพ์ใบสมัคร</p></div>
+      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">อ่านบัตรจากชิป หรือกดสแกนบัตร → ระบบอ่านเลข 13 หลักและค้นประวัติเดิม → ตรวจข้อมูล → ถ่ายรูปผู้บริจาคได้ถ้าต้องการ → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
       <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → ดาวน์โหลด LIS Assistant เมื่อต้องใช้เครื่องใหม่</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → เครื่องใหม่ให้ดาวน์โหลด LIS Assistant และ Scan Bridge</p></div>
+      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรบนกระจก Flatbed → หน้า Register กด สแกนบัตร / ใบขับขี่</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
     <div class="guide-note"><strong>LIS Assistant:</strong> คนผ่านต้องยืนยัน Barcode ถุงก่อน Auto ส่วนที่ 2 ส่วนคนไม่ผ่าน Auto เฉพาะ 5 ค่าคัดกรองและไม่แตะ Bag / Group / Bag Lot</div>
@@ -5826,6 +5827,88 @@ function closeCameraCapture(){
 }
 window.closeCameraCapture=closeCameraCapture;
 
+
+async function trimScannedDocumentDataUrl(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onerror=()=>reject(new Error('เปิดภาพสแกนไม่สำเร็จ'));
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width, oh=img.naturalHeight||img.height;
+        if(!ow||!oh) return resolve(dataUrl);
+        const maxAnalyze=900;
+        const scale=Math.min(maxAnalyze/ow,maxAnalyze/oh,1);
+        const aw=Math.max(1,Math.round(ow*scale)), ah=Math.max(1,Math.round(oh*scale));
+        const a=document.createElement('canvas');a.width=aw;a.height=ah;
+        const actx=a.getContext('2d',{willReadFrequently:true});
+        actx.drawImage(img,0,0,aw,ah);
+        const px=actx.getImageData(0,0,aw,ah).data;
+        let minX=aw,minY=ah,maxX=-1,maxY=-1;
+        for(let y=0;y<ah;y+=2){
+          for(let x=0;x<aw;x+=2){
+            const i=(y*aw+x)*4,r=px[i],g=px[i+1],b=px[i+2];
+            const nonWhite=(r<238||g<238||b<238) && !(Math.abs(r-g)<5&&Math.abs(g-b)<5&&r>220);
+            if(nonWhite){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;}
+          }
+        }
+        if(maxX<0||maxY<0) return resolve(dataUrl);
+        const padX=Math.round((maxX-minX)*0.04), padY=Math.round((maxY-minY)*0.04);
+        minX=Math.max(0,minX-padX);minY=Math.max(0,minY-padY);maxX=Math.min(aw-1,maxX+padX);maxY=Math.min(ah-1,maxY+padY);
+        let sx=Math.round(minX/scale),sy=Math.round(minY/scale),sw=Math.max(1,Math.round((maxX-minX+1)/scale)),sh=Math.max(1,Math.round((maxY-minY+1)/scale));
+        sx=Math.max(0,Math.min(ow-1,sx));sy=Math.max(0,Math.min(oh-1,sy));sw=Math.min(sw,ow-sx);sh=Math.min(sh,oh-sy);
+        const maxW=1800,maxH=1400,ratio=Math.min(maxW/sw,maxH/sh,1);
+        const w=Math.max(1,Math.round(sw*ratio)),h=Math.max(1,Math.round(sh*ratio));
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,sx,sy,sw,sh,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.9));
+      }catch(err){resolve(dataUrl);}
+    };
+    img.src=dataUrl;
+  });
+}
+
+async function scanIdDocument(){
+  const btn=document.getElementById('scan-id-doc-btn');
+  const oldText=btn?.innerHTML;
+  try{
+    if(btn){btn.disabled=true;btn.textContent='กำลังสแกน...';}
+    setDocOcrStatus('กำลังเรียกเครื่องสแกน...','busy');
+    let payload=null,lastErr=null;
+    for(const base of ['http://127.0.0.1:27101','http://localhost:27101']){
+      try{
+        const ctl=new AbortController();
+        const tm=setTimeout(()=>ctl.abort(),180000);
+        const res=await fetch(base+'/scan',{method:'GET',cache:'no-store',signal:ctl.signal,targetAddressSpace:'loopback'});
+        clearTimeout(tm);
+        const j=await res.json();
+        if(j?.ok&&j?.imageData){payload=j;break;}
+        if(j?.cancelled) throw new Error('ยกเลิกการสแกน');
+        lastErr=new Error(j?.message||'สแกนไม่สำเร็จ');
+      }catch(e){lastErr=e;}
+    }
+    if(!payload) throw lastErr||new Error('ไม่พบ CNMI Scan Bridge');
+    setDocOcrStatus('สแกนสำเร็จ · กำลังอ่านเลขบัตร...','busy');
+    const cropped=await trimScannedDocumentDataUrl(payload.imageData);
+    payload.imageData='';
+    await processIdDocumentDataUrl(cropped);
+    setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
+  }catch(err){
+    console.error('scanIdDocument failed',err);
+    const msg=String(err?.message||err||'');
+    if(/ยกเลิก/.test(msg)) setDocOcrStatus('ยกเลิกการสแกน','muted');
+    else if(/Scan Bridge|fetch|Failed to fetch|abort/i.test(msg)){
+      setDocOcrStatus('ไม่พบ Scan Bridge · เปิด Start-CNMI-Scan-Bridge.cmd บนคอมนี้ก่อน','error');
+      alert('ยังเชื่อมต่อเครื่องสแกนไม่ได้\nกรุณาเปิด CNMI Scan Bridge บนคอมเครื่องนี้ แล้วลองอีกครั้ง');
+    }else{
+      setDocOcrStatus('สแกน/อ่านบัตรไม่สำเร็จ: '+msg,'error');
+      alert('สแกน/อ่านบัตรไม่สำเร็จ\n'+msg);
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=oldText||'🖨️ สแกนบัตร / ใบขับขี่';}
+  }
+}
+window.scanIdDocument=scanIdDocument;
+
 function setDocOcrStatus(message, tone='muted') {
   const el = document.getElementById('doc-ocr-status');
   if (!el) return;
@@ -5883,28 +5966,19 @@ async function recognizeIdDocument(file){
   return { rawText, idCard, birthDate };
 }
 async function handleIdDocFile(event){
-  const file = event?.target?.files?.[0];
+  const file=event?.target?.files?.[0];
   if(!file) return;
   try{
-    setDocOcrStatus('กำลังอ่านข้อมูลจากรูปเอกสาร... ใช้เวลาสักครู่', 'busy');
-    const parsed = await recognizeIdDocument(file);
-    if(parsed.idCard){
-      applyOcrParsedFields(parsed);
-      setDocOcrStatus('อ่านเลขบัตรจากรูปสำเร็จแล้ว · ระบบกำลังค้นประวัติเดิมให้', 'ok');
-      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
-      const hasName = !!String(document.getElementById('fname')?.value || '').trim();
-      if(!hasName) setDocOcrStatus('พบเลขบัตรจากรูปแล้ว แต่ยังไม่พบประวัติเดิม กรุณาตรวจสอบและกรอกชื่อ/ข้อมูลที่เหลือเพิ่ม', 'warn');
-    } else {
-      setDocOcrStatus('ยังอ่านเลขบัตรประชาชน 13 หลักจากรูปไม่ได้ ลองถ่ายใหม่ให้ตรงขึ้นและแสงสว่างมากขึ้น หรือกรอกเอง', 'error');
-      alert('อ่านเลขบัตรจากรูปไม่ได้ชัดเจน\nแนะนำให้ถ่ายใหม่ตรง ๆ ไม่เอียง ไม่มีแสงสะท้อน หรือกรอกเอง');
-    }
+    setDocOcrStatus('กำลังอ่านไฟล์ Scan...','busy');
+    const raw=await loadImageFileAsCompressedDataUrl(file,{maxWidth:2600,maxHeight:2600,quality:0.92});
+    const cropped=await trimScannedDocumentDataUrl(raw);
+    await processIdDocumentDataUrl(cropped);
+    setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
   }catch(err){
-    console.error('handleIdDocFile failed', err);
-    setDocOcrStatus('อ่านรูปเอกสารไม่สำเร็จ: ' + (err.message || err), 'error');
-    alert('อ่านรูปเอกสารไม่สำเร็จ\n' + (err.message || err));
-  }finally{
-    if(event?.target) event.target.value='';
-  }
+    console.error('handleIdDocFile failed',err);
+    setDocOcrStatus('อ่านไฟล์ Scan ไม่สำเร็จ: '+(err.message||err),'error');
+    alert('อ่านไฟล์ Scan ไม่สำเร็จ\n'+(err.message||err));
+  }finally{if(event?.target)event.target.value='';}
 }
 window.handleIdDocFile=handleIdDocFile;
 
@@ -6122,11 +6196,11 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
           <div class="col-md-6">
             <div class="camera-choice-card">
-              <div class="camera-choice-title">อ่านจากรูปบัตร / ใบขับขี่</div>
-              <div class="camera-choice-sub">ใช้ช่วยอ่านเลขบัตรประชาชนจากรูปภาพ แล้วระบบจะลองค้นประวัติเดิมให้อัตโนมัติ</div>
+              <div class="camera-choice-title">สแกนบัตร / ใบขับขี่</div>
+              <div class="camera-choice-sub">สแกนจากเครื่องที่ต่อกับคอม แล้วระบบอ่านเลข 13 หลักเพื่อค้นประวัติเดิม</div>
               <div class="camera-choice-actions">
-                <button type="button" class="btn btn-primary" onclick="triggerIdDocPicker(true)">🪪 เปิดกล้องถ่ายเอกสาร</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="triggerIdDocPicker(false)">🖼️ เลือกรูปเอกสารจากเครื่อง</button>
+                <button type="button" class="btn btn-primary" onclick="closeSmartCaptureModal();scanIdDocument()">🖨️ สแกนเอกสาร</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="triggerIdDocPicker(false)">🖼️ เลือกไฟล์ Scan</button>
               </div>
             </div>
           </div>
