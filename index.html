@@ -1635,6 +1635,52 @@
   .visit-photo-box-large img { height:220px !important; }
   .visit-photo-empty-large { min-height:220px !important; }
 }
+
+/* v15.6.37: compact ID actions + balanced register footer */
+.register-id-line{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+  width:100%;
+}
+.register-id-line .form-control{
+  flex:1 1 auto;
+  min-width:260px;
+}
+.register-id-line .btn{
+  white-space:nowrap;
+  border-radius:10px;
+  padding-left:16px;
+  padding-right:16px;
+  font-weight:700;
+}
+.register-final-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  flex-wrap:wrap;
+  padding:10px 0 4px;
+}
+.register-final-btn{
+  width:300px;
+  min-height:54px;
+  border-radius:14px;
+  font-size:1.05rem;
+  font-weight:800;
+  box-shadow:0 6px 16px rgba(0,0,0,.10);
+}
+.register-final-btn:hover{ transform:translateY(-1px); }
+@media (max-width: 1100px){
+  .register-id-line{ flex-wrap:wrap; }
+  .register-id-line .form-control{ flex:1 1 100%; }
+}
+@media (max-width: 700px){
+  .register-id-line .btn{ flex:1 1 100%; }
+  .register-final-actions{ gap:10px; }
+  .register-final-btn{ width:100%; max-width:360px; }
+}
+
 </style>
 </head>
 
@@ -1882,16 +1928,14 @@
       <div class="row g-3">
         <div class="col-md-12">
           <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
-          <div class="input-group input-group-lg">
-            <input type="text" id="id_card" class="form-control" required autofocus inputmode="numeric" autocomplete="off">
-            <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
+          <div class="register-id-line">
+            <input type="text" id="id_card" class="form-control form-control-lg" required autofocus inputmode="numeric" autocomplete="off">
+            <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
+            <button id="scan-id-doc-btn" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
           </div>
-          <div class="id-input-actions">
-            <button id="scan-id-doc-btn" type="button" class="btn btn-primary mobile-camera-btn" onclick="scanIdDocument()">🖨️ สแกนบัตร / ใบขับขี่</button>
-            <button type="button" class="btn btn-outline-secondary mobile-camera-btn" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
-            <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
-            <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
-          </div>
+          <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
+          <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
           <div id="card-reader-status" class="register-status-line text-muted"></div>
           <div id="doc-ocr-status" class="register-status-line"></div>
           <div id="preload-register-status" class="register-status-line text-muted"></div>
@@ -2018,9 +2062,9 @@
         </div>
 
         <div class="col-md-12 mt-3">
-          <div class="d-flex gap-2">
-            <button id="save-btn" class="btn btn-danger btn-lg flex-grow-1" onclick="saveData()">✅ บันทึกและพิมพ์ใบสมัคร A4</button>
-            <button class="btn btn-outline-secondary btn-lg" onclick="clearForm()">🧹 ล้างข้อมูล</button>
+          <div class="register-final-actions">
+            <button id="save-btn" class="btn btn-success register-final-btn" onclick="saveData()">✅ บันทึกและพิมพ์ใบสมัคร A4</button>
+            <button class="btn btn-danger register-final-btn" onclick="clearForm()">🧹 ล้างข้อมูล</button>
           </div>
         </div>
                 </div>
@@ -2128,7 +2172,7 @@
             </div>
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
             <button type="button" class="btn btn-outline-secondary" onclick="downloadLisAssistantBundle()">ดาวน์โหลด LIS Assistant</button>
-            <a class="btn btn-outline-primary" href="CNMI-Scan-Bridge-v1.0.zip" download>🖨️ ดาวน์โหลด Scan Bridge</a>
+            <a class="btn btn-outline-primary" href="CNMI-Scan-Bridge-v1.2.zip" download>🖨️ ดาวน์โหลด Scan Bridge v1.2</a>
           </div>
           <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.12 → ค้น/ยืนยันคนก่อน Auto → ส่วนที่ 1 ถึงอาชีพ/โทรศัพท์ → ส่วนที่ 2: ผ่าน = ยิงถุงยืนยัน + Bag/V/Group/Bag Lot · ไม่ผ่าน = Auto 5 ค่าคัดกรองแล้วจบ</div>
           <hr class="my-3">
@@ -2193,7 +2237,7 @@
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
       <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → เครื่องใหม่ให้ดาวน์โหลด LIS Assistant และ Scan Bridge</p></div>
-      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรบนกระจก Flatbed → หน้า Register กด สแกนบัตร / ใบขับขี่</p></div>
+      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรชิดมุมซ้ายบนของกระจก Flatbed → กด สแกนบัตร/ใบขับขี่ → ระบบสแกนและย่อภาพอัตโนมัติก่อน OCR</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
     <div class="guide-note"><strong>LIS Assistant:</strong> คนผ่านต้องยืนยัน Barcode ถุงก่อน Auto ส่วนที่ 2 ส่วนคนไม่ผ่าน Auto เฉพาะ 5 ค่าคัดกรองและไม่แตะ Bag / Group / Bag Lot</div>
