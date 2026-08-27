@@ -1552,6 +1552,21 @@
   .sidebar-collapse-btn { display: none !important; }
 }
 
+/* v15.6.32: real USB webcam capture */
+.camera-live-shell { background:#10151d; border-radius:16px; overflow:hidden; min-height:360px; display:flex; align-items:center; justify-content:center; position:relative; }
+.camera-live-video, .camera-shot-preview { width:100%; max-height:62vh; object-fit:contain; background:#10151d; }
+.camera-live-video { transform:scaleX(-1); }
+.camera-shot-preview { display:none; }
+.camera-permission-note { font-size:.86rem; color:#63778b; }
+.camera-device-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.camera-device-row select { max-width:420px; }
+.camera-controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.camera-controls .btn { min-width:130px; }
+.donor-photo-actions .btn { border-radius:10px; }
+@media (max-width:768px) {
+  .camera-live-shell { min-height:260px; }
+  .camera-controls .btn { width:100%; }
+}
 </style>
 </head>
 
@@ -1846,9 +1861,10 @@
               </div>
             </div>
             <div class="donor-photo-actions">
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerDonorPhotoPicker()">📸 ถ่ายรูป / เลือกรูป</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="openCameraCapture('donor')">📷 เปิดกล้อง</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerDonorPhotoPicker()">🖼️ เลือกรูป</button>
               <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้รูปนี้</button>
-              <input type="file" id="donor-photo-input" accept="image/*" capture="environment" hidden onchange="handleDonorPhotoFile(event)">
+              <input type="file" id="donor-photo-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
             </div>
             <div id="donor-photo-status" class="donor-photo-note">ไม่บังคับถ่ายรูป</div>
           </div>
@@ -5722,6 +5738,172 @@ async function selectHistoryDonor(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+
+const cnmiCameraState = { stream:null, mode:'donor', capturedDataUrl:'', selectedDeviceId:'', modal:null };
+window.cnmiCameraState = cnmiCameraState;
+
+function getUsbCameraModal(){
+  const el=document.getElementById('usbCameraModal');
+  if(!el || !window.bootstrap?.Modal) return null;
+  return bootstrap.Modal.getOrCreateInstance(el);
+}
+
+function stopCameraStream(){
+  try{ cnmiCameraState.stream?.getTracks?.().forEach(track=>track.stop()); }catch{}
+  cnmiCameraState.stream=null;
+  const video=document.getElementById('usb-camera-video');
+  if(video) video.srcObject=null;
+}
+
+async function listCameraDevices(activeId=''){
+  const select=document.getElementById('usb-camera-select');
+  if(!select || !navigator.mediaDevices?.enumerateDevices) return;
+  try{
+    const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    const current=activeId || cnmiCameraState.stream?.getVideoTracks?.()[0]?.getSettings?.().deviceId || '';
+    select.innerHTML='';
+    devices.forEach((d,i)=>{
+      const opt=document.createElement('option');
+      opt.value=d.deviceId;
+      opt.textContent=d.label || `กล้อง ${i+1}`;
+      if(d.deviceId===current) opt.selected=true;
+      select.appendChild(opt);
+    });
+    select.disabled=devices.length<=1;
+  }catch(err){ console.warn('enumerateDevices failed',err); }
+}
+
+async function startCameraStream(deviceId=''){
+  const status=document.getElementById('usb-camera-status');
+  const video=document.getElementById('usb-camera-video');
+  if(!navigator.mediaDevices?.getUserMedia){
+    if(status) status.textContent='Browser นี้ไม่รองรับการเปิดกล้องจากเว็บ';
+    throw new Error('Browser นี้ไม่รองรับ Camera API');
+  }
+  stopCameraStream();
+  if(status) status.textContent='กำลังเปิดกล้อง...';
+  const videoConstraint=deviceId
+    ? {deviceId:{exact:deviceId},width:{ideal:1280},height:{ideal:720}}
+    : {width:{ideal:1280},height:{ideal:720}};
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:videoConstraint,audio:false});
+    cnmiCameraState.stream=stream;
+    cnmiCameraState.selectedDeviceId=stream.getVideoTracks?.()[0]?.getSettings?.().deviceId || deviceId || '';
+    if(video){ video.srcObject=stream; await video.play().catch(()=>{}); }
+    await listCameraDevices(cnmiCameraState.selectedDeviceId);
+    const label=stream.getVideoTracks?.()[0]?.label || 'กล้องพร้อมใช้งาน';
+    if(status) status.textContent=label;
+  }catch(err){
+    console.error('startCameraStream failed',err);
+    let msg='เปิดกล้องไม่สำเร็จ';
+    if(err?.name==='NotAllowedError') msg='Chrome ยังไม่ได้รับอนุญาตให้ใช้กล้อง — กดไอคอนรูปกล้อง/แม่กุญแจข้าง URL แล้วอนุญาต Camera';
+    else if(err?.name==='NotFoundError') msg='ไม่พบกล้องในเครื่อง — ตรวจสาย USB แล้วลองใหม่';
+    else if(err?.name==='NotReadableError') msg='กล้องอาจกำลังถูกโปรแกรมอื่นใช้งานอยู่ — ปิด Camera/Teams/Zoom แล้วลองใหม่';
+    if(status) status.textContent=msg;
+    throw new Error(msg);
+  }
+}
+
+async function openCameraCapture(mode='donor'){
+  cnmiCameraState.mode=mode==='document'?'document':'donor';
+  cnmiCameraState.capturedDataUrl='';
+  const title=document.getElementById('usb-camera-title');
+  if(title) title.textContent=cnmiCameraState.mode==='document'?'🪪 ถ่ายรูปบัตร / ใบขับขี่':'📷 ถ่ายรูปผู้บริจาค';
+  retakeCameraFrame(false);
+  getUsbCameraModal()?.show();
+  try{ await startCameraStream(cnmiCameraState.selectedDeviceId || ''); }
+  catch(err){ /* status already shown */ }
+}
+window.openCameraCapture=openCameraCapture;
+
+async function changeCameraDevice(deviceId){
+  if(!deviceId) return;
+  cnmiCameraState.selectedDeviceId=deviceId;
+  try{ await startCameraStream(deviceId); }
+  catch(err){ alert(err.message || err); }
+}
+window.changeCameraDevice=changeCameraDevice;
+
+function cameraCanvasDataUrl(maxWidth=800,maxHeight=800,quality=.86){
+  const video=document.getElementById('usb-camera-video');
+  const vw=video?.videoWidth||0, vh=video?.videoHeight||0;
+  if(!vw||!vh) throw new Error('กล้องยังไม่พร้อม กรุณารอสักครู่แล้วลองอีกครั้ง');
+  const ratio=Math.min(maxWidth/vw,maxHeight/vh,1);
+  const w=Math.max(1,Math.round(vw*ratio)), h=Math.max(1,Math.round(vh*ratio));
+  const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d'); ctx.drawImage(video,0,0,w,h);
+  return canvas.toDataURL('image/jpeg',quality);
+}
+
+function captureCameraFrame(){
+  try{
+    const isDoc=cnmiCameraState.mode==='document';
+    const dataUrl=cameraCanvasDataUrl(isDoc?1600:720,isDoc?1200:720,isDoc?.9:.84);
+    cnmiCameraState.capturedDataUrl=dataUrl;
+    const video=document.getElementById('usb-camera-video');
+    const shot=document.getElementById('usb-camera-shot');
+    if(shot){shot.src=dataUrl;shot.style.display='block';}
+    if(video) video.style.display='none';
+    document.getElementById('usb-camera-capture-btn').style.display='none';
+    document.getElementById('usb-camera-retake-btn').style.display='inline-block';
+    document.getElementById('usb-camera-use-btn').style.display='inline-block';
+  }catch(err){ alert(err.message||err); }
+}
+window.captureCameraFrame=captureCameraFrame;
+
+function retakeCameraFrame(clear=true){
+  if(clear) cnmiCameraState.capturedDataUrl='';
+  const video=document.getElementById('usb-camera-video');
+  const shot=document.getElementById('usb-camera-shot');
+  if(video) video.style.display='block';
+  if(shot){shot.style.display='none';shot.src='';}
+  const capture=document.getElementById('usb-camera-capture-btn');
+  const retake=document.getElementById('usb-camera-retake-btn');
+  const use=document.getElementById('usb-camera-use-btn');
+  if(capture) capture.style.display='inline-block';
+  if(retake) retake.style.display='none';
+  if(use) use.style.display='none';
+}
+window.retakeCameraFrame=retakeCameraFrame;
+
+async function processIdDocumentDataUrl(dataUrl){
+  if(!window.Tesseract?.recognize) throw new Error('โหลดเครื่องมืออ่านรูปไม่สำเร็จ กรุณากรอกเลขบัตรเอง');
+  setDocOcrStatus('กำลังอ่านข้อมูลจากรูปเอกสาร... ใช้เวลาสักครู่','busy');
+  const {data}=await window.Tesseract.recognize(dataUrl,'tha+eng');
+  const rawText=String(data?.text||'');
+  const parsed={rawText,idCard:extractThirteenDigitId(rawText),birthDate:extractBirthDateFromText(rawText)};
+  if(!parsed.idCard){
+    setDocOcrStatus('ยังอ่านเลขบัตรประชาชน 13 หลักจากรูปไม่ได้ กรุณาถ่ายใหม่หรือกรอกเอง','error');
+    throw new Error('อ่านเลขบัตรจากรูปไม่ได้ชัดเจน');
+  }
+  applyOcrParsedFields(parsed);
+  setDocOcrStatus('อ่านเลขบัตรจากรูปสำเร็จแล้ว · ระบบกำลังค้นประวัติเดิมให้','ok');
+  await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+  return parsed;
+}
+
+async function useCapturedCameraImage(){
+  const dataUrl=cnmiCameraState.capturedDataUrl;
+  if(!dataUrl) return alert('กรุณากดถ่ายรูปก่อน');
+  try{
+    if(cnmiCameraState.mode==='document'){
+      await processIdDocumentDataUrl(dataUrl);
+    }else{
+      setDonorPhotoPreview(dataUrl,{markDirty:true,loadedForIdCard:String(document.getElementById('id_card')?.value||'').replace(/\D/g,'')});
+    }
+    closeCameraCapture();
+  }catch(err){ alert(err.message||err); }
+}
+window.useCapturedCameraImage=useCapturedCameraImage;
+
+function closeCameraCapture(){
+  stopCameraStream();
+  cnmiCameraState.capturedDataUrl='';
+  retakeCameraFrame(false);
+  getUsbCameraModal()?.hide();
+}
+window.closeCameraCapture=closeCameraCapture;
+
 function setDocOcrStatus(message, tone='muted') {
   const el = document.getElementById('doc-ocr-status');
   if (!el) return;
@@ -5736,11 +5918,15 @@ function getSmartCaptureModal(){
 function openSmartCaptureModal(){ getSmartCaptureModal()?.show(); }
 window.openSmartCaptureModal=openSmartCaptureModal;
 function closeSmartCaptureModal(){ getSmartCaptureModal()?.hide(); }
-function triggerDonorPhotoCapture(){ closeSmartCaptureModal(); triggerDonorPhotoPicker(); }
+function triggerDonorPhotoCapture(){ closeSmartCaptureModal(); openCameraCapture('donor'); }
 window.triggerDonorPhotoCapture=triggerDonorPhotoCapture;
 function triggerDonorPhotoGallery(){ closeSmartCaptureModal(); document.getElementById('donor-photo-gallery-input')?.click(); }
 window.triggerDonorPhotoGallery=triggerDonorPhotoGallery;
-function triggerIdDocPicker(useCamera=true){ closeSmartCaptureModal(); document.getElementById(useCamera ? 'id-doc-input' : 'id-doc-gallery-input')?.click(); }
+function triggerIdDocPicker(useCamera=true){
+  closeSmartCaptureModal();
+  if(useCamera) openCameraCapture('document');
+  else document.getElementById('id-doc-gallery-input')?.click();
+}
 window.triggerIdDocPicker=triggerIdDocPicker;
 function normalizeThaiDigits(str=''){ const th='๐๑๒๓๔๕๖๗๘๙'; return String(str||'').replace(/[๐-๙]/g,ch=>String(th.indexOf(ch))); }
 function extractThirteenDigitId(text=''){
@@ -5947,6 +6133,10 @@ function downloadLisAssistantBundle() {
     alert('สร้างไฟล์ LIS Assistant ไม่สำเร็จ กรุณาแจ้ง Admin');
   }
 }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('usbCameraModal')?.addEventListener('hidden.bs.modal',()=>stopCameraStream());
+});
 </script>
 <div class="modal fade" id="photoLightboxModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -5957,6 +6147,34 @@ function downloadLisAssistantBundle() {
       </div>
       <div class="modal-body photo-lightbox-body">
         <img id="photoLightboxImage" class="photo-lightbox-img" alt="รูปผู้บริจาคแบบขยาย">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="usbCameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="usb-camera-title">📷 ถ่ายรูปผู้บริจาค</h5>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeCameraCapture()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="camera-device-row mb-2">
+          <label for="usb-camera-select" class="fw-bold">กล้อง:</label>
+          <select id="usb-camera-select" class="form-select form-select-sm" onchange="changeCameraDevice(this.value)"></select>
+          <span id="usb-camera-status" class="camera-permission-note">กำลังเตรียมกล้อง...</span>
+        </div>
+        <div class="camera-live-shell">
+          <video id="usb-camera-video" class="camera-live-video" autoplay playsinline muted></video>
+          <img id="usb-camera-shot" class="camera-shot-preview" alt="ภาพที่ถ่าย">
+        </div>
+        <div class="camera-controls">
+          <button id="usb-camera-capture-btn" type="button" class="btn btn-primary btn-lg" onclick="captureCameraFrame()">📸 ถ่ายรูป</button>
+          <button id="usb-camera-retake-btn" type="button" class="btn btn-outline-secondary btn-lg" onclick="retakeCameraFrame()" style="display:none;">↩ ถ่ายใหม่</button>
+          <button id="usb-camera-use-btn" type="button" class="btn btn-success btn-lg" onclick="useCapturedCameraImage()" style="display:none;">✓ ใช้รูปนี้</button>
+          <button type="button" class="btn btn-outline-danger btn-lg" onclick="closeCameraCapture()">ยกเลิก</button>
+        </div>
+        <div class="camera-permission-note mt-2">ครั้งแรก Chrome จะถามสิทธิ์ Camera ให้เลือก “Allow / อนุญาต” หากมีกล้องหลายตัวสามารถเลือกจากช่องด้านบนได้</div>
       </div>
     </div>
   </div>
