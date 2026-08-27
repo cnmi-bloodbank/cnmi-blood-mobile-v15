@@ -1596,6 +1596,45 @@
 @media (max-width:768px){
   #page-register label:not(.form-check-label){font-size:1rem;}
 }
+/* v15.6.34 — viewport-fixed sidebar + clear photo in donor detail */
+@media (min-width: 769px) {
+  .app-layout { display:block !important; min-height:100vh; }
+  .sidebar,
+  .sidebar:hover,
+  .sidebar.is-collapsed,
+  .sidebar.is-collapsed:hover {
+    position:fixed !important;
+    top:0 !important;
+    bottom:0 !important;
+    left:0 !important;
+    height:100vh !important;
+    max-height:100vh !important;
+    z-index:1030 !important;
+  }
+  .app-main {
+    margin-left:var(--sidebar-expanded-width) !important;
+    width:calc(100% - var(--sidebar-expanded-width)) !important;
+    transition:margin-left .20s ease, width .20s ease !important;
+  }
+  .sidebar.is-collapsed ~ .app-main {
+    margin-left:var(--sidebar-collapsed-width) !important;
+    width:calc(100% - var(--sidebar-collapsed-width)) !important;
+  }
+}
+.visit-detail-modal-content { border-radius:18px; overflow:hidden; }
+.visit-detail-photo-panel { border:1px solid #cfe0f5; border-radius:16px; background:#f7fbff; padding:12px; }
+.visit-detail-photo-title { font-size:1rem; font-weight:800; color:#164f94; }
+.visit-detail-photo-hint { font-size:.82rem; color:#61788f; margin:2px 0 8px; }
+.visit-photo-box-large { width:100% !important; max-width:none !important; margin-top:0 !important; border-radius:14px !important; }
+.visit-photo-box-large img { width:100% !important; height:250px !important; object-fit:cover !important; }
+.visit-photo-empty-large { min-height:250px !important; border:1px dashed #b7cde8; }
+.visit-photo-empty-icon { font-size:2rem; margin-bottom:4px; }
+.detail-name-strong { font-size:1.05rem; font-weight:800; color:#0d3e73; }
+.detail-address { line-height:1.55; }
+@media (max-width: 768px) {
+  .visit-photo-box-large img { height:220px !important; }
+  .visit-photo-empty-large { min-height:220px !important; }
+}
 </style>
 </head>
 
@@ -2481,109 +2520,64 @@
   </div>
 </div>
 
-    <div class="modal fade" id="visitDetailModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" style="border-radius: 18px; overflow: hidden;">
+    
+    
+  <div class="modal fade" id="visitDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content visit-detail-modal-content">
       <div class="modal-header bg-light">
         <h5 class="modal-title">📋 รายละเอียดผู้บริจาค / ผลคัดกรองเบื้องต้น</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
         <div class="detail-box mb-3">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <div class="detail-label">DN</div>
-              <div id="vd-dn" class="detail-value"></div>
+          <div class="row g-3 align-items-start">
+            <div class="col-lg-3 col-md-4">
+              <div class="visit-detail-photo-panel">
+                <div class="visit-detail-photo-title">📷 รูปผู้บริจาค</div>
+                <div class="visit-detail-photo-hint">คลิกรูปเพื่อขยาย</div>
+                <div id="vd-photo-box" class="visit-photo-box visit-photo-box-large">
+                  <img id="vd-photo" class="photo-zoomable" alt="รูปผู้บริจาค" style="display:none;" onclick="openPhotoLightbox(this.src, document.getElementById('vd-name')?.innerText || 'รูปผู้บริจาค')" title="คลิกเพื่อขยายรูป">
+                  <div id="vd-photo-empty" class="visit-photo-empty visit-photo-empty-large">
+                    <div><div class="visit-photo-empty-icon">👤</div><strong>ไม่มีรูปถ่าย</strong><div class="small mt-1">ตำแหน่งรูปผู้บริจาค</div></div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="col-md-4">
-              <div class="detail-label">เลขถุง</div>
-              <div id="vd-bag" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">สถานะ</div>
-              <div id="vd-status" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-12">
-              <div class="detail-label">ชื่อ-นามสกุล</div>
-              <div id="vd-name" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">วันเกิด</div>
-              <div id="vd-birth" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">เพศ</div>
-              <div id="vd-gender" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">เบอร์โทร</div>
-              <div id="vd-phone" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">หมู่เลือด</div>
-              <div id="vd-group" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">ประเภท</div>
-              <div id="vd-type" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">น้ำหนัก</div>
-              <div id="vd-weight" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">Hb</div>
-              <div id="vd-hb" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">BP</div>
-              <div id="vd-bp" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">Pulse</div>
-              <div id="vd-pulse" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="detail-label">Temp</div>
-              <div id="vd-temp" class="detail-value"></div>
+            <div class="col-lg-9 col-md-8">
+              <div class="row g-3">
+                <div class="col-md-4"><div class="detail-label">DN</div><div id="vd-dn" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">เลขถุง</div><div id="vd-bag" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">สถานะ</div><div id="vd-status" class="detail-value"></div></div>
+                <div class="col-md-12"><div class="detail-label">ชื่อ-นามสกุล</div><div id="vd-name" class="detail-value detail-name-strong"></div></div>
+                <div class="col-md-4"><div class="detail-label">วันเกิด</div><div id="vd-birth" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">เพศ</div><div id="vd-gender" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">เบอร์โทร</div><div id="vd-phone" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">หมู่เลือด</div><div id="vd-group" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">ประเภท</div><div id="vd-type" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">น้ำหนัก</div><div id="vd-weight" class="detail-value"></div></div>
+                <div class="col-md-3"><div class="detail-label">Hb</div><div id="vd-hb" class="detail-value"></div></div>
+                <div class="col-md-3"><div class="detail-label">BP</div><div id="vd-bp" class="detail-value"></div></div>
+                <div class="col-md-3"><div class="detail-label">Pulse</div><div id="vd-pulse" class="detail-value"></div></div>
+                <div class="col-md-3"><div class="detail-label">Temp</div><div id="vd-temp" class="detail-value"></div></div>
+              </div>
             </div>
 
             <div class="col-md-12">
               <div class="detail-label">ที่อยู่</div>
               <div id="vd-address" class="detail-value detail-address"></div>
             </div>
-
-            <div class="col-md-12">
-              <div class="detail-label">เวลาบันทึกผลคัดกรอง</div>
-              <div id="vd-save-time" class="detail-value"></div>
-            </div>
-
-            <div class="col-md-12">
-              <div class="detail-label">สรุปเหตุผล</div>
-              <div id="vd-reason" class="detail-value"></div>
-            </div>
+            <div class="col-md-6"><div class="detail-label">เวลาบันทึกผลคัดกรอง</div><div id="vd-save-time" class="detail-value"></div></div>
+            <div class="col-md-6"><div class="detail-label">สรุปเหตุผล</div><div id="vd-reason" class="detail-value"></div></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
-    
-  <div class="modal fade" id="screeningModal" tabindex="-1" aria-hidden="true">
+
+<div class="modal fade" id="screeningModal" tabindex="-1" aria-hidden="true">
     
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -2679,108 +2673,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="visitDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title">📋 รายละเอียดผู้บริจาค / ผลคัดกรองเบื้องต้น</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="detail-box mb-3">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="detail-label">DN</div>
-                <div id="vd-dn" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">เลขถุง</div>
-                <div id="vd-bag" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">สถานะ</div>
-                <div id="vd-status" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-12">
-                <div class="detail-label">รูปผู้บริจาค</div>
-                <div class="detail-value">
-                  <div id="vd-photo-box" class="visit-photo-box">
-                    <img id="vd-photo" class="photo-zoomable" alt="รูปผู้บริจาค" style="display:none;" onclick="openPhotoLightbox(this.src, document.getElementById('vd-name')?.innerText || 'รูปผู้บริจาค')" title="กดเพื่อขยายรูป">
-                    <div id="vd-photo-empty" class="visit-photo-empty">ยังไม่มีรูปผู้บริจาค</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-12">
-                <div class="detail-label">ชื่อ-นามสกุล</div>
-                <div id="vd-name" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">วันเกิด</div>
-                <div id="vd-birth" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">เพศ</div>
-                <div id="vd-gender" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">หมู่เลือด</div>
-                <div id="vd-group" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">ประเภท</div>
-                <div id="vd-type" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">น้ำหนัก</div>
-                <div id="vd-weight" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">Hb</div>
-                <div id="vd-hb" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">BP</div>
-                <div id="vd-bp" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">Pulse</div>
-                <div id="vd-pulse" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="detail-label">Temp</div>
-                <div id="vd-temp" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-12">
-                <div class="detail-label">เวลาบันทึกผลคัดกรอง</div>
-                <div id="vd-save-time" class="detail-value"></div>
-              </div>
-
-              <div class="col-md-12">
-                <div class="detail-label">สรุปเหตุผล</div>
-                <div id="vd-reason" class="detail-value"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
+  
 
   <div class="modal fade" id="stickerPrintModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -4072,7 +3965,7 @@ async function resetPasswordWithOtp() {
         img.src = '';
         img.style.display = 'none';
         empty.style.display = 'flex';
-        empty.textContent = 'ยังไม่มีรูปผู้บริจาค';
+        empty.innerHTML = '<div><div class="visit-photo-empty-icon">👤</div><strong>ไม่มีรูปถ่าย</strong><div class="small mt-1">ตำแหน่งรูปผู้บริจาค</div></div>';
       }
     }
 
@@ -4091,7 +3984,7 @@ async function resetPasswordWithOtp() {
       try {
         const res = await apiCall('getDonorPhoto', { data: JSON.stringify({ idCard: cleanId }) });
         openVisitPhotoPreview(res?.photoData || '');
-        if (!res?.photoData) empty.textContent = 'ยังไม่มีรูปผู้บริจาค';
+        if (!res?.photoData) empty.innerHTML = '<div><div class="visit-photo-empty-icon">👤</div><strong>ไม่มีรูปถ่าย</strong><div class="small mt-1">ตำแหน่งรูปผู้บริจาค</div></div>';
       } catch (err) {
         console.warn('getDonorPhoto failed', err);
         openVisitPhotoPreview('');
