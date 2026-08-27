@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.46"></script>
+  <script src="js/supabase-backend.js?v=15.6.47"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1555,7 +1555,9 @@
 /* v15.6.32: real USB webcam capture */
 .camera-live-shell { background:#10151d; border-radius:16px; overflow:hidden; min-height:360px; display:flex; align-items:center; justify-content:center; position:relative; }
 .camera-live-video, .camera-shot-preview { width:100%; max-height:62vh; object-fit:contain; background:#10151d; }
-.camera-live-video { transform:scaleX(-1); }
+.camera-live-video { transform:none; }
+.camera-live-video.is-mirrored { transform:scaleX(-1); }
+.camera-mirror-status { font-size:.82rem; color:#60778e; font-weight:700; }
 .camera-shot-preview { display:none; }
 .camera-permission-note { font-size:.86rem; color:#63778b; }
 .camera-device-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
@@ -1708,6 +1710,7 @@
 .scan-source-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef6ff;border:1px solid #cfe2ff;color:#1554a2;font-weight:700;font-size:.82rem;}
 
 /* v15.6.46: read Thai ID displayed on a phone via USB camera */
+/* v15.6.47: mirror-safe USB camera */
 .phone-screen-camera-guide{
   position:absolute;
   left:8%; right:8%; top:22%; bottom:22%;
@@ -5816,7 +5819,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.46"></script>
+  <script src="js/supabase-history.js?v=15.6.47"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -5896,7 +5899,7 @@ async function selectHistoryPassport(passport){
 window.selectHistoryPassport=selectHistoryPassport;
 
 
-const cnmiCameraState = { stream:null, mode:'donor', capturedDataUrl:'', selectedDeviceId:'', modal:null };
+const cnmiCameraState = { stream:null, mode:'donor', capturedDataUrl:'', selectedDeviceId:'', modal:null, previewMirrored:false };
 window.cnmiCameraState = cnmiCameraState;
 
 function getUsbCameraModal(){
@@ -5904,6 +5907,20 @@ function getUsbCameraModal(){
   if(!el || !window.bootstrap?.Modal) return null;
   return bootstrap.Modal.getOrCreateInstance(el);
 }
+
+function updateCameraMirrorUi(){
+  const video=document.getElementById('usb-camera-video');
+  const btn=document.getElementById('usb-camera-mirror-btn');
+  const status=document.getElementById('usb-camera-mirror-status');
+  if(video) video.classList.toggle('is-mirrored',!!cnmiCameraState.previewMirrored);
+  if(btn) btn.textContent=cnmiCameraState.previewMirrored?'↔ แสดงภาพจริง':'↔ กลับซ้าย–ขวา';
+  if(status) status.textContent=cnmiCameraState.previewMirrored?'กำลังดูแบบกระจก · รูปที่บันทึกยังเป็นภาพจริง':'ภาพจริงจากกล้อง';
+}
+function toggleCameraMirrorPreview(){
+  cnmiCameraState.previewMirrored=!cnmiCameraState.previewMirrored;
+  updateCameraMirrorUi();
+}
+window.toggleCameraMirrorPreview=toggleCameraMirrorPreview;
 
 function stopCameraStream(){
   try{ cnmiCameraState.stream?.getTracks?.().forEach(track=>track.stop()); }catch{}
@@ -5955,7 +5972,7 @@ async function startCameraStream(deviceId=''){
       }
     }catch{}
     cnmiCameraState.selectedDeviceId=stream.getVideoTracks?.()[0]?.getSettings?.().deviceId || deviceId || '';
-    if(video){ video.srcObject=stream; await video.play().catch(()=>{}); }
+    if(video){ video.srcObject=stream; await video.play().catch(()=>{}); updateCameraMirrorUi(); }
     await listCameraDevices(cnmiCameraState.selectedDeviceId);
     const label=stream.getVideoTracks?.()[0]?.label || 'กล้องพร้อมใช้งาน';
     if(status) status.textContent=label;
@@ -5973,6 +5990,8 @@ async function startCameraStream(deviceId=''){
 async function openCameraCapture(mode='donor'){
   cnmiCameraState.mode = mode==='phone-id' ? 'phone-id' : (mode==='document' ? 'document' : 'donor');
   cnmiCameraState.capturedDataUrl='';
+  cnmiCameraState.previewMirrored=false;
+  updateCameraMirrorUi();
   const title=document.getElementById('usb-camera-title');
   const guide=document.getElementById('usb-phone-screen-guide');
   const tip=document.getElementById('usb-phone-screen-tip');
@@ -6235,53 +6254,84 @@ async function processIdDocumentDataUrl(dataUrl,{showPreviewOnFail=false}={}){
   return parsed;
 }
 
+async function flipImageDataUrlHorizontal(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onerror=()=>reject(new Error('เปิดภาพเพื่อกลับซ้าย–ขวาไม่สำเร็จ'));
+    img.onload=()=>{
+      try{
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        const ctx=c.getContext('2d');
+        ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.95));
+      }catch(err){reject(err);}
+    };
+    img.src=String(dataUrl||'');
+  });
+}
+window.flipImageDataUrlHorizontal=flipImageDataUrlHorizontal;
+
+async function tryPhoneIdOcrTarget(target,label='ภาพจริง'){
+  try{
+    setDocOcrStatus(`กำลังอ่านเลขบัตรจากหน้าจอโทรศัพท์ · ${label}`,'busy');
+    const focused=await recognizeThaiIdFocusedPhoneLine(target);
+    if(focused?.idCard) return {idCard:focused.idCard,rawText:'',source:label,candidates:focused.candidates||[]};
+    if(focused?.ambiguous&&focused.candidates?.length) return {ambiguous:true,candidates:focused.candidates,source:label};
+  }catch(err){ console.warn(`phone focused OCR ${label} failed`,err); }
+  try{
+    const result=await recognizeThaiIdDigitsRobust(target);
+    if(result?.idCard) return {idCard:result.idCard,rawText:result.rawText||'',source:label,candidates:result.candidates||[]};
+    if(result?.ambiguous&&result.candidates?.length) return {ambiguous:true,candidates:result.candidates,source:label};
+  }catch(err){ console.warn(`phone robust OCR ${label} failed`,err); }
+  return null;
+}
+
 async function processPhoneScreenCameraDataUrl(dataUrl){
   const raw=String(dataUrl||'');
   if(!raw) throw new Error('ยังไม่มีภาพจากกล้อง');
-  setDocOcrStatus('กำลังหาเฉพาะบัตรที่แสดงบนหน้าจอโทรศัพท์...','busy');
+  setDocOcrStatus('กำลังตรวจภาพจริงและภาพกลับซ้าย–ขวาอัตโนมัติ...','busy');
 
-  let phoneCard=null;
-  try{ phoneCard=await locatePhoneDisplayedCardDataUrl(raw); }catch{}
-  const target=(phoneCard?.detected&&phoneCard.dataUrl) ? phoneCard.dataUrl : raw;
-
-  // เส้นทางเฉพาะปุ่มอ่านจากหน้าจอโทรศัพท์: ซูมบรรทัดเลขบนบัตรประชาชนก่อน
+  const attempts=[];
+  attempts.push({dataUrl:raw,label:'ภาพจริง'});
   try{
-    const focused=await recognizeThaiIdFocusedPhoneLine(target);
-    if(focused?.idCard){
-      const parsed={rawText:'',idCard:focused.idCard,birthDate:''};
-      applyOcrParsedFields(parsed);
-      setDocOcrStatus('อ่านเลขบัตรจากหน้าจอโทรศัพท์สำเร็จ · กำลังค้นประวัติเดิม','ok');
-      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
-      return parsed;
-    }
-    if(focused?.ambiguous&&focused.candidates?.length){
-      setDocOcrStatus('พบเลขที่เป็นไปได้มากกว่า 1 ค่า · กรุณาเลือกเลขที่เห็นจริง','warn');
-      showLastScannedPreview(target,focused.candidates);
-      return {ambiguous:true,candidates:focused.candidates};
-    }
-  }catch(err){ console.warn('phone camera focused OCR failed',err); }
+    const flipped=await flipImageDataUrlHorizontal(raw);
+    attempts.push({dataUrl:flipped,label:'ภาพกลับซ้าย–ขวา'});
+  }catch(err){ console.warn('prepare flipped camera image failed',err); }
 
-  // ถ้ายังไม่เจอ ให้ลองภาพบัตร/ภาพเต็มแบบ robust โดยไม่กระทบ Flow Scanner หรือใบขับขี่
-  try{
-    const result=await recognizeThaiIdDigitsRobust(target);
+  const allCandidates=[];
+  let fallbackPreview=raw;
+  for(const attempt of attempts){
+    let phoneCard=null;
+    try{ phoneCard=await locatePhoneDisplayedCardDataUrl(attempt.dataUrl); }catch{}
+    const target=(phoneCard?.detected&&phoneCard.dataUrl) ? phoneCard.dataUrl : attempt.dataUrl;
+    fallbackPreview=target || fallbackPreview;
+    const result=await tryPhoneIdOcrTarget(target,attempt.label);
     if(result?.idCard){
       const parsed={rawText:result.rawText||'',idCard:result.idCard,birthDate:''};
       applyOcrParsedFields(parsed);
-      setDocOcrStatus('อ่านเลขบัตรจากหน้าจอโทรศัพท์สำเร็จ · กำลังค้นประวัติเดิม','ok');
+      setDocOcrStatus(`อ่านเลขบัตรสำเร็จจาก ${result.source} · กำลังค้นประวัติเดิม`,'ok');
       await window.cnmiPreload?.lookupFromRegister?.({fill:true});
       return parsed;
     }
-    if(result?.ambiguous&&result.candidates?.length){
-      setDocOcrStatus('พบเลขที่เป็นไปได้มากกว่า 1 ค่า · กรุณาเลือกเลขที่เห็นจริง','warn');
-      showLastScannedPreview(target,result.candidates);
-      return {ambiguous:true,candidates:result.candidates};
-    }
-  }catch(err){ console.warn('phone camera robust OCR failed',err); }
+    if(result?.candidates?.length) allCandidates.push(...result.candidates);
+  }
 
-  cnmiLastScannedDocumentDataUrl=target;
-  window.cnmiLastScannedDocumentDataUrl=target;
-  setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ · เปิดภาพที่กล้องถ่ายให้ตรวจ','error');
-  showLastScannedPreview(target,[]);
+  const unique=[]; const seen=new Set();
+  for(const c of allCandidates){
+    const id=String(c?.idCard||'').replace(/\D/g,'');
+    if(id&&isValidThaiNationalId(id)&&!seen.has(id)){seen.add(id);unique.push(c);}
+  }
+  if(unique.length){
+    setDocOcrStatus('พบเลขที่เป็นไปได้ · กรุณาเทียบกับเลขบนหน้าจอโทรศัพท์','warn');
+    showLastScannedPreview(fallbackPreview,unique);
+    return {ambiguous:true,candidates:unique};
+  }
+
+  cnmiLastScannedDocumentDataUrl=fallbackPreview;
+  window.cnmiLastScannedDocumentDataUrl=fallbackPreview;
+  setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ แม้ลองทั้งภาพจริงและภาพกลับด้านแล้ว','error');
+  showLastScannedPreview(fallbackPreview,[]);
   throw new Error('ยังอ่านเลขบัตรจากหน้าจอโทรศัพท์ไม่ได้');
 }
 window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
@@ -7156,6 +7206,8 @@ document.addEventListener('DOMContentLoaded',()=>{
           <label for="usb-camera-select" class="fw-bold">กล้อง:</label>
           <select id="usb-camera-select" class="form-select form-select-sm" onchange="changeCameraDevice(this.value)"></select>
           <span id="usb-camera-status" class="camera-permission-note">กำลังเตรียมกล้อง...</span>
+          <button id="usb-camera-mirror-btn" type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleCameraMirrorPreview()">↔ กลับซ้าย–ขวา</button>
+          <span id="usb-camera-mirror-status" class="camera-mirror-status">ภาพจริงจากกล้อง</span>
         </div>
         <div class="camera-live-shell">
           <video id="usb-camera-video" class="camera-live-video" autoplay playsinline muted></video>
@@ -7169,7 +7221,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <button id="usb-camera-use-btn" type="button" class="btn btn-success btn-lg" onclick="useCapturedCameraImage()" style="display:none;">✓ ใช้รูปนี้</button>
           <button type="button" class="btn btn-outline-danger btn-lg" onclick="closeCameraCapture()">ยกเลิก</button>
         </div>
-        <div class="camera-permission-note mt-2">ครั้งแรก Chrome จะถามสิทธิ์ Camera ให้เลือก “Allow / อนุญาต” หากมีกล้องหลายตัวสามารถเลือกจากช่องด้านบนได้</div>
+        <div class="camera-permission-note mt-2">ครั้งแรก Chrome จะถามสิทธิ์ Camera ให้เลือก “Allow / อนุญาต” · ถ้าภาพสดกลับซ้าย–ขวา กด ↔ ได้ โดยรูปผู้บริจาคจะบันทึกเป็นภาพจริง และโหมดอ่านบัตรจะลองทั้งสองด้านให้อัตโนมัติ</div>
       </div>
     </div>
   </div>
