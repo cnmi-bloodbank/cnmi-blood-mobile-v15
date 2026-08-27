@@ -1359,6 +1359,19 @@
 .detail-address { white-space:normal; line-height:1.55; }
 @media (max-width:900px){ .guide-grid{grid-template-columns:1fr;} }
 @media (max-width:768px){ .visit-thumb-placeholder{width:50px;height:50px;font-size:.55rem;} }
+/* v15.6.30: clickable photo zoom */
+.photo-zoomable { cursor: zoom-in !important; }
+.photo-zoomable:hover { filter: brightness(.98); }
+.donor-photo-preview-box.has-photo::after {
+  content:"🔍 กดรูปเพื่อขยาย";
+  position:absolute; right:8px; bottom:8px;
+  background:rgba(0,0,0,.62); color:#fff; border-radius:999px;
+  padding:4px 9px; font-size:.72rem; font-weight:700; pointer-events:none;
+}
+.visit-thumb.photo-zoomable { transition: transform .12s ease, box-shadow .12s ease; }
+.visit-thumb.photo-zoomable:hover { transform:scale(1.06); box-shadow:0 6px 16px rgba(15,79,154,.18); }
+.photo-lightbox-img { display:block; width:auto; max-width:100%; max-height:76vh; margin:0 auto; object-fit:contain; border-radius:14px; }
+.photo-lightbox-body { min-height:260px; display:flex; align-items:center; justify-content:center; background:#f5f8fc; border-radius:0 0 16px 16px; padding:16px; }
 </style>
 </head>
 
@@ -1643,8 +1656,8 @@
               </div>
               <span class="donor-photo-chip">Optional</span>
             </div>
-            <div id="donor-photo-box" class="donor-photo-preview-box">
-              <img id="donor-photo-preview" class="donor-photo-preview" alt="รูปผู้บริจาค">
+            <div id="donor-photo-box" class="donor-photo-preview-box" onclick="openCurrentDonorPhotoZoom()" role="button" title="กดเพื่อขยายรูป">
+              <img id="donor-photo-preview" class="donor-photo-preview photo-zoomable" alt="รูปผู้บริจาค">
               <div class="donor-photo-placeholder">
                 <div style="font-size:2rem; line-height:1;">👤</div>
                 <div><strong>ยังไม่มีรูปผู้บริจาค</strong></div>
@@ -2469,7 +2482,7 @@
                 <div class="detail-label">รูปผู้บริจาค</div>
                 <div class="detail-value">
                   <div id="vd-photo-box" class="visit-photo-box">
-                    <img id="vd-photo" alt="รูปผู้บริจาค" style="display:none;">
+                    <img id="vd-photo" class="photo-zoomable" alt="รูปผู้บริจาค" style="display:none;" onclick="openPhotoLightbox(this.src, document.getElementById('vd-name')?.innerText || 'รูปผู้บริจาค')" title="กดเพื่อขยายรูป">
                     <div id="vd-photo-empty" class="visit-photo-empty">ยังไม่มีรูปผู้บริจาค</div>
                   </div>
                 </div>
@@ -4453,7 +4466,7 @@ async function adminResetPassword(username, fullName) {
           ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
           : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`;
         const thumbHtml = row.photoData
-          ? `<img src="${escapeHtml(row.photoData)}" alt="รูปผู้บริจาค" class="visit-thumb">`
+          ? `<img src="${escapeHtml(row.photoData)}" alt="รูปผู้บริจาค" class="visit-thumb photo-zoomable" title="กดเพื่อขยายรูป" data-title="${escapeHtml(row.name || "รูปผู้บริจาค")}" onclick="event.stopPropagation(); openPhotoLightbox(this.src, this.dataset.title)">`
           : `<div class="visit-thumb-placeholder"><span class="photo-icon">👤</span><span>ไม่มีรูปถ่าย</span></div>`;
         html += `
           <tr ${imported?'':`onclick="openVisitDetail('${rowStr}')"`}>
@@ -5562,6 +5575,27 @@ async function handleIdDocFile(event){
   }
 }
 window.handleIdDocFile=handleIdDocFile;
+
+function openPhotoLightbox(src, title='รูปผู้บริจาค') {
+  const value=String(src||'').trim();
+  if(!value) return;
+  const img=document.getElementById('photoLightboxImage');
+  const titleEl=document.getElementById('photoLightboxTitle');
+  const modalEl=document.getElementById('photoLightboxModal');
+  if(!img||!modalEl) return;
+  img.src=value;
+  if(titleEl) titleEl.textContent=title || 'รูปผู้บริจาค';
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+window.openPhotoLightbox=openPhotoLightbox;
+function openCurrentDonorPhotoZoom(){
+  const img=document.getElementById('donor-photo-preview');
+  const src=String(img?.src||'').trim();
+  if(!src || !document.getElementById('donor-photo-box')?.classList.contains('has-photo')) return;
+  const name=[document.getElementById('prefix')?.value,document.getElementById('fname')?.value,document.getElementById('lname')?.value].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+  openPhotoLightbox(src,name||'รูปผู้บริจาค');
+}
+window.openCurrentDonorPhotoZoom=openCurrentDonorPhotoZoom;
 function thaiCardSet(id,value){const el=document.getElementById(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!=='')el.value=String(value).trim();}
 async function readThaiIdCard(){
   const btn=document.getElementById('read-thai-id-btn'),st=document.getElementById('card-reader-status');
@@ -5690,6 +5724,19 @@ function downloadLisAssistantBundle() {
   }
 }
 </script>
+<div class="modal fade" id="photoLightboxModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="photoLightboxTitle">รูปผู้บริจาค</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body photo-lightbox-body">
+        <img id="photoLightboxImage" class="photo-lightbox-img" alt="รูปผู้บริจาคแบบขยาย">
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal fade" id="smartCaptureModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
