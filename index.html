@@ -1567,6 +1567,35 @@
   .camera-live-shell { min-height:260px; }
   .camera-controls .btn { width:100%; }
 }
+/* v15.6.33: clear register labels */
+#page-register label:not(.form-check-label) {
+  display:block;
+  font-size:1.05rem;
+  font-weight:800;
+  color:#163f6f;
+  margin-bottom:7px;
+  line-height:1.25;
+}
+#page-register .required-mark { color:#d92d20; font-weight:900; }
+#page-register .form-control,
+#page-register .form-select { font-size:1rem; min-height:44px; }
+#page-register .input-group-lg > .form-control,
+#page-register .input-group-lg > .btn { min-height:48px; }
+#page-register .register-status-line:empty { display:none; }
+#page-register .register-status-line {
+  font-size:.95rem;
+  font-weight:700;
+  margin-top:7px;
+}
+#page-register .donor-photo-title { font-size:1.05rem; font-weight:800; color:#163f6f; }
+#page-register .donor-photo-sub,
+#page-register .donor-photo-chip,
+#page-register .donor-photo-note:empty { display:none; }
+#page-register .donor-photo-placeholder strong { font-size:1rem; color:#43566c; }
+#page-register .register-action-note-sub { display:none; }
+@media (max-width:768px){
+  #page-register label:not(.form-check-label){font-size:1rem;}
+}
 </style>
 </head>
 
@@ -1825,22 +1854,22 @@
             <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
             <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
           </div>
-          <div id="card-reader-status" class="small text-muted mt-1">อ่านผ่าน Card Bridge หรือกรอกเลขบัตรเอง</div>
-          <div id="doc-ocr-status" class="doc-ocr-status">ใช้รูปบัตร/ใบขับขี่ช่วยอ่านเลขบัตรได้</div>
-          <div id="preload-register-status" class="small text-muted mt-1">ครบ 13 หลัก → ค้นประวัติเดิมอัตโนมัติ</div>
+          <div id="card-reader-status" class="register-status-line text-muted"></div>
+          <div id="doc-ocr-status" class="register-status-line"></div>
+          <div id="preload-register-status" class="register-status-line text-muted"></div>
           <div id="donor-history-panel" hidden></div>
         </div>
 
         <div class="col-lg-4 col-md-6">
-          <label>Donor ID</label>
+          <label>Donor ID <span class="text-secondary fw-semibold">(ถ้าไม่มี เว้นว่าง)</span></label>
           <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
-          <div class="small text-muted mt-1">กรอก Donor ID จริงตามบัตร/AI-LIS ถ้ามี · ถ้าไม่มีให้เว้นว่าง ระบบจะเติมภายหลังจาก AI-LIS</div>
+          
         </div>
 
         <div class="col-lg-4 col-md-6">
-          <label>ครั้งล่าสุดที่เคยบริจาค</label>
+          <label>ครั้งล่าสุดที่เคยบริจาค <span class="text-secondary fw-semibold">(ไม่เคย = 0)</span></label>
           <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="0" max="9998" value="0" data-user-edited="0" oninput="this.dataset.userEdited='1'; updateDonationNoHint();">
-          <div id="donation-no-hint" class="small text-muted mt-1">ถ้าไม่เคยบริจาคให้เป็น 0 · ระบบจะบันทึกครั้งนี้เป็น <strong>ครั้งที่ 1</strong></div>
+          <div id="donation-no-hint" class="register-status-line text-muted"></div>
         </div>
 
         <div class="col-lg-4 col-md-5">
@@ -1848,16 +1877,16 @@
             <div class="donor-photo-head">
               <div>
                 <div class="donor-photo-title">📷 รูปผู้บริจาค <span class="text-muted fw-normal">(ไม่บังคับ)</span></div>
-                <div class="donor-photo-sub">รูปสำหรับช่วยจำผู้บริจาค</div>
+                
               </div>
-              <span class="donor-photo-chip">Optional</span>
+              
             </div>
             <div id="donor-photo-box" class="donor-photo-preview-box" onclick="openCurrentDonorPhotoZoom()" role="button" title="กดเพื่อขยายรูป">
               <img id="donor-photo-preview" class="donor-photo-preview photo-zoomable" alt="รูปผู้บริจาค">
               <div class="donor-photo-placeholder">
                 <div style="font-size:2rem; line-height:1;">👤</div>
                 <div><strong>ยังไม่มีรูปผู้บริจาค</strong></div>
-                <div class="small">กดถ่ายรูปหรือเลือกรูปจากเครื่องได้เลย</div>
+                
               </div>
             </div>
             <div class="donor-photo-actions">
@@ -1866,7 +1895,7 @@
               <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้รูปนี้</button>
               <input type="file" id="donor-photo-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
             </div>
-            <div id="donor-photo-status" class="donor-photo-note">ไม่บังคับถ่ายรูป</div>
+            <div id="donor-photo-status" class="register-status-line text-muted"></div>
           </div>
         </div>
 
@@ -1943,7 +1972,7 @@
           <input type="text" id="postal_code" class="form-control" required inputmode="numeric" maxlength="5" placeholder="เช่น 10280">
         </div>
         <div class="col-md-12">
-          <div id="address-helper" class="small text-muted">อ่านบัตรประชาชนแล้วระบบจะแยก ตำบล/อำเภอ/จังหวัดให้อัตโนมัติ · ตรวจรหัสไปรษณีย์ก่อนบันทึก</div>
+          
         </div>
 
         <div class="col-md-12 mt-2">
@@ -3846,7 +3875,7 @@ async function resetPasswordWithOtp() {
       if (!input || !hint) return;
       const last = Number.parseInt(String(input.value || "0"), 10);
       const safeLast = Number.isInteger(last) && last >= 0 ? last : 0;
-      hint.innerHTML = `ครั้งล่าสุด <strong>${safeLast}</strong> → ระบบจะบันทึกครั้งนี้เป็น <strong>ครั้งที่ ${safeLast + 1}</strong>`;
+      hint.innerHTML = `ครั้งนี้ = <strong>ครั้งที่ ${safeLast + 1}</strong>`;
     }
     window.updateDonationNoHint = updateDonationNoHint;
 
