@@ -1742,6 +1742,11 @@
 /* v15.6.45: Thai / Foreigner passport registration */
 .identity-mode-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.identity-mode-btn{border:1px solid #b8cbe6;background:#fff;color:#214a73;border-radius:12px;padding:9px 16px;font-weight:800}.identity-mode-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd}.foreign-only{display:none}.identity-passport-note{font-size:.88rem;color:#5b7186}.passport-mrz-preview{font-family:ui-monospace,Consolas,monospace;font-size:.82rem;white-space:pre-wrap;word-break:break-all;background:#f7f9fc;border:1px solid #d9e3ef;border-radius:10px;padding:8px;max-height:110px;overflow:auto}.passport-read-ok{color:#198754;font-weight:800}
 
+
+/* v15.6.48 — logout/login screen isolation fix */
+.app-layout.auth-hidden { display: none !important; }
+.login-screen.auth-hidden { display: none !important; }
+
 </style>
 </head>
 
@@ -3448,8 +3453,10 @@ function clearLoginError() {
 }
 
 function showLoginScreen() {
-  document.getElementById("login-screen")?.classList.remove("auth-hidden");
+  closeSidebar();
   document.getElementById("app-layout")?.classList.add("auth-hidden");
+  document.getElementById("login-screen")?.classList.remove("auth-hidden");
+  try { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); } catch (_) { window.scrollTo(0, 0); }
 }
 
 function showAppScreen() {
