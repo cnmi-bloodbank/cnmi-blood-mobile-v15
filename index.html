@@ -6388,6 +6388,85 @@ async function cropCardBandDataUrl(dataUrl,band='top'){
   });
 }
 
+
+async function makePhoneThaiIdNumberLineViews(cardDataUrl){
+  const specs=[
+    {x:0.16,y:0.12,w:0.80,h:0.18,label:'บรรทัดเลขบัตรบนมือถือ A'},
+    {x:0.20,y:0.16,w:0.76,h:0.16,label:'บรรทัดเลขบัตรบนมือถือ B'},
+    {x:0.12,y:0.08,w:0.84,h:0.25,label:'บริเวณเลขบัตรบนมือถือ C'}
+  ];
+  const outputs=[];
+  for(const spec of specs){
+    const view=await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('เปิดภาพบัตรบนหน้าจอไม่สำเร็จ'));
+      img.onload=()=>{
+        try{
+          const ow=img.naturalWidth||img.width, oh=img.naturalHeight||img.height;
+          const sx=Math.max(0,Math.round(ow*spec.x));
+          const sy=Math.max(0,Math.round(oh*spec.y));
+          const sw=Math.max(1,Math.min(ow-sx,Math.round(ow*spec.w)));
+          const sh=Math.max(1,Math.min(oh-sy,Math.round(oh*spec.h)));
+          // ทำให้ความสูงตัวเลขมากพอสำหรับ OCR แม้ต้นฉบับบนจอโทรศัพท์จะเล็ก
+          const targetH=520;
+          const scale=Math.max(3,Math.min(14,targetH/sh));
+          const outW=Math.max(1,Math.round(sw*scale));
+          const outH=Math.max(1,Math.round(sh*scale));
+          const c=document.createElement('canvas');c.width=outW;c.height=outH;
+          const ctx=c.getContext('2d',{willReadFrequently:true});
+          ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+          ctx.drawImage(img,sx,sy,sw,sh,0,0,outW,outH);
+          const im=ctx.getImageData(0,0,outW,outH), d=im.data;
+          for(let i=0;i<d.length;i+=4){
+            const y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+            const v=Math.max(0,Math.min(255,(y-128)*1.7+128));
+            d[i]=d[i+1]=d[i+2]=v;
+          }
+          ctx.putImageData(im,0,0);
+          resolve({label:spec.label,dataUrl:c.toDataURL('image/png')});
+        }catch(err){reject(err);}
+      };
+      img.src=cardDataUrl;
+    });
+    outputs.push(view);
+  }
+  return outputs;
+}
+
+async function recognizeThaiIdFocusedPhoneLine(cardDataUrl){
+  if(!window.Tesseract?.createWorker) return {idCard:'',candidates:[],views:[]};
+  const views=await makePhoneThaiIdNumberLineViews(cardDataUrl);
+  const vote=new Map();
+  let worker=null;
+  try{
+    worker=await window.Tesseract.createWorker('eng');
+    for(let i=0;i<views.length;i++){
+      const view=views[i];
+      for(const psm of ['7','13']){
+        await worker.setParameters({
+          tessedit_char_whitelist:'0123456789 -',
+          tessedit_pageseg_mode:psm,
+          preserve_interword_spaces:'1'
+        });
+        setDocOcrStatus(`กำลังซูมอ่านเลขบัตร (${i+1}/${views.length}) · ${view.label}`,'busy');
+        const {data}=await worker.recognize(view.dataUrl);
+        const text=String(data?.text||'');
+        const ids=[...new Set(getThaiIdCandidates(text).filter(isValidThaiNationalId))];
+        for(const id of ids){
+          const cur=vote.get(id)||{idCard:id,count:0,variants:[],views:[]};
+          cur.count++;cur.variants.push(`PSM ${psm}`);cur.views.push(view.label);vote.set(id,cur);
+        }
+      }
+    }
+  } finally { try{await worker?.terminate?.();}catch{} }
+  const ranked=[...vote.values()].sort((a,b)=>b.count-a.count||a.idCard.localeCompare(b.idCard));
+  if(!ranked.length) return {idCard:'',candidates:[],views};
+  if(ranked.length===1 || (ranked[0].count>=2 && ranked[0].count>(ranked[1]?.count||0))){
+    return {idCard:ranked[0].idCard,candidates:ranked,views};
+  }
+  return {idCard:'',candidates:ranked,views,ambiguous:true};
+}
+
 async function tryOcrScanView(dataUrl,label){
   setDocOcrStatus(`กำลังอ่านเลขบัตร · ${label}`,'busy');
   const result=await recognizeThaiIdDigitsRobust(dataUrl);
@@ -6405,9 +6484,36 @@ async function processScannedDocumentMultiView(rawDataUrl,{showPreviewOnFail=tru
   const phoneCard=await locatePhoneDisplayedCardDataUrl(raw);
   const views=[];
 
-  // v15.6.43: เพิ่มเส้นทางเฉพาะเมื่อพบ "กรอบโทรศัพท์มืดล้อมบัตรสว่าง" เท่านั้น
+  // v15.6.44: เพิ่มเส้นทางเฉพาะเมื่อพบ "กรอบโทรศัพท์มืดล้อมบัตรสว่าง" เท่านั้น
   // จึงไม่เปลี่ยน Flow ของบัตรประชาชนจริงหรือใบขับขี่จริงที่วางบนกระจก
   if(phoneCard?.detected&&phoneCard.dataUrl){
+    // v15.6.44: ถ้าเป็น "บัตรประชาชนบนหน้าจอโทรศัพท์" ให้ซูมเฉพาะบรรทัดเลข 13 หลักก่อน
+    // เส้นทางนี้เพิ่มเฉพาะ phoneCard เท่านั้น จึงไม่เปลี่ยน Flow ของใบขับขี่จริงที่วางบนกระจก
+    try{
+      const focused=await recognizeThaiIdFocusedPhoneLine(phoneCard.dataUrl);
+      if(focused?.idCard){
+        const parsed={rawText:'',idCard:focused.idCard,birthDate:''};
+        cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
+        window.cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
+        applyOcrParsedFields(parsed);
+        setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ซูมบรรทัดเลขบัตรบนมือถือ · กำลังค้นประวัติเดิม','ok');
+        await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+        return parsed;
+      }
+      if(focused?.ambiguous && focused.candidates?.length){
+        cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
+        window.cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
+        setDocOcrStatus('พบเลขที่เป็นไปได้จากบรรทัดเลขบัตรบนมือถือ · กรุณาเลือกเลขที่เห็นจริง','warn');
+        showLastScannedPreview(phoneCard.dataUrl,focused.candidates);
+        return {ambiguous:true,candidates:focused.candidates};
+      }
+      // ถ้า focused OCR ยังไม่อ่านได้ ให้เก็บภาพซูมบรรทัดแรกไว้เป็น preview สำหรับตรวจด้วยตา
+      if(focused?.views?.[0]?.dataUrl){
+        cnmiLastScannedDocumentDataUrl=focused.views[0].dataUrl;
+        window.cnmiLastScannedDocumentDataUrl=focused.views[0].dataUrl;
+      }
+    }catch(err){ console.warn('focused phone Thai ID OCR failed',err); }
+
     views.push({dataUrl:phoneCard.dataUrl,label:'ซูมบัตรบนหน้าจอโทรศัพท์'});
     if(phoneCard.orientation==='แนวนอน'){
       try{
