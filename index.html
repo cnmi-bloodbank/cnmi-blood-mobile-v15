@@ -1704,6 +1704,8 @@
 .scan-preview-wrap img { max-width:100%; max-height:58vh; object-fit:contain; border-radius:10px; background:#fff; border:1px solid #d8e1eb; }
 .scan-preview-help { font-size:.95rem; color:#445b70; margin-top:10px; line-height:1.45; }
 .scan-preview-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+.scan-source-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef6ff;border:1px solid #cfe2ff;color:#1554a2;font-weight:700;font-size:.82rem;}
 </style>
 </head>
 
@@ -1954,7 +1956,7 @@
           <div class="register-id-line">
             <input type="text" id="id_card" class="form-control form-control-lg" required autofocus inputmode="numeric" autocomplete="off">
             <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
-            <button id="scan-id-doc-btn" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+            <button id="scan-id-doc-btn" title="วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
             <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
           </div>
           <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
@@ -6008,6 +6010,8 @@ async function recognizeThaiIdDigitsRobust(dataUrl){
   return {idCard:'',rawText:combinedText,variant:'',candidates:ranked,ambiguous:true};
 }
 
+let cnmiLastRawScannedDocumentDataUrl='';
+window.cnmiLastRawScannedDocumentDataUrl='';
 let cnmiLastScannedDocumentDataUrl='';
 window.cnmiLastScannedDocumentDataUrl='';
 function getScanOcrPreviewModal(){
@@ -6043,9 +6047,10 @@ async function retryLastScannedOcr(rotation=0){
   if(!cnmiLastScannedDocumentDataUrl) return alert('ยังไม่มีภาพสแกนล่าสุด');
   try{
     getScanOcrPreviewModal()?.hide();
-    let dataUrl=cnmiLastScannedDocumentDataUrl;
+    let dataUrl=cnmiLastRawScannedDocumentDataUrl || cnmiLastScannedDocumentDataUrl;
     if(rotation) dataUrl=await imageDataUrlToOcrVariant(dataUrl,{rotate:rotation,threshold:false,maxWidth:2400});
-    await processIdDocumentDataUrl(dataUrl,{showPreviewOnFail:true});
+    if(cnmiLastRawScannedDocumentDataUrl && !rotation) await processScannedDocumentMultiView(dataUrl,{showPreviewOnFail:true});
+    else await processIdDocumentDataUrl(dataUrl,{showPreviewOnFail:true});
   }catch(err){
     console.error(err);
     alert(err.message||err);
@@ -6204,6 +6209,87 @@ async function trimScannedDocumentDataUrl(dataUrl){
   });
 }
 
+
+async function cropScanCenterDataUrl(dataUrl,{widthRatio=0.72,heightRatio=0.82}={}){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onerror=()=>reject(new Error('เปิดภาพสแกนไม่สำเร็จ'));
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width, oh=img.naturalHeight||img.height;
+        if(!ow||!oh) return resolve(dataUrl);
+        const sw=Math.max(1,Math.round(ow*Math.min(0.95,Math.max(0.4,widthRatio))));
+        const sh=Math.max(1,Math.round(oh*Math.min(0.95,Math.max(0.4,heightRatio))));
+        const sx=Math.max(0,Math.round((ow-sw)/2));
+        const sy=Math.max(0,Math.round((oh-sh)/2));
+        const maxW=2200,maxH=2400,ratio=Math.min(maxW/sw,maxH/sh,1);
+        const w=Math.max(1,Math.round(sw*ratio)),h=Math.max(1,Math.round(sh*ratio));
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.93));
+      }catch(err){reject(err);}
+    };
+    img.src=dataUrl;
+  });
+}
+
+async function tryOcrScanView(dataUrl,label){
+  setDocOcrStatus(`กำลังอ่านเลขบัตร · ${label}`,'busy');
+  const result=await recognizeThaiIdDigitsRobust(dataUrl);
+  return {...result,scanViewLabel:label,scanViewDataUrl:dataUrl};
+}
+
+async function processScannedDocumentMultiView(rawDataUrl,{showPreviewOnFail=true}={}){
+  const raw=String(rawDataUrl||'');
+  if(!raw) throw new Error('ไม่ได้รับภาพจาก Scanner');
+  cnmiLastRawScannedDocumentDataUrl=raw;
+  window.cnmiLastRawScannedDocumentDataUrl=raw;
+
+  const autoCrop=await trimScannedDocumentDataUrl(raw);
+  const centerCrop=await cropScanCenterDataUrl(raw,{widthRatio:0.72,heightRatio:0.82});
+  const views=[];
+  // Physical card: auto-locate first. Phone placed in middle: center crop is the key fallback.
+  views.push({dataUrl:autoCrop,label:window.cnmiLastCardLocateInfo?.detected?'กรอบบัตรที่ระบบหา':'ภาพสำหรับอ่านอัตโนมัติ'});
+  views.push({dataUrl:centerCrop,label:'บริเวณกลางกระจก'});
+  views.push({dataUrl:raw,label:'ภาพเต็มจาก Scanner'});
+
+  const candidateMap=new Map();
+  for(let i=0;i<views.length;i++){
+    const view=views[i];
+    const result=await tryOcrScanView(view.dataUrl,view.label);
+    for(const c of (result.candidates||[])){
+      if(!c?.idCard||!isValidThaiNationalId(c.idCard)) continue;
+      const prev=candidateMap.get(c.idCard)||{idCard:c.idCard,count:0,variants:[],views:[]};
+      prev.count+=Math.max(1,Number(c.count||1));
+      prev.variants.push(...(c.variants||[]));
+      prev.views.push(view.label);
+      candidateMap.set(c.idCard,prev);
+    }
+    if(result.idCard){
+      const parsed={rawText:result.rawText||'',idCard:result.idCard,birthDate:''};
+      cnmiLastScannedDocumentDataUrl=view.dataUrl;
+      window.cnmiLastScannedDocumentDataUrl=view.dataUrl;
+      applyOcrParsedFields(parsed);
+      setDocOcrStatus(`อ่านเลขบัตรสำเร็จ · ${view.label} · กำลังค้นประวัติเดิม`,'ok');
+      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+      return parsed;
+    }
+  }
+
+  const ranked=[...candidateMap.values()].sort((a,b)=>b.count-a.count||a.idCard.localeCompare(b.idCard));
+  cnmiLastScannedDocumentDataUrl=raw;
+  window.cnmiLastScannedDocumentDataUrl=raw;
+  if(ranked.length){
+    setDocOcrStatus('พบเลขที่เป็นไปได้ · ดูภาพเต็มแล้วเลือกเลขที่เห็นจริง','warn');
+    showLastScannedPreview(raw,ranked);
+    return {ambiguous:true,candidates:ranked};
+  }
+  setDocOcrStatus('สแกนสำเร็จ แต่ยังอ่านเลข 13 หลักไม่ได้ · เปิดภาพเต็มให้ตรวจ','error');
+  if(showPreviewOnFail) showLastScannedPreview(raw,[]);
+  throw new Error('สแกนสำเร็จ แต่ OCR ยังอ่านเลขบัตร 13 หลักไม่ได้');
+}
+
 async function scanIdDocument(){
   const btn=document.getElementById('scan-id-doc-btn');
   const oldText=btn?.innerHTML;
@@ -6224,16 +6310,10 @@ async function scanIdDocument(){
       }catch(e){lastErr=e;}
     }
     if(!payload) throw lastErr||new Error('ไม่พบ CNMI Scan Bridge');
-    setDocOcrStatus('สแกนสำเร็จ · กำลังอ่านเลขบัตร...','busy');
-    const cropped=await trimScannedDocumentDataUrl(payload.imageData);
+    setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตรจากหลายตำแหน่ง...','busy');
+    const rawScan=payload.imageData;
     payload.imageData='';
-    cnmiLastScannedDocumentDataUrl=cropped; window.cnmiLastScannedDocumentDataUrl=cropped;
-    if(window.cnmiLastCardLocateInfo?.detected){
-      setDocOcrStatus(`พบตำแหน่งบัตรอัตโนมัติ (${window.cnmiLastCardLocateInfo.orientation}) · กำลังอ่านเลขบัตร...`,'busy');
-    }else{
-      setDocOcrStatus('ยังจับกรอบบัตรไม่ชัด · ลอง OCR จากภาพเต็มก่อน','busy');
-    }
-    const parsed=await processIdDocumentDataUrl(cropped,{showPreviewOnFail:true});
+    const parsed=await processScannedDocumentMultiView(rawScan,{showPreviewOnFail:true});
     if(parsed?.ambiguous) return;
     setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
   }catch(err){
@@ -6587,7 +6667,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="modal-body">
         <div class="scan-preview-wrap">
           <img id="scan-ocr-preview-img" alt="ภาพบัตรที่สแกน">
-          <div class="scan-preview-help"><strong>เลขบัตรที่ต้องใช้</strong> อยู่ใต้ “เลขประจำตัวประชาชน / Identification Number” บนบัตรประชาชน หรือ “เลขประจำตัวประชาชน / ID No.” บนใบขับขี่ ถ้าพบหลายเลข ระบบจะไม่เดาเอง</div>
+          <div class="scan-preview-help"><span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ</div>
           <div id="scan-ocr-candidates" class="alert alert-warning mt-3 text-start" style="display:none;"></div>
         </div>
         <div class="scan-preview-actions">
