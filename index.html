@@ -2296,7 +2296,7 @@
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
       <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → ถ้าเปลี่ยนคอม ให้ดาวน์โหลด “โปรแกรมสำหรับคอมเครื่องนี้” จากหน้าเตรียมออกหน่วย</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรตรงไหนบนกระจก Flatbed ก็ได้ ขอให้ทั้งใบอยู่บนกระจก → กด สแกนบัตร/ใบขับขี่ → ระบบค้นหากรอบบัตร ครอป และ OCR อัตโนมัติ</p></div>
+      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรจริงบนกระจก หรือเปิดรูปบัตรเต็มจอบนโทรศัพท์แล้ววางกลางกระจก → กด สแกนบัตร/ใบขับขี่ → ระบบค้นกรอบบัตร/หน้าจอโทรศัพท์ ซูม และ OCR อัตโนมัติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
     <div class="guide-note"><strong>LIS Assistant:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2 ก่อนเปลี่ยนคน · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
@@ -6234,6 +6234,160 @@ async function cropScanCenterDataUrl(dataUrl,{widthRatio=0.72,heightRatio=0.82}=
   });
 }
 
+
+async function locatePhoneDisplayedCardDataUrl(dataUrl){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onerror=()=>resolve({detected:false,dataUrl:'',orientation:'',confidence:0});
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width, oh=img.naturalHeight||img.height;
+        if(!ow||!oh) return resolve({detected:false,dataUrl:'',orientation:'',confidence:0});
+
+        // วิเคราะห์ภาพย่อเพื่อหา "บัตรสว่างที่มีกรอบโทรศัพท์มืดล้อมรอบ"
+        // เส้นทางนี้มีไว้เฉพาะกรณีเปิดรูปบัตรบนหน้าจอโทรศัพท์แล้ววางกลาง Scanner
+        // บัตรจริง/ใบขับขี่จริงบนกระจกจะไม่มีกรอบมืดล้อม จึงยังไปใช้ Flow เดิมด้านล่าง
+        const maxAnalyze=1100;
+        const scale=Math.min(maxAnalyze/ow,maxAnalyze/oh,1);
+        const aw=Math.max(1,Math.round(ow*scale)), ah=Math.max(1,Math.round(oh*scale));
+        const c=document.createElement('canvas');c.width=aw;c.height=ah;
+        const ctx=c.getContext('2d',{willReadFrequently:true});
+        ctx.drawImage(img,0,0,aw,ah);
+        const px=ctx.getImageData(0,0,aw,ah).data;
+        const iw=aw+1;
+        const sum=new Float64Array((aw+1)*(ah+1));
+        const sumSq=new Float64Array((aw+1)*(ah+1));
+        for(let y=0;y<ah;y++){
+          let rs=0,rq=0;
+          for(let x=0;x<aw;x++){
+            const i=(y*aw+x)*4;
+            const lum=0.299*px[i]+0.587*px[i+1]+0.114*px[i+2];
+            rs+=lum; rq+=lum*lum;
+            const p=(y+1)*iw+(x+1);
+            sum[p]=sum[y*iw+(x+1)]+rs;
+            sumSq[p]=sumSq[y*iw+(x+1)]+rq;
+          }
+        }
+        const rectStats=(x,y,w,h)=>{
+          x=Math.max(0,Math.min(aw-1,x)); y=Math.max(0,Math.min(ah-1,y));
+          w=Math.max(1,Math.min(aw-x,w)); h=Math.max(1,Math.min(ah-y,h));
+          const x2=x+w,y2=y+h;
+          const s=sum[y2*iw+x2]-sum[y*iw+x2]-sum[y2*iw+x]+sum[y*iw+x];
+          const q=sumSq[y2*iw+x2]-sumSq[y*iw+x2]-sumSq[y2*iw+x]+sumSq[y*iw+x];
+          const n=w*h, mean=s/n, variance=Math.max(0,q/n-mean*mean);
+          return {mean,variance,n,sum:s};
+        };
+
+        const searchX0=Math.round(aw*0.08), searchY0=Math.round(ah*0.04);
+        const searchX1=Math.round(aw*0.92), searchY1=Math.round(ah*0.82);
+        const specs=[];
+        // บัตรที่แสดงบนโทรศัพท์มักเล็กกว่าบัตรจริงบนกระจก จึงลองหลายขนาด
+        [0.18,0.22,0.26,0.30,0.34,0.38,0.42,0.46,0.50,0.54,0.58].forEach(fr=>{
+          const w=Math.round(aw*fr), h=Math.round(w/1.586);
+          if(w>40&&h>25&&w<aw&&h<ah) specs.push({w,h,orientation:'แนวนอน'});
+        });
+        [0.13,0.16,0.19,0.22,0.25,0.28,0.31,0.34].forEach(fr=>{
+          const w=Math.round(aw*fr), h=Math.round(w*1.586);
+          if(w>25&&h>40&&w<aw&&h<ah) specs.push({w,h,orientation:'แนวตั้ง'});
+        });
+
+        let best=null;
+        for(const spec of specs){
+          const step=Math.max(4,Math.round(Math.min(spec.w,spec.h)/10));
+          for(let y=searchY0;y+spec.h<=searchY1;y+=step){
+            for(let x=searchX0;x+spec.w<=searchX1;x+=step){
+              const inner=rectStats(x,y,spec.w,spec.h);
+              // กรอบรอบ candidate ประมาณ 14% ใช้ดูว่ามีโทรศัพท์/ขอบจอมืดล้อมรอบหรือไม่
+              const padX=Math.round(spec.w*0.14), padY=Math.round(spec.h*0.18);
+              const ox=Math.max(0,x-padX), oy=Math.max(0,y-padY);
+              const ox2=Math.min(aw,x+spec.w+padX), oy2=Math.min(ah,y+spec.h+padY);
+              const outer=rectStats(ox,oy,ox2-ox,oy2-oy);
+              const ringN=Math.max(1,outer.n-inner.n);
+              const ringMean=(outer.sum-inner.sum)/ringN;
+              const contrast=inner.mean-ringMean;
+              // บัตรต้องมีรายละเอียดตัวอักษรพอสมควร ไม่ใช่แค่พื้นที่ขาวเรียบ
+              const detail=Math.min(40,Math.sqrt(inner.variance)*0.75);
+              const cx=x+spec.w/2, cy=y+spec.h/2;
+              const centerDist=Math.hypot((cx-aw/2)/(aw/2),(cy-ah*0.36)/(ah*0.50));
+              const centerBonus=Math.max(0,18-centerDist*12);
+              const areaFrac=(spec.w*spec.h)/(aw*ah);
+              // ภาพบัตรบนจอมักกินพื้นที่พอสมควรของโทรศัพท์ ให้โบนัสกับกรอบที่ครอบบัตรทั้งใบ
+              // ลดโอกาสเลือกเพียงช่องสีขาวเล็ก ๆ ภายในบัตร
+              const areaBonus=Math.min(70,areaFrac*500);
+              const landscapeBonus=spec.orientation==='แนวนอน'?8:0;
+              const score=contrast*1.65+detail+centerBonus+areaBonus+landscapeBonus;
+              // กรณีโทรศัพท์จริง: ข้างในสว่างกว่า ring ชัด และมีรายละเอียด
+              if(inner.mean<105 || contrast<18 || inner.variance<420) continue;
+              if(!best||score>best.score){
+                best={x,y,w:spec.w,h:spec.h,orientation:spec.orientation,score,contrast,innerMean:inner.mean,variance:inner.variance};
+              }
+            }
+          }
+        }
+        if(!best) return resolve({detected:false,dataUrl:'',orientation:'',confidence:0});
+
+        // เผื่อขอบบัตรเล็กน้อย แต่ไม่เอากรอบโทรศัพท์เข้ามามาก
+        const padX=Math.round(best.w*0.035), padY=Math.round(best.h*0.05);
+        const ax=Math.max(0,best.x-padX), ay=Math.max(0,best.y-padY);
+        const ax2=Math.min(aw,best.x+best.w+padX), ay2=Math.min(ah,best.y+best.h+padY);
+        const sx=Math.max(0,Math.round(ax/scale)), sy=Math.max(0,Math.round(ay/scale));
+        const sw=Math.min(ow-sx,Math.max(1,Math.round((ax2-ax)/scale)));
+        const sh=Math.min(oh-sy,Math.max(1,Math.round((ay2-ay)/scale)));
+
+        // ขยายให้ OCR เห็นตัวเลขบนจอโทรศัพท์ใหญ่ขึ้น 3-4 เท่า (สูงสุด 3200 px)
+        const desiredW=best.orientation==='แนวนอน'?3000:1900;
+        const up=Math.min(4.2,Math.max(1.4,desiredW/sw));
+        const outW=Math.max(1,Math.round(sw*up)), outH=Math.max(1,Math.round(sh*up));
+        const out=document.createElement('canvas');out.width=outW;out.height=outH;
+        const octx=out.getContext('2d',{willReadFrequently:true});
+        octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';
+        octx.drawImage(img,sx,sy,sw,sh,0,0,outW,outH);
+        // เพิ่ม contrast เบา ๆ แต่ไม่ threshold เพื่อไม่ทำลายตัวเลขจากจอ LCD
+        const im=octx.getImageData(0,0,outW,outH), d=im.data;
+        for(let i=0;i<d.length;i+=4){
+          for(let k=0;k<3;k++) d[i+k]=Math.max(0,Math.min(255,(d[i+k]-128)*1.20+128));
+        }
+        octx.putImageData(im,0,0);
+        resolve({
+          detected:true,
+          dataUrl:out.toDataURL('image/jpeg',0.95),
+          orientation:best.orientation,
+          confidence:Number(Math.min(1,best.contrast/70).toFixed(2)),
+          score:Number(best.score.toFixed(1))
+        });
+      }catch(err){
+        console.warn('locatePhoneDisplayedCardDataUrl failed',err);
+        resolve({detected:false,dataUrl:'',orientation:'',confidence:0});
+      }
+    };
+    img.src=dataUrl;
+  });
+}
+
+async function cropCardBandDataUrl(dataUrl,band='top'){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onerror=()=>reject(new Error('เปิดภาพบัตรบนหน้าจอไม่สำเร็จ'));
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width, oh=img.naturalHeight||img.height;
+        if(!ow||!oh) return resolve(dataUrl);
+        let sx=Math.round(ow*0.04), sw=Math.round(ow*0.92), sy=0, sh=oh;
+        if(band==='top') { sy=Math.round(oh*0.03); sh=Math.round(oh*0.43); }
+        else if(band==='bottom') { sy=Math.round(oh*0.58); sh=Math.round(oh*0.39); }
+        const scale=Math.min(4,Math.max(1.2,3000/sw));
+        const w=Math.round(sw*scale), h=Math.round(sh*scale);
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d',{willReadFrequently:true});
+        ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.96));
+      }catch(err){reject(err);}
+    };
+    img.src=dataUrl;
+  });
+}
+
 async function tryOcrScanView(dataUrl,label){
   setDocOcrStatus(`กำลังอ่านเลขบัตร · ${label}`,'busy');
   const result=await recognizeThaiIdDigitsRobust(dataUrl);
@@ -6248,8 +6402,25 @@ async function processScannedDocumentMultiView(rawDataUrl,{showPreviewOnFail=tru
 
   const autoCrop=await trimScannedDocumentDataUrl(raw);
   const centerCrop=await cropScanCenterDataUrl(raw,{widthRatio:0.72,heightRatio:0.82});
+  const phoneCard=await locatePhoneDisplayedCardDataUrl(raw);
   const views=[];
-  // Physical card: auto-locate first. Phone placed in middle: center crop is the key fallback.
+
+  // v15.6.43: เพิ่มเส้นทางเฉพาะเมื่อพบ "กรอบโทรศัพท์มืดล้อมบัตรสว่าง" เท่านั้น
+  // จึงไม่เปลี่ยน Flow ของบัตรประชาชนจริงหรือใบขับขี่จริงที่วางบนกระจก
+  if(phoneCard?.detected&&phoneCard.dataUrl){
+    views.push({dataUrl:phoneCard.dataUrl,label:'ซูมบัตรบนหน้าจอโทรศัพท์'});
+    if(phoneCard.orientation==='แนวนอน'){
+      try{
+        const phoneTop=await cropCardBandDataUrl(phoneCard.dataUrl,'top');
+        views.unshift({dataUrl:phoneTop,label:'เลขบัตรด้านบนของบัตรบนโทรศัพท์'});
+        // เผื่อผู้ใช้เปิดใบขับขี่บนโทรศัพท์: ID No. มักอยู่ช่วงล่าง
+        const phoneBottom=await cropCardBandDataUrl(phoneCard.dataUrl,'bottom');
+        views.push({dataUrl:phoneBottom,label:'ID No. ช่วงล่างของบัตรบนโทรศัพท์'});
+      }catch(err){ console.warn('phone card band crop failed',err); }
+    }
+  }
+
+  // Flow เดิมยังอยู่ครบสำหรับบัตร/ใบขับขี่จริง
   views.push({dataUrl:autoCrop,label:window.cnmiLastCardLocateInfo?.detected?'กรอบบัตรที่ระบบหา':'ภาพสำหรับอ่านอัตโนมัติ'});
   views.push({dataUrl:centerCrop,label:'บริเวณกลางกระจก'});
   views.push({dataUrl:raw,label:'ภาพเต็มจาก Scanner'});
@@ -6310,7 +6481,7 @@ async function scanIdDocument(){
       }catch(e){lastErr=e;}
     }
     if(!payload) throw lastErr||new Error('ไม่พบ CNMI Scan Bridge');
-    setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตรจากหลายตำแหน่ง...','busy');
+    setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตร รวมกรณีแสดงบัตรบนหน้าจอโทรศัพท์...','busy');
     const rawScan=payload.imageData;
     payload.imageData='';
     const parsed=await processScannedDocumentMultiView(rawScan,{showPreviewOnFail:true});
