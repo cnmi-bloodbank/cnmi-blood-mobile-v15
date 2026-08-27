@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.45"></script>
+  <script src="js/supabase-backend.js?v=15.6.46"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1707,6 +1707,35 @@
 
 .scan-source-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef6ff;border:1px solid #cfe2ff;color:#1554a2;font-weight:700;font-size:.82rem;}
 
+/* v15.6.46: read Thai ID displayed on a phone via USB camera */
+.phone-screen-camera-guide{
+  position:absolute;
+  left:8%; right:8%; top:22%; bottom:22%;
+  border:3px solid rgba(255,255,255,.92);
+  border-radius:18px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.16), inset 0 0 0 1px rgba(15,79,154,.65);
+  pointer-events:none;
+  display:none;
+}
+.phone-screen-camera-guide::before{
+  content:'ให้ภาพบัตรบนหน้าจออยู่ในกรอบนี้';
+  position:absolute;
+  left:50%; top:-42px; transform:translateX(-50%);
+  padding:6px 12px; border-radius:999px;
+  background:rgba(8,34,64,.86); color:#fff;
+  font-weight:800; font-size:.9rem; white-space:nowrap;
+}
+.phone-screen-camera-tip{
+  display:none; margin-top:10px; padding:9px 12px;
+  border-radius:12px; background:#eef7ff; border:1px solid #c9e1fb;
+  color:#174d80; font-weight:700; text-align:center;
+}
+@media(max-width:700px){
+  .phone-screen-camera-guide{left:4%;right:4%;top:25%;bottom:25%;}
+  .phone-screen-camera-guide::before{font-size:.78rem;top:-36px;}
+}
+
+
 /* v15.6.45: Thai / Foreigner passport registration */
 .identity-mode-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.identity-mode-btn{border:1px solid #b8cbe6;background:#fff;color:#214a73;border-radius:12px;padding:9px 16px;font-weight:800}.identity-mode-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd}.foreign-only{display:none}.identity-passport-note{font-size:.88rem;color:#5b7186}.passport-mrz-preview{font-family:ui-monospace,Consolas,monospace;font-size:.82rem;white-space:pre-wrap;word-break:break-all;background:#f7f9fc;border:1px solid #d9e3ef;border-radius:10px;padding:8px;max-height:110px;overflow:auto}.passport-read-ok{color:#198754;font-weight:800}
 
@@ -1971,7 +2000,8 @@
             <div class="register-id-line">
               <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
               <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
-              <button id="scan-id-doc-btn" title="วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+              <button id="scan-id-doc-btn" title="ใช้กับบัตรประชาชนหรือใบขับขี่ตัวจริงบน Scanner" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+              <button id="phone-screen-id-btn" title="เปิด USB Camera เพื่ออ่านเลขบัตรจากภาพที่แสดงบนโทรศัพท์" type="button" class="btn btn-outline-primary" onclick="openPhoneScreenIdCamera()">📱 อ่านจากหน้าจอโทรศัพท์</button>
               <button id="choose-id-file-btn" type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
             </div>
           </div>
@@ -2324,7 +2354,7 @@
   <div class="main-card">
     <div class="guide-grid">
       <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร, Passport Number, ชื่อ, Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยอ่านบัตรหรือสแกนเลข 13 หลัก · ต่างชาติสแกน Passport/MRZ หรือกรอก Passport Number → ค้นประวัติเดิม → ตรวจข้อมูล → บันทึก</p></div>
+      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยใช้ Card Reader, Scanner, หรือ “อ่านจากหน้าจอโทรศัพท์” ด้วย USB Camera · ต่างชาติสแกน Passport/MRZ หรือกรอก Passport Number → ค้นประวัติเดิม → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
       <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
@@ -5786,7 +5816,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.45"></script>
+  <script src="js/supabase-history.js?v=15.6.46"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -5909,12 +5939,21 @@ async function startCameraStream(deviceId=''){
   }
   stopCameraStream();
   if(status) status.textContent='กำลังเปิดกล้อง...';
+  const hiRes = cnmiCameraState.mode==='phone-id' || cnmiCameraState.mode==='document';
+  const baseConstraint = {width:{ideal:hiRes?1920:1280},height:{ideal:hiRes?1080:720}};
   const videoConstraint=deviceId
-    ? {deviceId:{exact:deviceId},width:{ideal:1280},height:{ideal:720}}
-    : {width:{ideal:1280},height:{ideal:720}};
+    ? {...baseConstraint,deviceId:{exact:deviceId}}
+    : baseConstraint;
   try{
     const stream=await navigator.mediaDevices.getUserMedia({video:videoConstraint,audio:false});
     cnmiCameraState.stream=stream;
+    try{
+      const track=stream.getVideoTracks?.()[0];
+      const caps=track?.getCapabilities?.()||{};
+      if(Array.isArray(caps.focusMode)&&caps.focusMode.includes('continuous')){
+        await track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+      }
+    }catch{}
     cnmiCameraState.selectedDeviceId=stream.getVideoTracks?.()[0]?.getSettings?.().deviceId || deviceId || '';
     if(video){ video.srcObject=stream; await video.play().catch(()=>{}); }
     await listCameraDevices(cnmiCameraState.selectedDeviceId);
@@ -5932,16 +5971,33 @@ async function startCameraStream(deviceId=''){
 }
 
 async function openCameraCapture(mode='donor'){
-  cnmiCameraState.mode=mode==='document'?'document':'donor';
+  cnmiCameraState.mode = mode==='phone-id' ? 'phone-id' : (mode==='document' ? 'document' : 'donor');
   cnmiCameraState.capturedDataUrl='';
   const title=document.getElementById('usb-camera-title');
-  if(title) title.textContent=cnmiCameraState.mode==='document'?'🪪 ถ่ายรูปบัตร / ใบขับขี่':'📷 ถ่ายรูปผู้บริจาค';
+  const guide=document.getElementById('usb-phone-screen-guide');
+  const tip=document.getElementById('usb-phone-screen-tip');
+  if(cnmiCameraState.mode==='phone-id'){
+    if(title) title.textContent='📱 อ่านบัตรจากหน้าจอโทรศัพท์';
+    if(guide) guide.style.display='block';
+    if(tip) tip.style.display='block';
+  }else{
+    if(title) title.textContent=cnmiCameraState.mode==='document'?'🪪 ถ่ายรูปบัตร / ใบขับขี่':'📷 ถ่ายรูปผู้บริจาค';
+    if(guide) guide.style.display='none';
+    if(tip) tip.style.display='none';
+  }
   retakeCameraFrame(false);
   getUsbCameraModal()?.show();
   try{ await startCameraStream(cnmiCameraState.selectedDeviceId || ''); }
   catch(err){ /* status already shown */ }
 }
 window.openCameraCapture=openCameraCapture;
+
+function openPhoneScreenIdCamera(){
+  setRegisterIdentityType('thai',{clear:false});
+  setDocOcrStatus('เปิดกล้องแล้วให้ภาพบัตรบนหน้าจอโทรศัพท์อยู่ในกรอบ','busy');
+  return openCameraCapture('phone-id');
+}
+window.openPhoneScreenIdCamera=openPhoneScreenIdCamera;
 
 async function changeCameraDevice(deviceId){
   if(!deviceId) return;
@@ -5964,8 +6020,8 @@ function cameraCanvasDataUrl(maxWidth=800,maxHeight=800,quality=.86){
 
 function captureCameraFrame(){
   try{
-    const isDoc=cnmiCameraState.mode==='document';
-    const dataUrl=cameraCanvasDataUrl(isDoc?1600:720,isDoc?1200:720,isDoc?.9:.84);
+    const isDoc=cnmiCameraState.mode==='document' || cnmiCameraState.mode==='phone-id';
+    const dataUrl=cameraCanvasDataUrl(isDoc?1920:720,isDoc?1440:720,isDoc?0.94:0.84);
     cnmiCameraState.capturedDataUrl=dataUrl;
     const video=document.getElementById('usb-camera-video');
     const shot=document.getElementById('usb-camera-shot');
@@ -6179,11 +6235,64 @@ async function processIdDocumentDataUrl(dataUrl,{showPreviewOnFail=false}={}){
   return parsed;
 }
 
+async function processPhoneScreenCameraDataUrl(dataUrl){
+  const raw=String(dataUrl||'');
+  if(!raw) throw new Error('ยังไม่มีภาพจากกล้อง');
+  setDocOcrStatus('กำลังหาเฉพาะบัตรที่แสดงบนหน้าจอโทรศัพท์...','busy');
+
+  let phoneCard=null;
+  try{ phoneCard=await locatePhoneDisplayedCardDataUrl(raw); }catch{}
+  const target=(phoneCard?.detected&&phoneCard.dataUrl) ? phoneCard.dataUrl : raw;
+
+  // เส้นทางเฉพาะปุ่มอ่านจากหน้าจอโทรศัพท์: ซูมบรรทัดเลขบนบัตรประชาชนก่อน
+  try{
+    const focused=await recognizeThaiIdFocusedPhoneLine(target);
+    if(focused?.idCard){
+      const parsed={rawText:'',idCard:focused.idCard,birthDate:''};
+      applyOcrParsedFields(parsed);
+      setDocOcrStatus('อ่านเลขบัตรจากหน้าจอโทรศัพท์สำเร็จ · กำลังค้นประวัติเดิม','ok');
+      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+      return parsed;
+    }
+    if(focused?.ambiguous&&focused.candidates?.length){
+      setDocOcrStatus('พบเลขที่เป็นไปได้มากกว่า 1 ค่า · กรุณาเลือกเลขที่เห็นจริง','warn');
+      showLastScannedPreview(target,focused.candidates);
+      return {ambiguous:true,candidates:focused.candidates};
+    }
+  }catch(err){ console.warn('phone camera focused OCR failed',err); }
+
+  // ถ้ายังไม่เจอ ให้ลองภาพบัตร/ภาพเต็มแบบ robust โดยไม่กระทบ Flow Scanner หรือใบขับขี่
+  try{
+    const result=await recognizeThaiIdDigitsRobust(target);
+    if(result?.idCard){
+      const parsed={rawText:result.rawText||'',idCard:result.idCard,birthDate:''};
+      applyOcrParsedFields(parsed);
+      setDocOcrStatus('อ่านเลขบัตรจากหน้าจอโทรศัพท์สำเร็จ · กำลังค้นประวัติเดิม','ok');
+      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+      return parsed;
+    }
+    if(result?.ambiguous&&result.candidates?.length){
+      setDocOcrStatus('พบเลขที่เป็นไปได้มากกว่า 1 ค่า · กรุณาเลือกเลขที่เห็นจริง','warn');
+      showLastScannedPreview(target,result.candidates);
+      return {ambiguous:true,candidates:result.candidates};
+    }
+  }catch(err){ console.warn('phone camera robust OCR failed',err); }
+
+  cnmiLastScannedDocumentDataUrl=target;
+  window.cnmiLastScannedDocumentDataUrl=target;
+  setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ · เปิดภาพที่กล้องถ่ายให้ตรวจ','error');
+  showLastScannedPreview(target,[]);
+  throw new Error('ยังอ่านเลขบัตรจากหน้าจอโทรศัพท์ไม่ได้');
+}
+window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
+
 async function useCapturedCameraImage(){
   const dataUrl=cnmiCameraState.capturedDataUrl;
   if(!dataUrl) return alert('กรุณากดถ่ายรูปก่อน');
   try{
-    if(cnmiCameraState.mode==='document'){
+    if(cnmiCameraState.mode==='phone-id'){
+      await processPhoneScreenCameraDataUrl(dataUrl);
+    }else if(cnmiCameraState.mode==='document'){
       await processIdDocumentDataUrl(dataUrl);
     }else{
       setDonorPhotoPreview(dataUrl,{markDirty:true,loadedForIdCard:String(document.getElementById('id_card')?.value||'').replace(/\D/g,'')});
@@ -7051,7 +7160,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div class="camera-live-shell">
           <video id="usb-camera-video" class="camera-live-video" autoplay playsinline muted></video>
           <img id="usb-camera-shot" class="camera-shot-preview" alt="ภาพที่ถ่าย">
+          <div id="usb-phone-screen-guide" class="phone-screen-camera-guide"></div>
         </div>
+        <div id="usb-phone-screen-tip" class="phone-screen-camera-tip">ถือมือถือให้นิ่ง · เปิดภาพบัตรให้เต็มจอ · ให้เลขบัตรอ่านได้ด้วยตาในภาพสด</div>
         <div class="camera-controls">
           <button id="usb-camera-capture-btn" type="button" class="btn btn-primary btn-lg" onclick="captureCameraFrame()">📸 ถ่ายรูป</button>
           <button id="usb-camera-retake-btn" type="button" class="btn btn-outline-secondary btn-lg" onclick="retakeCameraFrame()" style="display:none;">↩ ถ่ายใหม่</button>
