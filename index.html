@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.29"></script>
+  <script src="js/supabase-backend.js?v=15.6.45"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1706,6 +1706,10 @@
 .scan-preview-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
 .scan-source-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef6ff;border:1px solid #cfe2ff;color:#1554a2;font-weight:700;font-size:.82rem;}
+
+/* v15.6.45: Thai / Foreigner passport registration */
+.identity-mode-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.identity-mode-btn{border:1px solid #b8cbe6;background:#fff;color:#214a73;border-radius:12px;padding:9px 16px;font-weight:800}.identity-mode-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd}.foreign-only{display:none}.identity-passport-note{font-size:.88rem;color:#5b7186}.passport-mrz-preview{font-family:ui-monospace,Consolas,monospace;font-size:.82rem;white-space:pre-wrap;word-break:break-all;background:#f7f9fc;border:1px solid #d9e3ef;border-radius:10px;padding:8px;max-height:110px;overflow:auto}.passport-read-ok{color:#198754;font-weight:800}
+
 </style>
 </head>
 
@@ -1894,6 +1898,10 @@
                 <input id="donor-search-id-card" class="form-control" inputmode="numeric" autocomplete="off" placeholder="13 หลัก" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
               </div>
               <div class="col-lg-2 col-md-4">
+                <label class="small fw-bold">Passport Number</label>
+                <input id="donor-search-passport" class="form-control" autocomplete="off" maxlength="20" placeholder="เช่น AB1234567" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20)" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+              </div>
+              <div class="col-lg-2 col-md-4">
                 <label class="small fw-bold">Donor ID</label>
                 <input id="donor-search-donor-id" class="form-control" autocomplete="off" placeholder="เช่น 123456" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
               </div>
@@ -1952,17 +1960,45 @@
 
       <div class="row g-3">
         <div class="col-md-12">
-          <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
-          <div class="register-id-line">
-            <input type="text" id="id_card" class="form-control form-control-lg" required autofocus inputmode="numeric" autocomplete="off">
-            <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
-            <button id="scan-id-doc-btn" title="วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
-            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
+          <div class="identity-mode-switch" role="group" aria-label="ประเภทเอกสารยืนยันตัวตน">
+            <button type="button" id="identity-thai-btn" class="identity-mode-btn active" onclick="setRegisterIdentityType('thai')">🇹🇭 คนไทย</button>
+            <button type="button" id="identity-passport-btn" class="identity-mode-btn" onclick="setRegisterIdentityType('passport')">🌍 ต่างชาติ / Passport</button>
           </div>
+          <input type="hidden" id="register_identity_type" value="thai">
+
+          <div id="thai-identity-box">
+            <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
+            <div class="register-id-line">
+              <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
+              <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
+              <button id="scan-id-doc-btn" title="วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+              <button id="choose-id-file-btn" type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Scan</button>
+            </div>
+          </div>
+
+          <div id="passport-identity-box" class="foreign-only">
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-7">
+                <label class="fw-bold">Passport Number <span class="required-mark">*</span></label>
+                <div class="register-id-line">
+                  <input type="text" id="passport_number" class="form-control form-control-lg" autocomplete="off" maxlength="20" placeholder="เช่น AB1234567" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20)">
+                  <button id="scan-passport-btn" type="button" class="btn btn-primary" onclick="scanIdDocument()">🛂 สแกน Passport</button>
+                  <button id="choose-passport-file-btn" type="button" class="btn btn-outline-secondary" onclick="document.getElementById('id-doc-gallery-input')?.click()">🖼️ เลือกไฟล์ Passport</button>
+                </div>
+              </div>
+              <div class="col-lg-5">
+                <label class="fw-bold">สัญชาติ / Nationality <span class="required-mark">*</span></label>
+                <input type="text" id="nationality" class="form-control form-control-lg" maxlength="60" placeholder="เช่น THA / USA / CHN">
+              </div>
+            </div>
+            <div class="identity-passport-note mt-1">ถ้ามี MRZ ด้านล่างหน้า Passport ระบบจะช่วยอ่าน Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</div>
+          </div>
+
           <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
           <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
           <div id="card-reader-status" class="register-status-line text-muted"></div>
           <div id="doc-ocr-status" class="register-status-line"></div>
+          <div id="passport-mrz-preview" class="passport-mrz-preview foreign-only mt-2" style="display:none"></div>
           <div id="preload-register-status" class="register-status-line text-muted"></div>
           <div id="donor-history-panel" hidden></div>
         </div>
@@ -2063,19 +2099,19 @@
           <input type="text" id="phone" class="form-control" required inputmode="numeric" maxlength="12" placeholder="เช่น 085-871-7556" oninput="formatPhoneInput(this)">
         </div>
         <div class="col-md-3">
-          <label>ตำบล / แขวง <span class="required-mark">*</span></label>
+          <label>ตำบล / แขวง <span id="subdistrict-required" class="required-mark">*</span></label>
           <input type="text" id="subdistrict" class="form-control" required placeholder="เช่น บางปูใหม่">
         </div>
         <div class="col-md-3">
-          <label>อำเภอ / เขต <span class="required-mark">*</span></label>
+          <label>อำเภอ / เขต <span id="district-required" class="required-mark">*</span></label>
           <input type="text" id="district" class="form-control" required placeholder="เช่น เมืองสมุทรปราการ">
         </div>
         <div class="col-md-3">
-          <label>จังหวัด <span class="required-mark">*</span></label>
+          <label>จังหวัด <span id="province-required" class="required-mark">*</span></label>
           <input type="text" id="province" class="form-control" required placeholder="เช่น สมุทรปราการ">
         </div>
         <div class="col-md-3">
-          <label>รหัสไปรษณีย์ <span class="required-mark">*</span></label>
+          <label>รหัสไปรษณีย์ <span id="postal-required" class="required-mark">*</span></label>
           <input type="text" id="postal_code" class="form-control" required inputmode="numeric" maxlength="5" placeholder="เช่น 10280">
         </div>
         <div class="col-md-12">
@@ -2189,7 +2225,7 @@
                 <div class="desktop-tools-sub">เปลี่ยนคอมเมื่อไร ดาวน์โหลดจากตรงนี้ได้เลย</div>
               </div>
               <div class="desktop-tools-actions">
-                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.2.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
+                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.3.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="checkDesktopTools()">🔄 ตรวจว่าเปิดอยู่ไหม</button>
               </div>
             </div>
@@ -2201,11 +2237,11 @@
               </div>
               <div class="desktop-tool-card">
                 <div class="desktop-tool-name">🖨️ Scan Bridge v1.3</div>
-                <div class="desktop-tool-use">เปิดค้างไว้ก่อนสแกนบัตร/ใบขับขี่</div>
+                <div class="desktop-tool-use">เปิดค้างไว้ก่อนสแกนบัตร/ใบขับขี่/Passport</div>
                 <a class="btn btn-outline-primary btn-sm" href="CNMI-Scan-Bridge-v1.3.zip" download>ดาวน์โหลด Scan Bridge</a>
               </div>
               <div class="desktop-tool-card">
-                <div class="desktop-tool-name">🧾 LIS Assistant v2.13</div>
+                <div class="desktop-tool-name">🧾 LIS Assistant v2.14</div>
                 <div class="desktop-tool-use">เปิดเมื่อจะนำข้อมูล/ผลคัดกรองไปช่วยกรอก AI-LIS</div>
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="downloadLisAssistantBundle()">ดาวน์โหลด LIS Assistant</button>
               </div>
@@ -2232,7 +2268,7 @@
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
 
           </div>
-          <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.13 → ทำทีละคนให้จบ ส่วนที่ 1 → ส่วนที่ 2 → ✓ Complete → คนถัดไป</div>
+          <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.14 → ทำทีละคนให้จบ ส่วนที่ 1 → ส่วนที่ 2 → ✓ Complete → คนถัดไป</div>
           <hr class="my-3">
 
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f5fbff;">
@@ -2287,8 +2323,8 @@
   </div>
   <div class="main-card">
     <div class="guide-grid">
-      <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร ชื่อ Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">อ่านบัตรจากชิป หรือกดสแกนบัตร → ระบบอ่านเลข 13 หลักและค้นประวัติเดิม → ตรวจข้อมูล → ถ่ายรูปผู้บริจาคได้ถ้าต้องการ → บันทึก</p></div>
+      <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร, Passport Number, ชื่อ, Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
+      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยอ่านบัตรหรือสแกนเลข 13 หลัก · ต่างชาติสแกน Passport/MRZ หรือกรอก Passport Number → ค้นประวัติเดิม → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
       <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
@@ -2296,10 +2332,10 @@
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
       <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → ถ้าเปลี่ยนคอม ให้ดาวน์โหลด “โปรแกรมสำหรับคอมเครื่องนี้” จากหน้าเตรียมออกหน่วย</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → วางบัตรจริงบนกระจก หรือเปิดรูปบัตรเต็มจอบนโทรศัพท์แล้ววางกลางกระจก → กด สแกนบัตร/ใบขับขี่ → ระบบค้นกรอบบัตร/หน้าจอโทรศัพท์ ซูม และ OCR อัตโนมัติ</p></div>
+      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
-    <div class="guide-note"><strong>LIS Assistant:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2 ก่อนเปลี่ยนคน · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
+    <div class="guide-note"><strong>LIS Assistant v2.14:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2ก่อนเปลี่ยนคน · คนไทยใช้เลขบัตร/Donor ID · ต่างชาติใช้ Passport Number/Donor ID · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
   </div>
 </section>
 
@@ -2655,6 +2691,7 @@
                 <div class="col-md-4"><div class="detail-label">เลขถุง</div><div id="vd-bag" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">สถานะ</div><div id="vd-status" class="detail-value"></div></div>
                 <div class="col-md-12"><div class="detail-label">ชื่อ-นามสกุล</div><div id="vd-name" class="detail-value detail-name-strong"></div></div>
+                <div class="col-md-12"><div id="vd-identity-label" class="detail-label">เลขบัตรประชาชน</div><div id="vd-identity" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">วันเกิด</div><div id="vd-birth" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">เพศ</div><div id="vd-gender" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">เบอร์โทร</div><div id="vd-phone" class="detail-value"></div></div>
@@ -2847,7 +2884,7 @@
       </div>
 
       <div class="cert-row">
-        เลขบัตรประชาชน
+        <span id="c-id-label">เลขบัตรประชาชน</span>
         <span id="c-id" class="cert-line mid">-</span>
         ที่อยู่
         <span id="c-address" class="cert-line long">-</span>
@@ -4073,12 +4110,13 @@ async function resetPasswordWithOtp() {
       }
     }
 
-    async function loadVisitDetailPhoto(idCard) {
+    async function loadVisitDetailPhoto(identityValue, identityType='thai') {
       const img = document.getElementById('vd-photo');
       const empty = document.getElementById('vd-photo-empty');
       if (!img || !empty) return;
-      const cleanId = String(idCard || '').replace(/\D/g, '');
-      if (!/^\d{13}$/.test(cleanId)) {
+      const cleanId = String(identityValue || '').replace(/\D/g, '');
+      const pass = normalizePassportNumber(identityValue || '');
+      if ((identityType!=='passport' && !/^\d{13}$/.test(cleanId)) || (identityType==='passport' && !pass)) {
         openVisitPhotoPreview('');
         return;
       }
@@ -4086,7 +4124,7 @@ async function resetPasswordWithOtp() {
       empty.textContent = 'กำลังโหลดรูปผู้บริจาค...';
       img.style.display = 'none';
       try {
-        const res = await apiCall('getDonorPhoto', { data: JSON.stringify({ idCard: cleanId }) });
+        const res = await apiCall('getDonorPhoto', { data: JSON.stringify({ identityType, idCard: identityType==='passport'?'':cleanId, passportNumber: identityType==='passport'?pass:'' }) });
         openVisitPhotoPreview(res?.photoData || '');
         if (!res?.photoData) empty.innerHTML = '<div><div class="visit-photo-empty-icon">👤</div><strong>ไม่มีรูปถ่าย</strong><div class="small mt-1">ตำแหน่งรูปผู้บริจาค</div></div>';
       } catch (err) {
@@ -4135,7 +4173,7 @@ async function resetPasswordWithOtp() {
         const status = document.getElementById('donor-photo-status');
         if (status) status.textContent = 'กำลังเตรียมรูปผู้บริจาค...';
         const dataUrl = await loadImageFileAsCompressedDataUrl(file);
-        setDonorPhotoPreview(dataUrl, { markDirty: true, loadedForIdCard: String(document.getElementById('id_card')?.value || '').replace(/\D/g, '') });
+        setDonorPhotoPreview(dataUrl, { markDirty: true, loadedForIdCard: getRegisterIdentityType()==='passport' ? normalizePassportNumber(document.getElementById('passport_number')?.value||'') : String(document.getElementById('id_card')?.value || '').replace(/\D/g, '') });
       } catch (err) {
         console.error('handleDonorPhotoFile failed', err);
         alert('เตรียมรูปผู้บริจาคไม่สำเร็จ\n' + (err.message || err));
@@ -4145,9 +4183,40 @@ async function resetPasswordWithOtp() {
     }
     window.handleDonorPhotoFile = handleDonorPhotoFile;
 
+
+    function normalizePassportNumber(v){return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20);}
+    window.normalizePassportNumber=normalizePassportNumber;
+    function getRegisterIdentityType(){return document.getElementById('register_identity_type')?.value==='passport'?'passport':'thai';}
+    window.getRegisterIdentityType=getRegisterIdentityType;
+    function setRegisterIdentityType(type,opts={}){
+      const kind=type==='passport'?'passport':'thai';
+      const hidden=document.getElementById('register_identity_type'); if(hidden)hidden.value=kind;
+      document.getElementById('identity-thai-btn')?.classList.toggle('active',kind==='thai');
+      document.getElementById('identity-passport-btn')?.classList.toggle('active',kind==='passport');
+      const thai=document.getElementById('thai-identity-box'),pass=document.getElementById('passport-identity-box');
+      if(thai)thai.style.display=kind==='thai'?'':'none';
+      if(pass)pass.style.display=kind==='passport'?'block':'none';
+      const mrz=document.getElementById('passport-mrz-preview'); if(mrz&&kind!=='passport'){mrz.style.display='none';mrz.textContent='';}
+      ['subdistrict-required','district-required','province-required','postal-required'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=kind==='thai'?'':'none';});
+      const address=document.getElementById('address');if(address)address.placeholder=kind==='passport'?'ที่อยู่/โรงแรม/ที่พักที่ติดต่อได้':'เช่น 2005/488 หมู่ที่ 8';
+      const status=document.getElementById('doc-ocr-status'); if(status)status.textContent='';
+      if(opts.clear!==false){
+        document.getElementById('id_card')&&(document.getElementById('id_card').value='');
+        document.getElementById('passport_number')&&(document.getElementById('passport_number').value='');
+        document.getElementById('nationality')&&(document.getElementById('nationality').value='');
+        window.cnmiPreload?.clearPanel?.(); window.resetDonorPhotoForIdentityChange?.();
+      }
+      setTimeout(()=>document.getElementById(kind==='passport'?'passport_number':'id_card')?.focus(),50);
+    }
+    window.setRegisterIdentityType=setRegisterIdentityType;
+
     async function saveData() {
+      const identityType = getRegisterIdentityType();
       const data = {
-        idCard: document.getElementById("id_card").value.trim(),
+        identityType,
+        idCard: identityType === 'thai' ? document.getElementById("id_card").value.trim() : '',
+        passportNumber: identityType === 'passport' ? normalizePassportNumber(document.getElementById("passport_number")?.value || '') : '',
+        nationality: identityType === 'passport' ? (document.getElementById("nationality")?.value || '').trim().toUpperCase() : '',
         prefix: document.getElementById("prefix").value.trim(),
         fname: document.getElementById("fname").value.trim(),
         lname: document.getElementById("lname").value.trim(),
@@ -4171,17 +4240,14 @@ async function resetPasswordWithOtp() {
       document.getElementById("phone").value = data.phone;
 
       const requiredFields = [
-        ["id_card", "เลขบัตรประชาชน", data.idCard],
+        ...(data.identityType === 'thai' ? [["id_card", "เลขบัตรประชาชน", data.idCard]] : [["passport_number", "Passport Number", data.passportNumber],["nationality", "สัญชาติ", data.nationality]]),
         ["prefix", "คำนำหน้า", data.prefix],
         ["fname", "ชื่อ", data.fname],
         ["lname", "นามสกุล", data.lname],
         ["birth_date", "วันเกิด", data.birthDate],
         ["gender", "เพศ", data.gender],
-        ["address", "ที่อยู่", data.addressLine],
-        ["subdistrict", "ตำบล/แขวง", data.subdistrict],
-        ["district", "อำเภอ/เขต", data.district],
-        ["province", "จังหวัด", data.province],
-        ["postal_code", "รหัสไปรษณีย์", data.postalCode],
+        ["address", data.identityType === 'passport' ? "ที่อยู่/ที่พักที่ติดต่อได้" : "ที่อยู่", data.addressLine],
+        ...(data.identityType === 'thai' ? [["subdistrict", "ตำบล/แขวง", data.subdistrict],["district", "อำเภอ/เขต", data.district],["province", "จังหวัด", data.province],["postal_code", "รหัสไปรษณีย์", data.postalCode]] : []),
         ["phone", "เบอร์โทร", data.phone],
         ["occupation_type", "อาชีพ", data.occupationType]
       ];
@@ -4209,13 +4275,23 @@ async function resetPasswordWithOtp() {
       }
       if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
-      if (!/^\d{13}$/.test(data.idCard)) {
+      if (data.identityType === 'thai' && !/^\d{13}$/.test(data.idCard)) {
         alert("เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก");
         document.getElementById("id_card").focus();
         return;
       }
-      if (!/^\d{5}$/.test(data.postalCode)) {
+      if (data.identityType === 'passport' && !/^[A-Z0-9]{5,20}$/.test(data.passportNumber)) {
+        alert("Passport Number ต้องเป็น A-Z / 0-9 จำนวน 5–20 ตัว");
+        document.getElementById("passport_number")?.focus();
+        return;
+      }
+      if (data.identityType === 'thai' && !/^\d{5}$/.test(data.postalCode)) {
         alert("รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก");
+        document.getElementById("postal_code")?.focus();
+        return;
+      }
+      if (data.identityType === 'passport' && data.postalCode && !/^\d{5}$/.test(data.postalCode)) {
+        alert("ถ้ากรอกรหัสไปรษณีย์ ให้เป็นตัวเลข 5 หลัก");
         document.getElementById("postal_code")?.focus();
         return;
       }
@@ -4245,7 +4321,7 @@ async function resetPasswordWithOtp() {
         if (window.cnmiDonorPhotoState?.dirty) {
           try {
             const photoRes = await apiCall('saveDonorPhoto', {
-              data: JSON.stringify({ idCard: data.idCard, photoData: window.cnmiDonorPhotoState.data || '' })
+              data: JSON.stringify({ identityType: data.identityType, idCard: data.idCard, passportNumber: data.passportNumber, photoData: window.cnmiDonorPhotoState.data || '' })
             });
             if (photoRes?.status === 'success') {
               setDonorPhotoPreview(window.cnmiDonorPhotoState.data || '', { setOriginal: true, loadedForIdCard: data.idCard });
@@ -4271,6 +4347,7 @@ async function resetPasswordWithOtp() {
 
         alert(`บันทึกสำเร็จ!
 DN: ${res.dn || "-"}
+${data.identityType === 'passport' ? 'Passport: '+data.passportNumber : 'เลขบัตร: '+data.idCard}
 Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
 ครั้งที่บริจาค: ${res.donationNo || "-"}${photoNotice}`);
 
@@ -4640,7 +4717,12 @@ async function adminResetPassword(username, fullName) {
         address: donor.address || row.address || "-",
         phone: donor.phone || row.phone || "-",
         occupation: row.occupation || donor.occupation || "",
-        photoData: donor.photoData || row.photoData || ""
+        photoData: donor.photoData || row.photoData || "",
+        identityKey: donor.identityKey || row.identityKey || row.dbIdCard || row.idCard || "",
+        identityType: donor.identityType || row.identityType || "thai",
+        idCard: (donor.identityType||row.identityType)==='passport' ? '' : (donor.idCard || row.idCard || ''),
+        passportNumber: donor.passportNumber || row.passportNumber || "",
+        nationality: donor.nationality || row.nationality || ""
       };
     }
 
@@ -4658,7 +4740,7 @@ async function adminResetPassword(username, fullName) {
       let data = await apiCall("getRecentVisitsFast", { targetDate: dateInput });
       if (!Array.isArray(data)) return data;
 
-      const ids = [...new Set(data.map(r => String(r.idCard || "").trim()).filter(Boolean))];
+      const ids = [...new Set(data.map(r => String(r.identityKey || r.dbIdCard || r.idCard || "").trim()).filter(Boolean))];
       const localMap = await window.cnmiPreload.findMany(ids);
       let missing = ids.filter(id => !localMap[id]);
 
@@ -4679,7 +4761,7 @@ async function adminResetPassword(username, fullName) {
         }
       }
 
-      data = data.map(row => mergeVisitWithDonor(row, localMap[String(row.idCard || "").trim()]));
+      data = data.map(row => mergeVisitWithDonor(row, localMap[String(row.identityKey || row.dbIdCard || row.idCard || "").trim()]));
       visitDataCache.set(dateInput, { at: Date.now(), data });
       return data;
     }
@@ -4730,7 +4812,7 @@ async function adminResetPassword(username, fullName) {
         const idLabel = imported ? `<strong>Donor ID ${escapeHtml(row.donorId||'-')}</strong>` : `${escapeHtml(row.dn||'-')}${row.donorId?`<br><small class=\"text-muted\">Donor ID ${escapeHtml(row.donorId)}</small>`:''}`;
         const detailLine = imported
           ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
-          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`;
+          : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.identityType==='passport'&&row.passportNumber?' · Passport '+escapeHtml(row.passportNumber):''}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`;
         const thumbHtml = row.photoData
           ? `<img src="${escapeHtml(row.photoData)}" alt="รูปผู้บริจาค" class="visit-thumb photo-zoomable" title="กดเพื่อขยายรูป" data-title="${escapeHtml(row.name || "รูปผู้บริจาค")}" onclick="event.stopPropagation(); openPhotoLightbox(this.src, this.dataset.title)">`
           : `<div class="visit-thumb-placeholder"><span class="photo-icon">👤</span><span>ไม่มีรูปถ่าย</span></div>`;
@@ -4785,7 +4867,10 @@ async function adminResetPassword(username, fullName) {
       
       showPage("register");
 
-      document.getElementById("id_card").value = row.idCard || "";
+      setRegisterIdentityType(row.identityType === 'passport' ? 'passport' : 'thai', {clear:false});
+      document.getElementById("id_card").value = row.identityType === 'passport' ? "" : (row.idCard || "");
+      const passEl=document.getElementById("passport_number"); if(passEl) passEl.value=row.passportNumber||"";
+      const natEl=document.getElementById("nationality"); if(natEl) natEl.value=row.nationality||"";
       document.getElementById("prefix").value = row.prefix || "";
       document.getElementById("fname").value = row.fname || "";
       document.getElementById("lname").value = row.lname || "";
@@ -4812,7 +4897,7 @@ async function adminResetPassword(username, fullName) {
     }
 
     function clearForm() {
-      const fields = ["id_card", "prefix", "fname", "lname", "birth_date", "gender", "address", "subdistrict", "district", "province", "postal_code", "phone", "donor_id"];
+      const fields = ["id_card", "passport_number", "nationality", "prefix", "fname", "lname", "birth_date", "gender", "address", "subdistrict", "district", "province", "postal_code", "phone", "donor_id"];
 
       fields.forEach(id => {
         const el = document.getElementById(id);
@@ -4832,7 +4917,8 @@ async function adminResetPassword(username, fullName) {
       donorPhotoState.loadedForIdCard = '';
       window.cnmiPreload?.clearPanel?.();
       const preloadStatus = document.getElementById("preload-register-status");
-      if (preloadStatus) { preloadStatus.textContent = "กรอกเลขบัตร 13 หลักเพื่อค้นประวัติจากฐานที่เตรียมไว้"; preloadStatus.className = "small text-muted mt-1"; }
+      if (preloadStatus) { preloadStatus.textContent = ""; preloadStatus.className = "register-status-line text-muted"; }
+      setRegisterIdentityType('thai',{clear:false});
       document.getElementById("id_card").focus();
     }
 
@@ -5045,6 +5131,8 @@ function getVisitFullAddress(row = {}) {
       document.getElementById("vd-bag").innerText = row.bag || "-";
       document.getElementById("vd-status").innerText = row.status || "รอคัดกรอง";
       document.getElementById("vd-name").innerText = row.name || "-";
+      document.getElementById("vd-identity-label").innerText = row.identityType==='passport' ? "Passport Number / สัญชาติ" : "เลขบัตรประชาชน";
+      document.getElementById("vd-identity").innerText = row.identityType==='passport' ? `${row.passportNumber||"-"}${row.nationality?" · "+row.nationality:""}` : (row.idCard||"-");
       document.getElementById("vd-birth").innerText = row.birth || "-";
       document.getElementById("vd-gender").innerText = genderToThai(row.gender || "-");
       document.getElementById('vd-phone').innerText = row.phone || '-';
@@ -5057,7 +5145,7 @@ function getVisitFullAddress(row = {}) {
       document.getElementById("vd-temp").innerText = row.temp || "-";
       document.getElementById("vd-address").innerText = getVisitFullAddress(row);
       document.getElementById("vd-save-time").innerText = row.saveTime || "-";
-      await loadVisitDetailPhoto(row.idCard || row.dbIdCard || '');
+      await loadVisitDetailPhoto(row.identityType==='passport' ? (row.passportNumber||'') : (row.idCard||row.dbIdCard||''), row.identityType||'thai');
 
       let reasonEl = document.getElementById("vd-reason");
       let status = (row.status || "").trim();
@@ -5142,7 +5230,7 @@ function getVisitFullAddress(row = {}) {
 
         pDn.innerText = "DN: " + (row.dn || "");
         pName.innerText = "ชื่อ-สกุล: " + (row.name || "");
-        pId.innerText = "เลขบัตรประชาชน: " + (row.idCard || "");
+        pId.innerText = row.identityType==='passport' ? "Passport: " + (row.passportNumber || "") + (row.nationality ? " · "+row.nationality : "") : "เลขบัตรประชาชน: " + (row.idCard || "");
         pBirth.innerText = "วัน-เดือน-ปีเกิด: " + thaiBirthDateForPrint(row.birth || "-");
         pAge.innerText = "อายุ: " + age + " ปี";
         pGender.innerText = "เพศ: " + genderToThai(row.gender || "-");
@@ -5218,7 +5306,7 @@ function getVisitFullAddress(row = {}) {
           data: JSON.stringify({
             dn: row.dn || "",
             name: row.name || "",
-            idCard: row.idCard || "",
+            idCard: row.identityType==='passport' ? (row.passportNumber || "") : (row.idCard || ""),
             address: row.address || "",
             visitDate: selectedDate,
             remark: ""
@@ -5232,7 +5320,8 @@ function getVisitFullAddress(row = {}) {
 
         cCertNo.innerText = res.certNo || "-";
         cName.innerText = row.name || "-";
-        cId.innerText = row.idCard || "-";
+        const cIdLabel=document.getElementById('c-id-label'); if(cIdLabel)cIdLabel.innerText=row.identityType==='passport'?'Passport Number':'เลขบัตรประชาชน';
+        cId.innerText = row.identityType==='passport' ? (row.passportNumber || "-") : (row.idCard || "-");
         cAddress.innerText = row.address || "-";
         cVisitDate.innerText = formatThaiDateForCert(selectedDate);
         cIssueDate.innerText = formatThaiDateForCert(res.issueDate || getLocalDateInputValue());
@@ -5697,7 +5786,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.29"></script>
+  <script src="js/supabase-history.js?v=15.6.45"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -5705,6 +5794,7 @@ function getVisitFullAddress(row = {}) {
 function donorSearchFilters(){
   return {
     idCard:(document.getElementById('donor-search-id-card')?.value||'').trim(),
+    passport:(document.getElementById('donor-search-passport')?.value||'').trim().toUpperCase(),
     donorId:(document.getElementById('donor-search-donor-id')?.value||'').trim(),
     fname:(document.getElementById('donor-search-fname')?.value||'').trim(),
     lname:(document.getElementById('donor-search-lname')?.value||'').trim(),
@@ -5715,7 +5805,7 @@ function donorSearchFilters(){
   };
 }
 function clearDonorSearch(){
-  ['donor-search-id-card','donor-search-donor-id','donor-search-fname','donor-search-lname','donor-search-phone','donor-search-dn','donor-search-bag','donor-search-visit-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['donor-search-id-card','donor-search-passport','donor-search-donor-id','donor-search-fname','donor-search-lname','donor-search-phone','donor-search-dn','donor-search-bag','donor-search-visit-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const box=document.getElementById('donor-history-search-results');if(box)box.innerHTML='';
   const status=document.getElementById('donor-history-search-status');if(status){status.className='small text-muted';status.textContent='ค้นหาผู้บริจาคเดิมก่อนรับลงทะเบียน';}
   document.getElementById('donor-search-id-card')?.focus();
@@ -5726,6 +5816,7 @@ async function searchDonorHistory(){
   const box=document.getElementById('donor-history-search-results');
   if(!Object.values(filters).some(v=>String(v||'').trim())){ if(status) status.textContent='กรอกอย่างน้อย 1 ช่องก่อนค้นหา'; if(box) box.innerHTML=''; return; }
   if(filters.idCard && !/^\d{13}$/.test(filters.idCard.replace(/\D/g,''))){ if(status){status.className='small text-danger';status.textContent='เลขบัตรประชาชนต้องมี 13 หลัก';} return; }
+  if(filters.passport && !/^[A-Z0-9]{5,20}$/.test(filters.passport)){ if(status){status.className='small text-danger';status.textContent='Passport Number ต้องเป็น A-Z / 0-9 จำนวน 5–20 ตัว';} return; }
   if(status){status.className='small text-primary';status.textContent='กำลังค้นหา...';}
   try{
     const rows=await window.cnmiSupabaseApi.searchDonorsAdvanced(filters,30);
@@ -5738,8 +5829,9 @@ async function searchDonorHistory(){
         const badge=flags.length?`<span class="badge text-bg-danger">${flags.join(' · ')}</span>`:'<span class="badge text-bg-success">ไม่พบคำเตือน</span>';
         const internalId=String(r.id_card||'');
         const safeId=internalId.replace(/'/g,'');
-        const canRegister=/^\d{13}$/.test(internalId);
-        const displayIdentity=String(p.idCard||p.legacyIdentity||internalId.replace(/^LEGACY:/,'')||'');
+        const isPassport=(p.identityType==='passport') || !!String(p.passportNumber||'').trim();
+        const canRegister=isPassport || /^\d{13}$/.test(internalId);
+        const displayIdentity=isPassport ? String(p.passportNumber||'') : String(p.idCard||p.legacyIdentity||internalId.replace(/^LEGACY:/,'')||'');
         const warnings=[];
         if(sero.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Sero + NAT ผิดปกติ</strong><br>ให้ติดต่อห้องบริจาคโลหิตในเวลาทำการ เพื่อดูข้อมูลในระบบ LIS ของโรงพยาบาล</div>`);
         if(defers.length) warnings.push(`<div class="donor-search-warning bg-danger-subtle text-danger-emphasis"><strong>Active Defer:</strong> ${escapeHtml(defers[0]?.reason||'ไม่ระบุเหตุผล')}${defers[0]?.until?' · ถึง '+escapeHtml(defers[0].until):''}</div>`);
@@ -5749,8 +5841,8 @@ async function searchDonorHistory(){
         const donorIds=[...new Set([...(Array.isArray(p.donorIdsAll)?p.donorIdsAll:[]),...(Array.isArray(p.donorIds)?p.donorIds:[]),...(Array.isArray(p.mobileVisits)?p.mobileVisits.map(x=>x?.donorId||''):[])].filter(Boolean))];
         const donorIdLine=donorIds.length?`<div class="small text-muted">Donor ID ${escapeHtml(donorIds.slice(0,4).join(', '))}${donorIds.length>4?' …':''}</div>`:'';
         const lastLine=last?`<div class="small text-muted">AI-LIS ล่าสุด ${escapeHtml(last.date||'-')}${last.component?' · '+escapeHtml(last.component):''}${last.donationNo?' · บริจาคครั้งที่ '+escapeHtml(String(last.donationNo).replace(/\.0+$/,'')):''}</div>`:(mobileLast?`<div class="small text-muted">Blood Mobile ล่าสุด ${escapeHtml(mobileLast.date||mobileLast.ymd||'-')}${mobileLast.dn?' · DN '+escapeHtml(mobileLast.dn):''}${mobileLast.location?' · '+escapeHtml(mobileLast.location):''}</div>`:'');
-        const identityLine=canRegister?`เลขบัตร ${escapeHtml(displayIdentity)}`:`รหัสเดิม ${escapeHtml(displayIdentity)} <span class="badge text-bg-warning">Legacy</span>`;
-        const actionButton=canRegister?`<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button>`:`<div class="alert alert-warning py-1 px-2 small mt-2 mb-0">ประวัติเดิมรายการนี้ไม่มีเลขบัตรประชาชน 13 หลักในไฟล์เก่า จึงแสดงประวัติได้ แต่ไม่เติมลงทะเบียนใหม่อัตโนมัติ</div>`;
+        const identityLine=isPassport?`Passport ${escapeHtml(displayIdentity)}${p.nationality?' · '+escapeHtml(p.nationality):''}`:(canRegister?`เลขบัตร ${escapeHtml(displayIdentity)}`:`รหัสเดิม ${escapeHtml(displayIdentity)} <span class="badge text-bg-warning">Legacy</span>`);
+        const actionButton=canRegister?(isPassport?`<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryPassport('${String(p.passportNumber||'').replace(/'/g,'')}')">เลือกข้อมูลนี้ → ลงทะเบียน</button>`:`<button class="btn btn-primary btn-sm w-100 mt-2" onclick="selectHistoryDonor('${safeId}')">เลือกข้อมูลนี้ → ลงทะเบียน</button>`):`<div class="alert alert-warning py-1 px-2 small mt-2 mb-0">ประวัติเดิมรายการนี้ไม่มีเลขบัตรประชาชน 13 หลักหรือ Passport Number จึงแสดงประวัติได้ แต่ไม่เติมลงทะเบียนใหม่อัตโนมัติ</div>`;
         return `<div class="donor-search-card"><div class="d-flex justify-content-between gap-2 align-items-start"><div class="min-w-0"><div class="donor-search-name">${escapeHtml((p.prefix||'')+(p.fname||'')+' '+(p.lname||''))}</div><div class="small text-muted">${identityLine}${p.phone?' · '+escapeHtml(p.phone):''}</div>${donorIdLine}${lastLine}</div>${badge}</div>${warnings.join('')}${actionButton}</div>`;
       }).join('');
     }
@@ -5763,6 +5855,15 @@ async function selectHistoryDonor(id){
   await window.cnmiPreload.lookupFromRegister({fill:true});
   window.scrollTo({top:0,behavior:'smooth'});
 }
+async function selectHistoryPassport(passport){
+  clearForm();
+  setRegisterIdentityType('passport',{clear:false});
+  const input=document.getElementById('passport_number'); if(input) input.value=normalizePassportNumber(passport);
+  showPage('register');
+  await window.cnmiPreload.lookupFromRegister({fill:true});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.selectHistoryPassport=selectHistoryPassport;
 
 
 const cnmiCameraState = { stream:null, mode:'donor', capturedDataUrl:'', selectedDeviceId:'', modal:null };
@@ -6587,12 +6688,18 @@ async function scanIdDocument(){
       }catch(e){lastErr=e;}
     }
     if(!payload) throw lastErr||new Error('ไม่พบ CNMI Scan Bridge');
-    setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตร รวมกรณีแสดงบัตรบนหน้าจอโทรศัพท์...','busy');
     const rawScan=payload.imageData;
     payload.imageData='';
-    const parsed=await processScannedDocumentMultiView(rawScan,{showPreviewOnFail:true});
-    if(parsed?.ambiguous) return;
-    setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
+    if(getRegisterIdentityType()==='passport'){
+      setDocOcrStatus('สแกนสำเร็จ · กำลังอ่าน MRZ ของ Passport...','busy');
+      await processPassportDocumentDataUrl(rawScan);
+      setDocOcrStatus('อ่าน Passport สำเร็จ · ตรวจข้อมูลที่ระบบเติมอีกครั้ง','ok');
+    }else{
+      setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตร รวมกรณีแสดงบัตรบนหน้าจอโทรศัพท์...','busy');
+      const parsed=await processScannedDocumentMultiView(rawScan,{showPreviewOnFail:true});
+      if(parsed?.ambiguous) return;
+      setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
+    }
   }catch(err){
     console.error('scanIdDocument failed',err);
     const msg=String(err?.message||err||'');
@@ -6605,7 +6712,7 @@ async function scanIdDocument(){
       alert('สแกน/อ่านบัตรไม่สำเร็จ\n'+msg);
     }
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML=oldText||'🖨️ สแกนบัตร / ใบขับขี่';}
+    if(btn){btn.disabled=false;btn.innerHTML=oldText||(getRegisterIdentityType()==='passport'?'🛂 สแกน Passport':'🖨️ สแกนบัตร / ใบขับขี่');}
   }
 }
 window.scanIdDocument=scanIdDocument;
@@ -6648,6 +6755,72 @@ function applyOcrParsedFields(parsed={}){
   if(parsed.idCard){ const idEl=document.getElementById('id_card'); if(idEl){ idEl.value=parsed.idCard; idEl.dispatchEvent(new Event('input',{bubbles:true})); }}
   if(parsed.birthDate){ thaiCardSet('birth_date', parsed.birthDate); }
 }
+
+function mrzBirthToThaiDate(v=''){
+  const s=String(v||'').replace(/\D/g,''); if(!/^\d{6}$/.test(s))return'';
+  const yy=Number(s.slice(0,2)),mm=Number(s.slice(2,4)),dd=Number(s.slice(4,6));
+  if(mm<1||mm>12||dd<1||dd>31)return'';
+  const now=new Date(),cy=now.getFullYear(),candidates=[1900+yy,2000+yy];
+  let year=candidates.find(y=>{const age=cy-y;return age>=16&&age<=100;})||candidates.sort((a,b)=>Math.abs((cy-a)-35)-Math.abs((cy-b)-35))[0];
+  return `${String(dd).padStart(2,'0')}-${String(mm).padStart(2,'0')}-${year+543}`;
+}
+function parsePassportMrz(text=''){
+  const rawLines=String(text||'').toUpperCase().split(/\r?\n/).map(x=>x.replace(/[^A-Z0-9<]/g,'')).filter(x=>x.length>=20);
+  let line1=rawLines.find(x=>x.startsWith('P<'))||'';
+  let line2='';
+  if(line1){const idx=rawLines.indexOf(line1);line2=rawLines.slice(idx+1).find(x=>x.length>=30)||'';}
+  if(!line2) line2=rawLines.filter(x=>x.length>=30&&!x.startsWith('P<')).sort((a,b)=>b.length-a.length)[0]||'';
+  if(!line1||!line2)return null;
+  line1=(line1+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<').slice(0,44);
+  line2=(line2+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<').slice(0,44);
+  const passportNumber=line2.slice(0,9).replace(/</g,'').replace(/[^A-Z0-9]/g,'');
+  const nationality=line2.slice(10,13).replace(/</g,'');
+  const birthRaw=line2.slice(13,19).replace(/O/g,'0').replace(/[^0-9]/g,'');
+  const sex=line2.charAt(20)==='F'?'F':(line2.charAt(20)==='M'?'M':'');
+  const names=line1.slice(5).split('<<');
+  const lname=(names[0]||'').replace(/</g,' ').replace(/\s+/g,' ').trim();
+  const fname=(names.slice(1).join(' ')||'').replace(/</g,' ').replace(/\s+/g,' ').trim();
+  if(!/^[A-Z0-9]{5,20}$/.test(passportNumber))return null;
+  return {passportNumber,nationality,birthDate:mrzBirthToThaiDate(birthRaw),gender:sex,fname,lname,rawMrz:line1+'\n'+line2};
+}
+function applyPassportParsedFields(parsed={}){
+  if(parsed.passportNumber){const el=document.getElementById('passport_number');if(el){el.value=normalizePassportNumber(parsed.passportNumber);el.dispatchEvent(new Event('input',{bubbles:true}));}}
+  if(parsed.nationality) thaiCardSet('nationality',parsed.nationality);
+  if(parsed.fname) thaiCardSet('fname',parsed.fname);
+  if(parsed.lname) thaiCardSet('lname',parsed.lname);
+  if(parsed.birthDate) thaiCardSet('birth_date',parsed.birthDate);
+  if(parsed.gender) thaiCardSet('gender',parsed.gender);
+  const prefix=document.getElementById('prefix');if(prefix&&!prefix.value&&parsed.gender)prefix.value=parsed.gender==='F'?'Ms.':'Mr.';
+  const mrz=document.getElementById('passport-mrz-preview');if(mrz&&parsed.rawMrz){mrz.style.display='block';mrz.textContent=parsed.rawMrz;}
+}
+async function recognizePassportMrz(dataUrl){
+  if(!window.Tesseract?.createWorker)throw new Error('โหลดเครื่องมือ OCR ไม่สำเร็จ');
+  const variants=[{rotate:0,threshold:false,label:'ภาพปกติ'},{rotate:0,threshold:true,label:'เพิ่มความคม'},{rotate:180,threshold:true,label:'หมุน 180°'}];
+  let worker=null,lastText='';
+  try{
+    worker=await window.Tesseract.createWorker('eng');
+    await worker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',tessedit_pageseg_mode:'6',preserve_interword_spaces:'0'});
+    for(let i=0;i<variants.length;i++){
+      setDocOcrStatus(`กำลังอ่าน MRZ Passport (${i+1}/${variants.length}) · ${variants[i].label}`,'busy');
+      const view=await imageDataUrlToOcrVariant(dataUrl,{...variants[i],maxWidth:3000});
+      const {data}=await worker.recognize(view);lastText=String(data?.text||'');
+      const parsed=parsePassportMrz(lastText);if(parsed)return parsed;
+    }
+  }finally{try{await worker?.terminate?.();}catch{}}
+  return {rawMrz:'',rawText:lastText};
+}
+async function processPassportDocumentDataUrl(dataUrl){
+  const parsed=await recognizePassportMrz(dataUrl);
+  if(!parsed?.passportNumber){
+    setDocOcrStatus('อ่าน MRZ ไม่สำเร็จ · กรอก Passport Number เองได้ แล้วระบบจะค้นประวัติให้อัตโนมัติ','warn');
+    throw new Error('ยังอ่าน MRZ ของ Passport ไม่ได้ กรุณากรอก Passport Number เอง');
+  }
+  applyPassportParsedFields(parsed);
+  setDocOcrStatus(`อ่าน Passport ${parsed.passportNumber} สำเร็จ · กำลังค้นประวัติเดิม`,'ok');
+  await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+  return parsed;
+}
+window.processPassportDocumentDataUrl=processPassportDocumentDataUrl;
 async function recognizeIdDocument(file){
   if(!file) throw new Error('ไม่พบไฟล์รูปเอกสาร');
   if(!window.Tesseract?.recognize) throw new Error('โหลดเครื่องมืออ่านรูปไม่สำเร็จ กรุณาลองใหม่หรือกรอกเลขบัตรเอง');
@@ -6663,16 +6836,21 @@ async function handleIdDocFile(event){
   if(!file) return;
   try{
     setDocOcrStatus('กำลังอ่านไฟล์ Scan...','busy');
-    const raw=await loadImageFileAsCompressedDataUrl(file,{maxWidth:2600,maxHeight:2600,quality:0.92});
-    const cropped=await trimScannedDocumentDataUrl(raw);
-    cnmiLastScannedDocumentDataUrl=cropped; window.cnmiLastScannedDocumentDataUrl=cropped;
-    const parsed=await processIdDocumentDataUrl(cropped,{showPreviewOnFail:true});
-    if(parsed?.ambiguous) return;
-    setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
+    const raw=await loadImageFileAsCompressedDataUrl(file,{maxWidth:3000,maxHeight:3000,quality:0.94});
+    if(getRegisterIdentityType()==='passport'){
+      await processPassportDocumentDataUrl(raw);
+      setDocOcrStatus('อ่าน Passport สำเร็จ · ตรวจข้อมูลที่ระบบเติมอีกครั้ง','ok');
+    }else{
+      const cropped=await trimScannedDocumentDataUrl(raw);
+      cnmiLastScannedDocumentDataUrl=cropped; window.cnmiLastScannedDocumentDataUrl=cropped;
+      const parsed=await processIdDocumentDataUrl(cropped,{showPreviewOnFail:true});
+      if(parsed?.ambiguous) return;
+      setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
+    }
   }catch(err){
     console.error('handleIdDocFile failed',err);
-    setDocOcrStatus('อ่านไฟล์ Scan ไม่สำเร็จ: '+(err.message||err),'error');
-    alert('อ่านไฟล์ Scan ไม่สำเร็จ\n'+(err.message||err));
+    setDocOcrStatus('อ่านเอกสารไม่สำเร็จ: '+(err.message||err),'error');
+    alert('อ่านเอกสารไม่สำเร็จ\n'+(err.message||err));
   }finally{if(event?.target)event.target.value='';}
 }
 window.handleIdDocFile=handleIdDocFile;
@@ -6699,6 +6877,7 @@ function openCurrentDonorPhotoZoom(){
 window.openCurrentDonorPhotoZoom=openCurrentDonorPhotoZoom;
 function thaiCardSet(id,value){const el=document.getElementById(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!=='')el.value=String(value).trim();}
 async function readThaiIdCard(){
+  if(getRegisterIdentityType()==='passport') return alert('โหมดต่างชาติใช้ Passport Number ไม่ใช้เครื่องอ่านบัตรประชาชน');
   const btn=document.getElementById('read-thai-id-btn'),st=document.getElementById('card-reader-status');
   const oldText=btn?.innerHTML;
   try{
@@ -6802,9 +6981,7 @@ async function saveBagRange(){
 </script>
 
 <script>
-// v15.6.41: create LIS Assistant v2.13 One Person Complete ZIP in the browser.
-// This avoids GitHub Pages serving an incomplete/empty binary file after manual uploads.
-const CNMI_LIS_ASSISTANT_ZIP_B64 = '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';
+// v15.6.45: LIS Assistant v2.14 is downloaded from the static ZIP on GitHub Pages.
 async function checkLocalBridgeHealth(url, elementId, label) {
   const el = document.getElementById(elementId);
   if (el) { el.className='tool-status-chip'; el.textContent=label+': กำลังตรวจ...'; }
@@ -6832,23 +7009,12 @@ async function checkDesktopTools(){
 window.checkDesktopTools=checkDesktopTools;
 
 function downloadLisAssistantBundle() {
-  try {
-    const bin = atob(CNMI_LIS_ASSISTANT_ZIP_B64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/zip' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'CNMI-LIS-Assistant-v2.13-One-Person-Complete.zip';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-  } catch (err) {
-    console.error(err);
-    alert('สร้างไฟล์ LIS Assistant ไม่สำเร็จ กรุณาแจ้ง Admin');
-  }
+  const a = document.createElement('a');
+  a.href = 'CNMI-LIS-Assistant-v2.14-Thai-Passport-One-Person-DIRECT.zip';
+  a.download = 'CNMI-LIS-Assistant-v2.14-Thai-Passport-One-Person-DIRECT.zip';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
