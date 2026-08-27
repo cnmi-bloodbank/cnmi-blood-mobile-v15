@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.27"></script>
+  <script src="js/supabase-backend.js?v=15.6.29"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1348,6 +1348,17 @@
   .thumb-col { width:64px; }
   .visit-thumb, .visit-thumb-placeholder { width:46px; height:46px; border-radius:10px; }
 }
+/* v15.6.29: concise guide + photo placeholder */
+.visit-thumb-placeholder { width:58px; height:58px; padding:4px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; border:1px dashed #9fb9d6; background:#f7fbff; color:#617b95; font-size:.62rem; line-height:1.05; text-align:center; }
+.visit-thumb-placeholder .photo-icon { font-size:1.25rem; line-height:1; }
+.guide-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.guide-card { border:1px solid #dce8f5; border-radius:14px; background:#fff; padding:14px 16px; }
+.guide-title { font-weight:800; color:#14539e; margin-bottom:5px; }
+.guide-step { margin:0; color:#334e68; font-size:.93rem; line-height:1.55; }
+.guide-note { border-left:4px solid #4c8dde; background:#f4f9ff; border-radius:10px; padding:10px 12px; margin-top:12px; }
+.detail-address { white-space:normal; line-height:1.55; }
+@media (max-width:900px){ .guide-grid{grid-template-columns:1fr;} }
+@media (max-width:768px){ .visit-thumb-placeholder{width:50px;height:50px;font-size:.55rem;} }
 </style>
 </head>
 
@@ -1438,6 +1449,12 @@
         <button class="nav-btn" data-page="preload" data-roles="admin,sup_manager,manager,staff" onclick="showPage('preload')">
           <span class="nav-icon">⚡</span>
           <span class="nav-label">เตรียมออกหน่วย</span>
+        </button>
+
+
+        <button class="nav-btn" data-page="guide" data-roles="admin,sup_manager,manager,staff,physician" onclick="showPage('guide')">
+          <span class="nav-icon">📘</span>
+          <span class="nav-label">คู่มือ</span>
         </button>
 
         <div class="nav-group" id="settings-group" data-group-roles="admin,sup_manager">
@@ -1572,7 +1589,7 @@
       <section class="page-section" id="page-register">
         <div class="page-title-card">
           <h1 class="page-title">ลงทะเบียนผู้บริจาค</h1>
-          <p class="page-desc">บันทึกข้อมูลผู้บริจาคและพิมพ์ใบสมัคร</p>
+          <p class="page-desc">ลงทะเบียนผู้บริจาค</p>
         </div>
 
         <div class="container-fluid px-0">
@@ -1600,8 +1617,8 @@
             <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
           </div>
           <div id="card-reader-status" class="small text-muted mt-1">อ่านผ่าน Card Bridge หรือกรอกเลขบัตรเอง</div>
-          <div id="doc-ocr-status" class="doc-ocr-status">ถ้าไม่ได้พกบัตรประชาชน สามารถใช้รูปบัตร/ใบขับขี่ช่วยอ่านเลขบัตรได้แบบช่วยกรอก (ต้องตรวจทานก่อนบันทึก)</div>
-          <div id="preload-register-status" class="small text-muted mt-1">กรอกครบ 13 หลัก ระบบค้นประวัติเดิมและเติมข้อมูลให้อัตโนมัติ</div>
+          <div id="doc-ocr-status" class="doc-ocr-status">ใช้รูปบัตร/ใบขับขี่ช่วยอ่านเลขบัตรได้</div>
+          <div id="preload-register-status" class="small text-muted mt-1">ครบ 13 หลัก → ค้นประวัติเดิมอัตโนมัติ</div>
           <div id="donor-history-panel" hidden></div>
         </div>
 
@@ -1622,7 +1639,7 @@
             <div class="donor-photo-head">
               <div>
                 <div class="donor-photo-title">📷 รูปผู้บริจาค <span class="text-muted fw-normal">(ไม่บังคับ)</span></div>
-                <div class="donor-photo-sub">ใช้ช่วยจำหน้าเจ้าของข้อมูลได้ง่ายขึ้น เวลามีผู้บริจาคเดิมกลับมา</div>
+                <div class="donor-photo-sub">รูปสำหรับช่วยจำผู้บริจาค</div>
               </div>
               <span class="donor-photo-chip">Optional</span>
             </div>
@@ -1639,7 +1656,7 @@
               <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้รูปนี้</button>
               <input type="file" id="donor-photo-input" accept="image/*" capture="environment" hidden onchange="handleDonorPhotoFile(event)">
             </div>
-            <div id="donor-photo-status" class="donor-photo-note">ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ</div>
+            <div id="donor-photo-status" class="donor-photo-note">ไม่บังคับถ่ายรูป</div>
           </div>
         </div>
 
@@ -1736,7 +1753,7 @@
       <section class="page-section" id="page-today">
   <div class="page-title-card">
     <h1 class="page-title">รายชื่อผู้บริจาคตามวันที่</h1>
-    <p class="page-desc">ค้นรายการจาก Mobile + AI-LIS ตามวันที่</p>
+    <p class="page-desc">ดูรายการตามวันที่</p>
   </div>
 
   <div class="container-fluid px-0" id="table-mount-today">
@@ -1776,7 +1793,7 @@
       <section class="page-section" id="page-print-a4">
         <div class="page-title-card">
           <h1 class="page-title">พิมพ์ใบสมัคร</h1>
-          <p class="page-desc">เลือกวันที่และพิมพ์ใบสมัครย้อนหลัง</p>
+          <p class="page-desc">พิมพ์ใบสมัครย้อนหลัง</p>
         </div>
 
         <div class="container-fluid px-0" id="table-mount-print-a4"></div>
@@ -1816,7 +1833,7 @@
       <section class="page-section" id="page-preload">
         <div class="page-title-card">
           <h1 class="page-title">⚡ เตรียมออกหน่วย</h1>
-          <p class="page-desc">อัปเดตฐานกลาง สถานที่ และเลขถุงก่อนออกหน่วย</p>
+          <p class="page-desc">เตรียมข้อมูลก่อนออกหน่วย</p>
         </div>
         <div class="main-card">
           <h4 class="text-primary fw-bold">ฐานประวัติผู้บริจาคกลาง</h4>
@@ -1881,6 +1898,27 @@
           </div>
         </div>
       </section>
+
+
+<section class="page-section" id="page-guide">
+  <div class="page-title-card">
+    <h1 class="page-title">📘 คู่มือการใช้งาน</h1>
+    <p class="page-desc">สรุปแต่ละเมนูแบบสั้น</p>
+  </div>
+  <div class="main-card">
+    <div class="guide-grid">
+      <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร ชื่อ Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
+      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">กรอกหรืออ่านเลขบัตร 13 หลัก → ระบบดึงประวัติเดิม → ตรวจข้อมูล → ถ่ายรูปได้ถ้าต้องการ → บันทึกและพิมพ์ใบสมัคร</p></div>
+      <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
+      <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
+      <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
+      <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
+      <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → ดาวน์โหลด LIS Assistant เมื่อต้องใช้เครื่องใหม่</p></div>
+    </div>
+    <div class="guide-note"><strong>LIS Assistant:</strong> คนผ่านต้องยืนยัน Barcode ถุงก่อน Auto ส่วนที่ 2 ส่วนคนไม่ผ่าน Auto เฉพาะ 5 ค่าคัดกรองและไม่แตะ Bag / Group / Bag Lot</div>
+  </div>
+</section>
 
       <section class="page-section" id="page-settings">
   <div class="page-title-card">
@@ -2286,7 +2324,7 @@
 
             <div class="col-md-12">
               <div class="detail-label">ที่อยู่</div>
-              <div id="vd-address" class="detail-value"></div>
+              <div id="vd-address" class="detail-value detail-address"></div>
             </div>
 
             <div class="col-md-12">
@@ -3710,7 +3748,7 @@ async function resetPasswordWithOtp() {
       if (status) {
         if (value && donorPhotoState.dirty) status.textContent = 'เลือกรูปใหม่แล้ว · ระบบจะบันทึกเมื่อกดปุ่มบันทึกข้อมูลผู้บริจาค';
         else if (value) status.textContent = 'มีรูปผู้บริจาคในระบบแล้ว · สามารถใช้รูปเดิมหรือเปลี่ยนรูปใหม่ได้';
-        else status.textContent = 'ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ';
+        else status.textContent = 'ไม่บังคับถ่ายรูป';
       }
       if (!value && input) input.value = '';
     }
@@ -3734,7 +3772,7 @@ async function resetPasswordWithOtp() {
       const { box, img, status, input } = donorPhotoElements();
       if (img) { img.src = ''; img.style.display = 'none'; }
       if (box) box.classList.remove('has-photo');
-      if (status) status.textContent = 'ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ';
+      if (status) status.textContent = 'ไม่บังคับถ่ายรูป';
       if (input) input.value = '';
     }
     window.resetDonorPhotoForIdentityChange = resetDonorPhotoForIdentityChange;
@@ -4315,6 +4353,11 @@ async function adminResetPassword(username, fullName) {
         name: `${donor.prefix || ""}${donor.fname || ""} ${donor.lname || ""}`.trim() || row.name || "ไม่พบชื่อ",
         birth: donor.birth || row.birth || "-",
         gender: donor.gender || row.gender || "-",
+        addressLine: donor.addressLine || row.addressLine || "",
+        subdistrict: donor.subdistrict || row.subdistrict || "",
+        district: donor.district || row.district || "",
+        province: donor.province || row.province || "",
+        postalCode: donor.postalCode || row.postalCode || "",
         address: donor.address || row.address || "-",
         phone: donor.phone || row.phone || "-",
         occupation: row.occupation || donor.occupation || "",
@@ -4409,9 +4452,13 @@ async function adminResetPassword(username, fullName) {
         const detailLine = imported
           ? `${escapeHtml(row.saveTime||dateInput)}${row.type?' · '+escapeHtml(row.type):''}${row.group?' · หมู่ '+escapeHtml(row.group):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`
           : `วัน/เดือน/ปีเกิด: ${escapeHtml(row.birth || "-")}${row.location?' · 📍 '+escapeHtml(row.location):''}${row.source==='mobile+lis'?' · Mobile + AI-LIS':(row.source==='legacy-mobile'?' · Mobile เดิม':'')}${row.donorId?' · Donor ID '+escapeHtml(row.donorId):''}${row.donationNo?' · ครั้งที่ '+escapeHtml(row.donationNo):''}`;
+        const thumbHtml = row.photoData
+          ? `<img src="${escapeHtml(row.photoData)}" alt="รูปผู้บริจาค" class="visit-thumb">`
+          : `<div class="visit-thumb-placeholder"><span class="photo-icon">👤</span><span>ไม่มีรูปถ่าย</span></div>`;
         html += `
           <tr ${imported?'':`onclick="openVisitDetail('${rowStr}')"`}>
             <td>${filteredData.length - index}</td>
+            <td><div class="d-flex justify-content-center">${thumbHtml}</div></td>
             <td>${idLabel}</td>
             <td><strong>${escapeHtml(row.name || "ไม่พบชื่อ")}</strong><br><small class="text-muted">${detailLine}</small></td>
             <td><span class="badge ${badgeClass}" style="min-width:80px">${statusText}</span></td>
@@ -4698,6 +4745,20 @@ async function adminResetPassword(username, fullName) {
       }
     }
 
+
+function getVisitFullAddress(row = {}) {
+  const existing = String(row.address || '').trim();
+  const structured = joinRegistrationAddress({
+    addressLine: row.addressLine || '',
+    subdistrict: row.subdistrict || '',
+    district: row.district || '',
+    province: row.province || '',
+    postalCode: row.postalCode || ''
+  });
+  if (structured) return structured;
+  return existing || '-';
+}
+
     async function openVisitDetail(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
@@ -4715,6 +4776,7 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("vd-bp").innerText = row.bp || "-";
       document.getElementById("vd-pulse").innerText = row.pulse || "-";
       document.getElementById("vd-temp").innerText = row.temp || "-";
+      document.getElementById("vd-address").innerText = getVisitFullAddress(row);
       document.getElementById("vd-save-time").innerText = row.saveTime || "-";
       await loadVisitDetailPhoto(row.idCard || row.dbIdCard || '');
 
@@ -5356,7 +5418,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.27"></script>
+  <script src="js/supabase-history.js?v=15.6.29"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
