@@ -21,7 +21,8 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.8"></script>
+  <script src="js/supabase-backend.js?v=15.6.27"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
     :root { --cnmi-blue: #2f80ed; --cnmi-blue-soft: #eaf4ff; --cnmi-blue-border: #b8dafc; --cnmi-blue-dark: #185abc; --cnmi-text: #18324a; --cnmi-muted: #6b7a8a; --cnmi-card: #ffffff; }
@@ -1291,6 +1292,62 @@
 .bag-used-chip { display:inline-flex; gap:5px; align-items:center; border-radius:999px; padding:5px 9px; background:#ffe8e8; border:1px solid #f0b8b8; color:#8a2020; font-size:.82rem; }
 @media (max-width: 1000px){ .donor-search-grid{grid-template-columns:1fr;} }
 
+
+/* v15.6.26: donor photo + cleaner register actions */
+.register-action-bar { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 16px; border:1px solid #dbe7f7; border-radius:16px; background:linear-gradient(180deg,#fbfdff 0%,#f3f8ff 100%); }
+.register-action-note { min-width:220px; flex:1 1 260px; color:#35506b; }
+.register-action-note-title { font-size:1rem; font-weight:800; color:#0f4f9a; }
+.register-action-note-sub { font-size:.88rem; color:#5b7186; margin-top:2px; }
+.register-action-buttons { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.register-save-btn { min-width:280px; max-width:360px; font-weight:800; box-shadow:0 8px 20px rgba(18,98,176,.15); }
+.register-save-btn .save-sub { display:block; font-size:.80rem; font-weight:600; opacity:.9; margin-top:2px; }
+.register-clear-btn { min-width:140px; }
+.donor-photo-card { border:1px solid #d9e7f7; border-radius:16px; background:linear-gradient(180deg,#ffffff 0%,#f7fbff 100%); padding:14px; height:100%; }
+.donor-photo-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.donor-photo-title { font-weight:800; color:#154f9b; }
+.donor-photo-sub { font-size:.84rem; color:#6b7f93; }
+.donor-photo-preview-box { margin-top:12px; border:1px dashed #b8cbe6; border-radius:16px; background:#f9fbfe; min-height:210px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+.donor-photo-preview-box.has-photo { border-style:solid; background:#fff; }
+.donor-photo-preview { width:100%; height:210px; object-fit:cover; display:none; }
+.donor-photo-preview-box.has-photo .donor-photo-preview { display:block; }
+.donor-photo-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:18px; color:#6b7f93; gap:6px; }
+.donor-photo-preview-box.has-photo .donor-photo-placeholder { display:none; }
+.donor-photo-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.donor-photo-note { margin-top:8px; font-size:.82rem; color:#6b7f93; }
+.donor-photo-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; background:#edf6ff; color:#185abc; font-size:.78rem; font-weight:700; border:1px solid #cfe2ff; }
+.visit-photo-box { width:180px; max-width:100%; border:1px solid #d9e7f7; border-radius:16px; overflow:hidden; background:#f8fbff; margin-top:6px; }
+.visit-photo-box img { width:100%; height:190px; object-fit:cover; display:block; }
+.visit-photo-empty { min-height:190px; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px; color:#6b7f93; background:#f8fbff; }
+.preload-photo-row { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
+.preload-photo-thumb { width:110px; height:140px; object-fit:cover; border-radius:14px; border:1px solid #cfe2ff; background:#fff; flex:0 0 auto; }
+.preload-summary-stack { flex:1 1 320px; min-width:0; }
+@media (max-width: 768px) {
+  .register-action-bar { padding:12px; }
+  .register-action-buttons { width:100%; justify-content:stretch; }
+  .register-save-btn, .register-clear-btn { width:100%; max-width:none; min-width:0; }
+}
+
+/* v15.6.27: thumbnails + smart capture */
+.id-input-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.mobile-camera-btn { display:inline-flex; align-items:center; gap:8px; border-radius:12px; }
+.doc-ocr-status { margin-top:8px; font-size:.88rem; color:#5b7186; }
+.doc-ocr-status.is-busy { color:#0d6efd; font-weight:700; }
+.doc-ocr-status.is-ok { color:#198754; font-weight:700; }
+.doc-ocr-status.is-warn { color:#b26a00; font-weight:700; }
+.doc-ocr-status.is-error { color:#dc3545; font-weight:700; }
+.camera-choice-card { border:1px solid #d9e7f7; border-radius:14px; padding:14px; background:#fbfdff; height:100%; }
+.camera-choice-title { font-weight:800; color:#1554a2; margin-bottom:4px; }
+.camera-choice-sub { font-size:.84rem; color:#6b7f93; margin-bottom:10px; }
+.camera-choice-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.camera-choice-actions .btn { border-radius:10px; }
+.thumb-col { width:72px; }
+.visit-thumb { width:52px; height:52px; border-radius:12px; object-fit:cover; border:1px solid #cfe2ff; background:#fff; box-shadow:0 4px 10px rgba(15,79,154,.08); }
+.visit-thumb-placeholder { width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:1px dashed #c5d8f0; background:#f8fbff; color:#7b90a5; font-size:1.2rem; }
+@media (max-width: 768px) {
+  .id-input-actions .btn { width:100%; justify-content:center; }
+  .thumb-col { width:64px; }
+  .visit-thumb, .visit-thumb-placeholder { width:46px; height:46px; border-radius:10px; }
+}
 </style>
 </head>
 
@@ -1535,21 +1592,55 @@
             <input type="text" id="id_card" class="form-control" required autofocus inputmode="numeric" autocomplete="off">
             <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตรประชาชน</button>
           </div>
+          <div class="id-input-actions">
+            <button type="button" class="btn btn-primary mobile-camera-btn" onclick="openSmartCaptureModal()">📷 ถ่ายรูป / เลือกรูปจากมือถือ</button>
+            <button type="button" class="btn btn-outline-secondary mobile-camera-btn" onclick="triggerIdDocPicker()">🪪 อ่านจากรูปบัตร/ใบขับขี่</button>
+            <input type="file" id="id-doc-input" accept="image/*" capture="environment" hidden onchange="handleIdDocFile(event)">
+            <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
+            <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
+          </div>
           <div id="card-reader-status" class="small text-muted mt-1">อ่านผ่าน Card Bridge หรือกรอกเลขบัตรเอง</div>
-          <div id="preload-register-status" class="small text-muted mt-1">กรอกครบ 13 หลัก ระบบค้นประวัติอัตโนมัติ</div>
+          <div id="doc-ocr-status" class="doc-ocr-status">ถ้าไม่ได้พกบัตรประชาชน สามารถใช้รูปบัตร/ใบขับขี่ช่วยอ่านเลขบัตรได้แบบช่วยกรอก (ต้องตรวจทานก่อนบันทึก)</div>
+          <div id="preload-register-status" class="small text-muted mt-1">กรอกครบ 13 หลัก ระบบค้นประวัติเดิมและเติมข้อมูลให้อัตโนมัติ</div>
           <div id="donor-history-panel" hidden></div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-4 col-md-6">
           <label>Donor ID</label>
           <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
           <div class="small text-muted mt-1">กรอก Donor ID จริงตามบัตร/AI-LIS ถ้ามี · ถ้าไม่มีให้เว้นว่าง ระบบจะเติมภายหลังจาก AI-LIS</div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-4 col-md-6">
           <label>ครั้งล่าสุดที่เคยบริจาค</label>
           <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="0" max="9998" value="0" data-user-edited="0" oninput="this.dataset.userEdited='1'; updateDonationNoHint();">
           <div id="donation-no-hint" class="small text-muted mt-1">ถ้าไม่เคยบริจาคให้เป็น 0 · ระบบจะบันทึกครั้งนี้เป็น <strong>ครั้งที่ 1</strong></div>
+        </div>
+
+        <div class="col-lg-4 col-md-5">
+          <div class="donor-photo-card">
+            <div class="donor-photo-head">
+              <div>
+                <div class="donor-photo-title">📷 รูปผู้บริจาค <span class="text-muted fw-normal">(ไม่บังคับ)</span></div>
+                <div class="donor-photo-sub">ใช้ช่วยจำหน้าเจ้าของข้อมูลได้ง่ายขึ้น เวลามีผู้บริจาคเดิมกลับมา</div>
+              </div>
+              <span class="donor-photo-chip">Optional</span>
+            </div>
+            <div id="donor-photo-box" class="donor-photo-preview-box">
+              <img id="donor-photo-preview" class="donor-photo-preview" alt="รูปผู้บริจาค">
+              <div class="donor-photo-placeholder">
+                <div style="font-size:2rem; line-height:1;">👤</div>
+                <div><strong>ยังไม่มีรูปผู้บริจาค</strong></div>
+                <div class="small">กดถ่ายรูปหรือเลือกรูปจากเครื่องได้เลย</div>
+              </div>
+            </div>
+            <div class="donor-photo-actions">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerDonorPhotoPicker()">📸 ถ่ายรูป / เลือกรูป</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้รูปนี้</button>
+              <input type="file" id="donor-photo-input" accept="image/*" capture="environment" hidden onchange="handleDonorPhotoFile(event)">
+            </div>
+            <div id="donor-photo-status" class="donor-photo-note">ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ</div>
+          </div>
         </div>
 
         <div class="col-md-2">
@@ -1667,6 +1758,7 @@
           <thead class="table-light">
             <tr>
               <th style="width:70px;">ลำดับ</th>
+              <th class="thumb-col">รูป</th>
               <th>DN / Donor ID</th>
               <th>ชื่อ-นามสกุล</th>
               <th>สถานะ</th>
@@ -2333,6 +2425,16 @@
               <div class="col-md-4">
                 <div class="detail-label">สถานะ</div>
                 <div id="vd-status" class="detail-value"></div>
+              </div>
+
+              <div class="col-md-12">
+                <div class="detail-label">รูปผู้บริจาค</div>
+                <div class="detail-value">
+                  <div id="vd-photo-box" class="visit-photo-box">
+                    <img id="vd-photo" alt="รูปผู้บริจาค" style="display:none;">
+                    <div id="vd-photo-empty" class="visit-photo-empty">ยังไม่มีรูปผู้บริจาค</div>
+                  </div>
+                </div>
               </div>
 
               <div class="col-md-12">
@@ -3576,6 +3678,156 @@ async function resetPasswordWithOtp() {
     window.cnmiParseThaiAddressText = parseThaiAddressText;
     window.cnmiFillStructuredAddress = fillStructuredAddress;
 
+
+    const donorPhotoState = { data: '', original: '', dirty: false, loadedForIdCard: '' };
+    window.cnmiDonorPhotoState = donorPhotoState;
+
+    function donorPhotoElements() {
+      return {
+        box: document.getElementById('donor-photo-box'),
+        img: document.getElementById('donor-photo-preview'),
+        status: document.getElementById('donor-photo-status'),
+        input: document.getElementById('donor-photo-input')
+      };
+    }
+
+    function setDonorPhotoPreview(photoData, options = {}) {
+      const { markDirty = false, setOriginal = false, loadedForIdCard = undefined, preserveDirty = false } = options || {};
+      if (preserveDirty && donorPhotoState.dirty) return;
+      const value = String(photoData || '').trim();
+      donorPhotoState.data = value;
+      if (setOriginal) donorPhotoState.original = value;
+      if (markDirty) donorPhotoState.dirty = true;
+      else if (setOriginal || value === donorPhotoState.original) donorPhotoState.dirty = false;
+      if (loadedForIdCard !== undefined) donorPhotoState.loadedForIdCard = String(loadedForIdCard || '').replace(/\D/g, '');
+
+      const { box, img, status, input } = donorPhotoElements();
+      if (img) {
+        img.src = value || '';
+        img.style.display = value ? 'block' : 'none';
+      }
+      if (box) box.classList.toggle('has-photo', !!value);
+      if (status) {
+        if (value && donorPhotoState.dirty) status.textContent = 'เลือกรูปใหม่แล้ว · ระบบจะบันทึกเมื่อกดปุ่มบันทึกข้อมูลผู้บริจาค';
+        else if (value) status.textContent = 'มีรูปผู้บริจาคในระบบแล้ว · สามารถใช้รูปเดิมหรือเปลี่ยนรูปใหม่ได้';
+        else status.textContent = 'ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ';
+      }
+      if (!value && input) input.value = '';
+    }
+    window.setDonorPhotoPreview = setDonorPhotoPreview;
+
+    function clearDonorPhoto(markDirty = false) {
+      setDonorPhotoPreview('', { markDirty, setOriginal: !markDirty, loadedForIdCard: donorPhotoState.loadedForIdCard });
+    }
+    window.clearDonorPhoto = clearDonorPhoto;
+
+    function triggerDonorPhotoPicker() {
+      document.getElementById('donor-photo-input')?.click();
+    }
+    window.triggerDonorPhotoPicker = triggerDonorPhotoPicker;
+
+    function resetDonorPhotoForIdentityChange() {
+      donorPhotoState.data = '';
+      donorPhotoState.original = '';
+      donorPhotoState.dirty = false;
+      donorPhotoState.loadedForIdCard = '';
+      const { box, img, status, input } = donorPhotoElements();
+      if (img) { img.src = ''; img.style.display = 'none'; }
+      if (box) box.classList.remove('has-photo');
+      if (status) status.textContent = 'ถ้าไม่ถ่ายรูปก็ลงทะเบียนได้ตามปกติค่ะ';
+      if (input) input.value = '';
+    }
+    window.resetDonorPhotoForIdentityChange = resetDonorPhotoForIdentityChange;
+
+    function openVisitPhotoPreview(photoData) {
+      const value = String(photoData || '').trim();
+      const img = document.getElementById('vd-photo');
+      const empty = document.getElementById('vd-photo-empty');
+      if (!img || !empty) return;
+      if (value) {
+        img.src = value;
+        img.style.display = 'block';
+        empty.style.display = 'none';
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+        empty.style.display = 'flex';
+        empty.textContent = 'ยังไม่มีรูปผู้บริจาค';
+      }
+    }
+
+    async function loadVisitDetailPhoto(idCard) {
+      const img = document.getElementById('vd-photo');
+      const empty = document.getElementById('vd-photo-empty');
+      if (!img || !empty) return;
+      const cleanId = String(idCard || '').replace(/\D/g, '');
+      if (!/^\d{13}$/.test(cleanId)) {
+        openVisitPhotoPreview('');
+        return;
+      }
+      empty.style.display = 'flex';
+      empty.textContent = 'กำลังโหลดรูปผู้บริจาค...';
+      img.style.display = 'none';
+      try {
+        const res = await apiCall('getDonorPhoto', { data: JSON.stringify({ idCard: cleanId }) });
+        openVisitPhotoPreview(res?.photoData || '');
+        if (!res?.photoData) empty.textContent = 'ยังไม่มีรูปผู้บริจาค';
+      } catch (err) {
+        console.warn('getDonorPhoto failed', err);
+        openVisitPhotoPreview('');
+        empty.textContent = 'โหลดรูปผู้บริจาคไม่สำเร็จ';
+      }
+    }
+
+    function loadImageFileAsCompressedDataUrl(file, { maxWidth = 640, maxHeight = 640, quality = 0.82 } = {}) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error('ไม่พบไฟล์รูป'));
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('อ่านไฟล์รูปไม่สำเร็จ'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('เปิดไฟล์รูปไม่สำเร็จ'));
+          img.onload = () => {
+            let { width, height } = img;
+            const ratio = Math.min(maxWidth / width || 1, maxHeight / height || 1, 1);
+            width = Math.max(1, Math.round(width * ratio));
+            height = Math.max(1, Math.round(height * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            let q = quality;
+            let dataUrl = canvas.toDataURL('image/jpeg', q);
+            while (dataUrl.length > 280000 && q > 0.5) {
+              q -= 0.08;
+              dataUrl = canvas.toDataURL('image/jpeg', q);
+            }
+            resolve(dataUrl);
+          };
+          img.src = String(reader.result || '');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleDonorPhotoFile(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      try {
+        const status = document.getElementById('donor-photo-status');
+        if (status) status.textContent = 'กำลังเตรียมรูปผู้บริจาค...';
+        const dataUrl = await loadImageFileAsCompressedDataUrl(file);
+        setDonorPhotoPreview(dataUrl, { markDirty: true, loadedForIdCard: String(document.getElementById('id_card')?.value || '').replace(/\D/g, '') });
+      } catch (err) {
+        console.error('handleDonorPhotoFile failed', err);
+        alert('เตรียมรูปผู้บริจาคไม่สำเร็จ\n' + (err.message || err));
+        const status = document.getElementById('donor-photo-status');
+        if (status) status.textContent = 'เลือกรูปไม่สำเร็จ ลองใหม่อีกครั้งได้ค่ะ';
+      }
+    }
+    window.handleDonorPhotoFile = handleDonorPhotoFile;
+
     async function saveData() {
       const data = {
         idCard: document.getElementById("id_card").value.trim(),
@@ -3672,6 +3924,26 @@ async function resetPasswordWithOtp() {
           alert((res && res.message) ? res.message : "บันทึกไม่สำเร็จ");
           return;
         }
+        let photoNotice = "";
+        if (window.cnmiDonorPhotoState?.dirty) {
+          try {
+            const photoRes = await apiCall('saveDonorPhoto', {
+              data: JSON.stringify({ idCard: data.idCard, photoData: window.cnmiDonorPhotoState.data || '' })
+            });
+            if (photoRes?.status === 'success') {
+              setDonorPhotoPreview(window.cnmiDonorPhotoState.data || '', { setOriginal: true, loadedForIdCard: data.idCard });
+              photoNotice = `
+รูปผู้บริจาค: ${window.cnmiDonorPhotoState.data ? 'บันทึกแล้ว' : 'ล้างรูปแล้ว'}`;
+            } else {
+              photoNotice = `
+รูปผู้บริจาค: ${photoRes?.message || 'บันทึกไม่สำเร็จ'}`;
+            }
+          } catch (photoErr) {
+            console.warn('save donor photo failed', photoErr);
+            photoNotice = `
+รูปผู้บริจาค: บันทึกไม่สำเร็จ`;
+          }
+        }
 
         window.cnmiPreload?.upsertBasic?.({
           idCard: data.idCard, prefix: data.prefix, fname: data.fname, lname: data.lname,
@@ -3680,7 +3952,10 @@ async function resetPasswordWithOtp() {
         }).catch(()=>{});
         invalidateVisitCache(getLocalDateInputValue());
 
-        alert(`บันทึกสำเร็จ!\nDN: ${res.dn || "-"}\nDonor ID: ${res.donorId || "รอเติมจาก AI-LIS"}\nครั้งที่บริจาค: ${res.donationNo || "-"}`);
+        alert(`บันทึกสำเร็จ!
+DN: ${res.dn || "-"}
+Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
+ครั้งที่บริจาค: ${res.donationNo || "-"}${photoNotice}`);
 
         const rowStr = encodeURIComponent(JSON.stringify({ ...res, occupation: res.occupation || data.occupation || "" }));
         printA4FromRow(rowStr);
@@ -4042,7 +4317,8 @@ async function adminResetPassword(username, fullName) {
         gender: donor.gender || row.gender || "-",
         address: donor.address || row.address || "-",
         phone: donor.phone || row.phone || "-",
-        occupation: row.occupation || donor.occupation || ""
+        occupation: row.occupation || donor.occupation || "",
+        photoData: donor.photoData || row.photoData || ""
       };
     }
 
@@ -4105,7 +4381,7 @@ async function adminResetPassword(username, fullName) {
       const tbody = document.getElementById("visit-table-body");
       updateDashboard(data || []);
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลของวันที่ ' + escapeHtml(dateInput) + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">ไม่พบข้อมูลของวันที่ ' + escapeHtml(dateInput) + '</td></tr>';
         return;
       }
 
@@ -4113,7 +4389,7 @@ async function adminResetPassword(username, fullName) {
       if (dnQuery !== "") filteredData = data.filter(row => [row.dn,row.donorId,row.bag].some(v=>String(v||'').toLowerCase().includes(dnQuery)));
       filteredData = filterByCurrentTableMode(filteredData);
       if (filteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลที่ตรงกับเมนูนี้</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">ไม่พบข้อมูลที่ตรงกับเมนูนี้</td></tr>';
         return;
       }
 
@@ -4156,7 +4432,7 @@ async function adminResetPassword(username, fullName) {
       const tbody = document.getElementById("visit-table-body");
       const cached = visitDataCache.get(dateInput);
       if (!force && cached) renderVisitTable(cached.data, dateInput, dnQuery);
-      else tbody.innerHTML = '<tr><td colspan="6" class="text-center">⌛ กำลังโหลด...</td></tr>';
+      else tbody.innerHTML = '<tr><td colspan="7" class="text-center">⌛ กำลังโหลด...</td></tr>';
 
       const seq = ++visitLoadSeq;
       try {
@@ -4164,7 +4440,7 @@ async function adminResetPassword(username, fullName) {
         let data = await getVisitDataFast(dateInput, force);
         if (seq !== visitLoadSeq) return;
         if (data && data.status === "error") {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">' + escapeHtml(data.message || "เกิดข้อผิดพลาด") + '</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">' + escapeHtml(data.message || "เกิดข้อผิดพลาด") + '</td></tr>';
           return;
         }
         data = await mergeImportedLisDonationsForTodayList(data || [], dateInput);
@@ -4172,7 +4448,7 @@ async function adminResetPassword(username, fullName) {
         renderVisitTable(data || [], dateInput, dnQuery);
       } catch (err) {
         console.error("loadTable error =", err);
-        if (!cached) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาด: ' + escapeHtml(err.message || err) + '</td></tr>';
+        if (!cached) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">เกิดข้อผิดพลาด: ' + escapeHtml(err.message || err) + '</td></tr>';
       } finally {
         setButtonBusy("search-btn", false);
       }
@@ -4203,6 +4479,7 @@ async function adminResetPassword(username, fullName) {
       if (donorIdEl) { donorIdEl.value = row.donorId || ''; donorIdEl.dataset.userEdited = row.donorId ? '1' : '0'; }
       if (donationNoEl) { const currentNo = Number.parseInt(String(row.donationNo || '0'),10); donationNoEl.value = Number.isInteger(currentNo) && currentNo > 0 ? String(currentNo - 1) : '0'; donationNoEl.dataset.userEdited = '0'; updateDonationNoHint(); }
       setOccupationUiFromStored(row.occupation || '', true);
+      window.resetDonorPhotoForIdentityChange?.();
       window.cnmiPreload?.lookupFromRegister?.({ fill: false }).catch(()=>{});
 
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4225,6 +4502,8 @@ async function adminResetPassword(username, fullName) {
       const errorBox = document.getElementById("registration-error-summary");
       if (errorBox) { errorBox.textContent = ""; errorBox.classList.remove("show"); }
 
+      window.clearDonorPhoto(false);
+      donorPhotoState.loadedForIdCard = '';
       window.cnmiPreload?.clearPanel?.();
       const preloadStatus = document.getElementById("preload-register-status");
       if (preloadStatus) { preloadStatus.textContent = "กรอกเลขบัตร 13 หลักเพื่อค้นประวัติจากฐานที่เตรียมไว้"; preloadStatus.className = "small text-muted mt-1"; }
@@ -4419,7 +4698,7 @@ async function adminResetPassword(username, fullName) {
       }
     }
 
-    function openVisitDetail(encodedRow) {
+    async function openVisitDetail(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
       document.getElementById("vd-dn").innerText = row.dn || "-";
@@ -4437,6 +4716,7 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("vd-pulse").innerText = row.pulse || "-";
       document.getElementById("vd-temp").innerText = row.temp || "-";
       document.getElementById("vd-save-time").innerText = row.saveTime || "-";
+      await loadVisitDetailPhoto(row.idCard || row.dbIdCard || '');
 
       let reasonEl = document.getElementById("vd-reason");
       let status = (row.status || "").trim();
@@ -5076,7 +5356,7 @@ async function adminResetPassword(username, fullName) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.8"></script>
+  <script src="js/supabase-history.js?v=15.6.27"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -5142,6 +5422,84 @@ async function selectHistoryDonor(id){
   await window.cnmiPreload.lookupFromRegister({fill:true});
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function setDocOcrStatus(message, tone='muted') {
+  const el = document.getElementById('doc-ocr-status');
+  if (!el) return;
+  el.className = 'doc-ocr-status' + (tone ? ' is-' + tone : '');
+  el.textContent = message || '';
+}
+function getSmartCaptureModal(){
+  const el=document.getElementById('smartCaptureModal');
+  if(!el||!window.bootstrap?.Modal) return null;
+  return bootstrap.Modal.getOrCreateInstance(el);
+}
+function openSmartCaptureModal(){ getSmartCaptureModal()?.show(); }
+window.openSmartCaptureModal=openSmartCaptureModal;
+function closeSmartCaptureModal(){ getSmartCaptureModal()?.hide(); }
+function triggerDonorPhotoCapture(){ closeSmartCaptureModal(); triggerDonorPhotoPicker(); }
+window.triggerDonorPhotoCapture=triggerDonorPhotoCapture;
+function triggerDonorPhotoGallery(){ closeSmartCaptureModal(); document.getElementById('donor-photo-gallery-input')?.click(); }
+window.triggerDonorPhotoGallery=triggerDonorPhotoGallery;
+function triggerIdDocPicker(useCamera=true){ closeSmartCaptureModal(); document.getElementById(useCamera ? 'id-doc-input' : 'id-doc-gallery-input')?.click(); }
+window.triggerIdDocPicker=triggerIdDocPicker;
+function normalizeThaiDigits(str=''){ const th='๐๑๒๓๔๕๖๗๘๙'; return String(str||'').replace(/[๐-๙]/g,ch=>String(th.indexOf(ch))); }
+function extractThirteenDigitId(text=''){
+  const normalized = normalizeThaiDigits(String(text||'')).replace(/[Oo]/g,'0');
+  const compact = normalized.replace(/[^0-9]/g,'');
+  if (compact.length >= 13){
+    for(let i=0;i<=compact.length-13;i++){ const seg=compact.slice(i,i+13); if(/^\d{13}$/.test(seg)) return seg; }
+  }
+  return '';
+}
+function extractBirthDateFromText(text=''){
+  const normalized = normalizeThaiDigits(String(text||''));
+  const m = normalized.match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/);
+  if(!m) return '';
+  let d=m[1].padStart(2,'0'), mo=m[2].padStart(2,'0'), y=m[3];
+  if(y.length===2){ const yy=Number(y); y=String(yy>69?1900+yy:2000+yy); }
+  const yn=Number(y); if(yn>2400) y=String(yn-543);
+  return `${d}-${mo}-${y}`;
+}
+function applyOcrParsedFields(parsed={}){
+  if(parsed.idCard){ const idEl=document.getElementById('id_card'); if(idEl){ idEl.value=parsed.idCard; idEl.dispatchEvent(new Event('input',{bubbles:true})); }}
+  if(parsed.birthDate){ thaiCardSet('birth_date', parsed.birthDate); }
+}
+async function recognizeIdDocument(file){
+  if(!file) throw new Error('ไม่พบไฟล์รูปเอกสาร');
+  if(!window.Tesseract?.recognize) throw new Error('โหลดเครื่องมืออ่านรูปไม่สำเร็จ กรุณาลองใหม่หรือกรอกเลขบัตรเอง');
+  const dataUrl = await loadImageFileAsCompressedDataUrl(file,{maxWidth:1600,maxHeight:1200,quality:0.9});
+  const { data } = await window.Tesseract.recognize(dataUrl, 'tha+eng');
+  const rawText = String(data?.text || '');
+  const idCard = extractThirteenDigitId(rawText);
+  const birthDate = extractBirthDateFromText(rawText);
+  return { rawText, idCard, birthDate };
+}
+async function handleIdDocFile(event){
+  const file = event?.target?.files?.[0];
+  if(!file) return;
+  try{
+    setDocOcrStatus('กำลังอ่านข้อมูลจากรูปเอกสาร... ใช้เวลาสักครู่', 'busy');
+    const parsed = await recognizeIdDocument(file);
+    if(parsed.idCard){
+      applyOcrParsedFields(parsed);
+      setDocOcrStatus('อ่านเลขบัตรจากรูปสำเร็จแล้ว · ระบบกำลังค้นประวัติเดิมให้', 'ok');
+      await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+      const hasName = !!String(document.getElementById('fname')?.value || '').trim();
+      if(!hasName) setDocOcrStatus('พบเลขบัตรจากรูปแล้ว แต่ยังไม่พบประวัติเดิม กรุณาตรวจสอบและกรอกชื่อ/ข้อมูลที่เหลือเพิ่ม', 'warn');
+    } else {
+      setDocOcrStatus('ยังอ่านเลขบัตรประชาชน 13 หลักจากรูปไม่ได้ ลองถ่ายใหม่ให้ตรงขึ้นและแสงสว่างมากขึ้น หรือกรอกเอง', 'error');
+      alert('อ่านเลขบัตรจากรูปไม่ได้ชัดเจน\nแนะนำให้ถ่ายใหม่ตรง ๆ ไม่เอียง ไม่มีแสงสะท้อน หรือกรอกเอง');
+    }
+  }catch(err){
+    console.error('handleIdDocFile failed', err);
+    setDocOcrStatus('อ่านรูปเอกสารไม่สำเร็จ: ' + (err.message || err), 'error');
+    alert('อ่านรูปเอกสารไม่สำเร็จ\n' + (err.message || err));
+  }finally{
+    if(event?.target) event.target.value='';
+  }
+}
+window.handleIdDocFile=handleIdDocFile;
 function thaiCardSet(id,value){const el=document.getElementById(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!=='')el.value=String(value).trim();}
 async function readThaiIdCard(){
   const btn=document.getElementById('read-thai-id-btn'),st=document.getElementById('card-reader-status');
@@ -5270,5 +5628,42 @@ function downloadLisAssistantBundle() {
   }
 }
 </script>
+<div class="modal fade" id="smartCaptureModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📷 เครื่องมือรูปภาพสำหรับลงทะเบียน</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="camera-choice-card">
+              <div class="camera-choice-title">รูปผู้บริจาค</div>
+              <div class="camera-choice-sub">ใช้ช่วยจำหน้า ไม่บังคับ และยังลงทะเบียนได้ตามปกติถ้าไม่ถ่าย</div>
+              <div class="camera-choice-actions">
+                <button type="button" class="btn btn-primary" onclick="triggerDonorPhotoCapture()">📸 เปิดกล้อง</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="triggerDonorPhotoGallery()">🖼️ เลือกรูปจากเครื่อง</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="camera-choice-card">
+              <div class="camera-choice-title">อ่านจากรูปบัตร / ใบขับขี่</div>
+              <div class="camera-choice-sub">ใช้ช่วยอ่านเลขบัตรประชาชนจากรูปภาพ แล้วระบบจะลองค้นประวัติเดิมให้อัตโนมัติ</div>
+              <div class="camera-choice-actions">
+                <button type="button" class="btn btn-primary" onclick="triggerIdDocPicker(true)">🪪 เปิดกล้องถ่ายเอกสาร</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="triggerIdDocPicker(false)">🖼️ เลือกรูปเอกสารจากเครื่อง</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-light border mt-3 mb-0">
+          <strong>หมายเหตุ:</strong> การอ่านจากรูปเป็นโหมดช่วยกรอกข้อมูล อาจอ่านผิดจากแสงสะท้อน มุมเอียง หรือภาพเบลอได้ ต้องตรวจชื่อและเลขบัตรก่อนบันทึกทุกครั้ง
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

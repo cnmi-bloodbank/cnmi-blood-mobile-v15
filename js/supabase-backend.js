@@ -94,10 +94,21 @@
       if(action==='saveDataToSheet'){
         const {data:r,error}=await sb.rpc('register_donor_visit_v15617',{p_id_card:data.idCard,p_prefix:data.prefix,p_fname:data.fname,p_lname:data.lname,p_birth:data.birthDate,p_gender:data.gender,p_address:data.address,p_address_line:data.addressLine||'',p_subdistrict:data.subdistrict||'',p_district:data.district||'',p_province:data.province||'',p_postal_code:data.postalCode||'',p_phone:data.phone||'',p_occupation:data.occupation||'',p_donor_id:data.donorId||'',p_last_donation_no:Number.isFinite(Number(data.lastDonationNo))?Number(data.lastDonationNo):0,p_user_agent:ua()}); if(error) throw error; return r;
       }
+      if(action==='saveDonorPhoto'){
+        const cleanId=String(data.idCard||'').replace(/\D/g,'');
+        const photoData=String(data.photoData||'');
+        const {data:r,error}=await sb.rpc('set_donor_photo_v15626',{p_id_card:cleanId,p_photo_data:photoData,p_user_agent:ua()}); if(error) throw error; return r;
+      }
+      if(action==='getDonorPhoto'){
+        const cleanId=String(data.idCard||'').replace(/\D/g,'');
+        if(!/^\d{13}$/.test(cleanId)) return {status:'success',photoData:'',photoUpdatedAt:''};
+        const {data:r,error}=await sb.from('donors').select('photo_data,photo_updated_at').eq('id_card',cleanId).maybeSingle(); if(error) throw error;
+        return {status:'success',photoData:r?.photo_data||'',photoUpdatedAt:r?.photo_updated_at||''};
+      }
       if(action==='getRecentVisits'||action==='getRecentVisitsFast') return await visitsForDate(params.targetDate);
       if(action==='getDonorsByIds'){
         const ids=(data.ids||[]).slice(0,50); const {data:rows,error}=await sb.from('donors').select('*').in('id_card',ids); if(error) throw error;
-        return {status:'success',donors:(rows||[]).map(d=>({idCard:d.id_card,prefix:d.prefix,fname:d.fname,lname:d.lname,birth:d.birth,gender:d.gender,addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'',phone:d.phone,occupation:d.occupation||''}))};
+        return {status:'success',donors:(rows||[]).map(d=>({idCard:d.id_card,prefix:d.prefix,fname:d.fname,lname:d.lname,birth:d.birth,gender:d.gender,addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'',phone:d.phone,occupation:d.occupation||'',photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||''}))};
       }
       if(action==='saveScreeningResult'){
         const sc=data && Object.keys(data).length?data:parse(params.data);
@@ -132,7 +143,7 @@
       throw new Error(`ยังไม่รองรับ action: ${action}`);
     }catch(err){console.error('Supabase action failed',action,err); return {status:'error',message:err?.message||String(err)};}
   }
-  async function getDonorHistory(id){const sb=init();const {data,error}=await sb.rpc('get_donor_history_v1563',{p_id_card:id});if(error)throw error;const profile=data||null;if(!profile)return null;try{const {data:d}=await sb.from('donors').select('occupation').eq('id_card',String(id||'').replace(/\D/g,'')).maybeSingle();if(String(d?.occupation||'').trim())profile.occupation=d.occupation;}catch{}return profile;}
+  async function getDonorHistory(id){const sb=init();const {data,error}=await sb.rpc('get_donor_history_v1563',{p_id_card:id});if(error)throw error;const profile=data||null;if(!profile)return null;try{const {data:d}=await sb.from('donors').select('occupation,photo_data,photo_updated_at').eq('id_card',String(id||'').replace(/\D/g,'')).maybeSingle();if(String(d?.occupation||'').trim())profile.occupation=d.occupation;profile.photoData=d?.photo_data||'';profile.photoUpdatedAt=d?.photo_updated_at||'';}catch{}return profile;}
   function mergeUnique(listA,listB,keyFn){const m=new Map();[...(listA||[]),...(listB||[])].forEach(x=>{const k=keyFn(x||{});if(k)m.set(k,x);});return [...m.values()];}
   function mergeProfiles(oldP,newP){
     if(!oldP) return newP;
@@ -169,7 +180,7 @@
     return {importId,summary:finalSummary?.summary||summary,reconcile};
   }
   async function getHistorySummary(){const sb=init();const {data,error}=await sb.from('history_imports').select('*').eq('active',true).eq('status','complete').order('completed_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;return data||null;}
-  async function getDonorHistories(ids){const sb=init();const clean=[...new Set((ids||[]).map(x=>String(x||'').replace(/\D/g,'')).filter(x=>/^\d{13}$/.test(x)))];if(!clean.length)return {};const imp=await getHistorySummary();if(!imp)return {};const out={};for(let i=0;i<clean.length;i+=100){const {data,error}=await sb.from('donor_history_snapshots').select('id_card,profile').eq('import_id',imp.id).in('id_card',clean.slice(i,i+100));if(error)throw error;(data||[]).forEach(r=>out[r.id_card]=r.profile);}return out;}
+  async function getDonorHistories(ids){const sb=init();const clean=[...new Set((ids||[]).map(x=>String(x||'').replace(/\D/g,'')).filter(x=>/^\d{13}$/.test(x)))];if(!clean.length)return {};const imp=await getHistorySummary();if(!imp)return {};const out={};for(let i=0;i<clean.length;i+=100){const {data,error}=await sb.from('donor_history_snapshots').select('id_card,profile').eq('import_id',imp.id).in('id_card',clean.slice(i,i+100));if(error)throw error;(data||[]).forEach(r=>out[r.id_card]=r.profile);}try{for(let i=0;i<clean.length;i+=100){const {data,error}=await sb.from('donors').select('id_card,occupation,photo_data,photo_updated_at').in('id_card',clean.slice(i,i+100));if(error)throw error;(data||[]).forEach(d=>{out[d.id_card]={...(out[d.id_card]||{}),occupation:(d.occupation||out[d.id_card]?.occupation||''),photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||''};});}}catch{}return out;}
   async function searchDonors(query,limit=20){const sb=init();const {data,error}=await sb.rpc('search_donor_history',{p_query:String(query||''),p_limit:Math.max(1,Math.min(Number(limit)||20,50))});if(error)throw error;return Array.isArray(data)?data:[];}
   async function searchDonorsAdvanced(filters={},limit=30){const sb=init();const f=filters||{};const {data,error}=await sb.rpc('search_donor_history_advanced_v1563',{p_id_card:String(f.idCard||''),p_donor_id:String(f.donorId||''),p_fname:String(f.fname||''),p_lname:String(f.lname||''),p_phone:String(f.phone||''),p_dn:String(f.dn||''),p_bag_number:String(f.bag||''),p_visit_date:f.visitDate||null,p_limit:Math.max(1,Math.min(Number(limit)||30,50))});if(error)throw error;return Array.isArray(data)?data:[];}
   async function getImportedDonationsForDate(date){const sb=init();const d=String(date||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return[];const {data,error}=await sb.rpc('get_imported_donations_for_date',{p_date:d});if(error)throw error;return (data||[]).map(r=>({dn:'',donorId:r.donor_id||'',idCard:r.id_card||'',prefix:r.prefix||'',fname:r.fname||'',lname:r.lname||'',name:`${r.prefix||''}${r.fname||''} ${r.lname||''}`.trim(),birth:r.birth||'-',gender:r.gender||'-',address:r.address||'-',phone:r.phone||'-',bag:r.bag_number||'-',status:'ข้อมูลจาก AI-LIS',reason:'',type:r.component||'',group:r.blood_group||'',weight:'',bp:'',pulse:'',temp:'',hb:'',saveTime:r.donation_date||'',donationNo:r.donation_no||'',source:'lis-import'}));}
