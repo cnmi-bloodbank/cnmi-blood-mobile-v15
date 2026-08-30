@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.55"></script>
+  <script src="js/supabase-backend.js?v=15.6.56"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -2041,7 +2041,7 @@
                 <label class="fw-bold">Passport Number <span class="required-mark">*</span></label>
                 <div class="register-id-line">
                   <input type="text" id="passport_number" class="form-control form-control-lg" autocomplete="off" maxlength="20" placeholder="เช่น AB1234567" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20)">
-                  <button id="scan-passport-btn" type="button" class="btn btn-primary" onclick="scanIdDocument()">🛂 สแกน Passport</button>
+                  <button id="scan-passport-btn" type="button" class="btn btn-primary" title="ใช้เครื่องสแกนเอกสารที่ต่อกับ Scan Bridge (ไม่ใช่เครื่องอ่าน Smart Card)" onclick="scanIdDocument()">🖨️ สแกน Passport</button>
                   <button id="camera-passport-btn" type="button" class="btn btn-outline-primary" onclick="openPassportCamera()">📷 อ่าน Passport ด้วยกล้อง</button>
                 </div>
               </div>
@@ -2050,7 +2050,7 @@
                 <input type="text" id="nationality" class="form-control form-control-lg" maxlength="60" placeholder="เช่น THA / USA / CHN">
               </div>
             </div>
-            <div class="identity-passport-note mt-1">Scanner หรือ USB Camera อ่าน MRZ 2 บรรทัดล่างสุดเป็นหลักและตรวจ Checksum ก่อนใช้ข้อมูล · ถ้า MRZ อ่านไม่ครบ ระบบจะลองอ่านช่องข้อมูลด้านบนเป็นตัวช่วย</div>
+            <div class="identity-passport-note mt-1">🖨️ สแกน Passport = เครื่องสแกนเอกสาร + Scan Bridge · 📷 กล้อง = USB Camera · เครื่องอ่านบัตร uTrust/Card Reader ใช้เฉพาะบัตรประชาชนไทย · ระบบอ่าน MRZ 2 บรรทัดล่างสุดเป็นหลักและตรวจ Checksum ก่อนใช้ข้อมูล</div>
           </div>
 
           <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
@@ -2171,7 +2171,8 @@
         </div>
         <div class="col-md-3">
           <label>รหัสไปรษณีย์ <span id="postal-required" class="required-mark">*</span></label>
-          <input type="text" id="postal_code" class="form-control" required inputmode="numeric" maxlength="5" placeholder="เช่น 10280">
+          <input type="text" id="postal_code" class="form-control" required inputmode="numeric" maxlength="5" placeholder="ระบบช่วยเติมจาก ตำบล/อำเภอ/จังหวัด">
+          <div id="postal-auto-status" class="small mt-1 text-muted" style="min-height:1.2em"></div>
         </div>
         <div class="col-md-12">
           
@@ -2296,7 +2297,7 @@
               </div>
               <div class="desktop-tool-card">
                 <div class="desktop-tool-name">🖨️ Scan Bridge v1.3</div>
-                <div class="desktop-tool-use">เปิดค้างไว้ก่อนสแกนบัตร/ใบขับขี่/Passport</div>
+                <div class="desktop-tool-use">เปิดค้างไว้ก่อนใช้เครื่องสแกนเอกสารกับบัตร/ใบขับขี่/Passport</div>
                 <a class="btn btn-outline-primary btn-sm" href="CNMI-Scan-Bridge-v1.3.zip" download>ดาวน์โหลด Scan Bridge</a>
               </div>
               <div class="desktop-tool-card">
@@ -2409,7 +2410,7 @@
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
       <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงเลือกชื่อจากรายชื่อ → อ่านบัตร/สแกนหรือยืนยันเลขจริงก่อน → จึงค้น AI-LIS → ถ้าพบใช้ AI-LIS เป็นหลัก ถ้าไม่พบจึงใช้จำนวนครั้งที่หน่วยแจ้ง → ส่งออก LIS CSV</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
+      <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
     <div class="guide-note"><strong>LIS Assistant v2.14:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2ก่อนเปลี่ยนคน · คนไทยใช้เลขบัตร/Donor ID · ต่างชาติใช้ Passport Number/Donor ID · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
@@ -4129,9 +4130,117 @@ async function resetPasswordWithOtp() {
         const el=document.getElementById(id); const value=String(parts[key]||'').trim();
         if(el && value && (overwrite || !String(el.value||'').trim())) el.value=value;
       });
+      window.cnmiSchedulePostalLookup?.();
     }
     window.cnmiParseThaiAddressText = parseThaiAddressText;
     window.cnmiFillStructuredAddress = fillStructuredAddress;
+
+    // v15.6.56: ช่วยเติมรหัสไปรษณีย์จาก ตำบล/อำเภอ/จังหวัด
+    // ใช้ GeoThai v4 (MIT) แบบโหลดเมื่อจำเป็นเท่านั้น และปล่อยให้กรอกเองได้เสมอถ้าหาไม่พบ
+    const CNMI_THAI_GEO_URLS = [
+      'https://cdn.jsdelivr.net/npm/geothai@3.0.1/dist/data/geo.json',
+      'https://unpkg.com/geothai@3.0.1/dist/data/geo.json'
+    ];
+    let cnmiThaiGeoPromise = null;
+    let cnmiThaiGeoRows = null;
+    let cnmiPostalLookupTimer = null;
+
+    function cnmiNormalizeGeoName(value, kind='') {
+      let s=cleanThaiAreaPart(value,kind).replace(/[​-‍﻿]/g,'').replace(/[.,]/g,'').replace(/\s+/g,'').trim();
+      if(kind==='province' && /^(?:กรุงเทพ|กทม|กทมฯ)$/i.test(s)) s='กรุงเทพมหานคร';
+      return s;
+    }
+    async function cnmiLoadThaiGeoRows(){
+      if(cnmiThaiGeoRows) return cnmiThaiGeoRows;
+      if(cnmiThaiGeoPromise) return cnmiThaiGeoPromise;
+      cnmiThaiGeoPromise=(async()=>{
+        let lastErr=null;
+        for(const url of CNMI_THAI_GEO_URLS){
+          try{
+            const res=await fetch(url,{cache:'force-cache'});
+            if(!res.ok) throw new Error(`HTTP ${res.status}`);
+            const geo=await res.json();
+            const rows=[];
+            for(const p of Array.isArray(geo)?geo:[]){
+              for(const d of Array.isArray(p.districts)?p.districts:[]){
+                for(const sd of Array.isArray(d.subdistricts)?d.subdistricts:[]){
+                  const postal=String(sd.postal_code||'').replace(/\D/g,'');
+                  if(!postal) continue;
+                  rows.push({
+                    province:String(p.name_th||''), district:String(d.name_th||''), subdistrict:String(sd.name_th||''), postal,
+                    p:cnmiNormalizeGeoName(p.name_th,'province'), d:cnmiNormalizeGeoName(d.name_th,'district'), s:cnmiNormalizeGeoName(sd.name_th,'subdistrict')
+                  });
+                }
+              }
+            }
+            if(rows.length<7000) throw new Error('ชุดข้อมูลที่อยู่ไม่ครบ');
+            cnmiThaiGeoRows=rows;
+            return rows;
+          }catch(err){lastErr=err;}
+        }
+        throw lastErr||new Error('โหลดฐานรหัสไปรษณีย์ไม่สำเร็จ');
+      })();
+      try{return await cnmiThaiGeoPromise;}finally{if(!cnmiThaiGeoRows)cnmiThaiGeoPromise=null;}
+    }
+    function cnmiPostalStatus(text='',type='muted'){
+      const el=document.getElementById('postal-auto-status'); if(!el)return;
+      el.className='small mt-1 '+(type==='ok'?'text-success':type==='warn'?'text-warning':'text-muted');
+      el.textContent=text;
+    }
+    async function cnmiAutoFillPostalCode({force=false}={}){
+      if(getRegisterIdentityType?.()!=='thai') return null;
+      const subEl=document.getElementById('subdistrict'),disEl=document.getElementById('district'),proEl=document.getElementById('province'),postEl=document.getElementById('postal_code');
+      if(!subEl||!disEl||!proEl||!postEl)return null;
+      const s=cnmiNormalizeGeoName(subEl.value,'subdistrict'),d=cnmiNormalizeGeoName(disEl.value,'district'),p=cnmiNormalizeGeoName(proEl.value,'province');
+      if(!s||!d||!p){cnmiPostalStatus('');return null;}
+      if(!force && postEl.value && postEl.dataset.autoPostal!=='1') return null;
+      cnmiPostalStatus('กำลังหารหัสไปรษณีย์…');
+      try{
+        const rows=await cnmiLoadThaiGeoRows();
+        let matches=rows.filter(r=>r.s===s&&r.d===d&&r.p===p);
+        // ไม่ fuzzy เดาชื่อพื้นที่ เพื่อไม่เติมรหัสผิด; fallback เฉพาะเมื่อ ตำบล+จังหวัด ให้ผลเดียวจริง
+        if(!matches.length){
+          const safe=rows.filter(r=>r.s===s&&r.p===p);
+          const codes=[...new Set(safe.map(r=>r.postal))];
+          if(codes.length===1)matches=safe;
+        }
+        const codes=[...new Set(matches.map(r=>r.postal))];
+        if(codes.length===1){
+          postEl.value=codes[0]; postEl.dataset.autoPostal='1';
+          cnmiPostalStatus(`✓ เติมอัตโนมัติ ${codes[0]}`,'ok');
+          return codes[0];
+        }
+        if(codes.length>1){
+          cnmiPostalStatus('พบมากกว่า 1 รหัส กรุณาตรวจและกรอกเอง','warn');
+          return null;
+        }
+        if(postEl.dataset.autoPostal==='1'){postEl.value='';delete postEl.dataset.autoPostal;}
+        cnmiPostalStatus('ไม่พบรหัสที่ตรงกัน กรุณาตรวจชื่อพื้นที่หรือกรอกเอง','warn');
+      }catch(err){
+        console.warn('Postal lookup unavailable',err);
+        cnmiPostalStatus('ฐานรหัสไปรษณีย์โหลดไม่ได้ชั่วคราว · กรอกเองได้','warn');
+      }
+      return null;
+    }
+    function cnmiSchedulePostalLookup(){
+      clearTimeout(cnmiPostalLookupTimer);
+      cnmiPostalLookupTimer=setTimeout(()=>{cnmiAutoFillPostalCode().catch(()=>{});},350);
+    }
+    window.cnmiAutoFillPostalCode=cnmiAutoFillPostalCode;
+    window.cnmiSchedulePostalLookup=cnmiSchedulePostalLookup;
+    document.addEventListener('DOMContentLoaded',()=>{
+      ['subdistrict','district','province'].forEach(id=>{
+        const el=document.getElementById(id); if(!el)return;
+        el.addEventListener('input',()=>{
+          const post=document.getElementById('postal_code');
+          if(post?.dataset.autoPostal==='1'){post.value='';delete post.dataset.autoPostal;}
+          cnmiPostalStatus(''); cnmiSchedulePostalLookup();
+        });
+        el.addEventListener('blur',()=>cnmiSchedulePostalLookup());
+      });
+      const post=document.getElementById('postal_code');
+      post?.addEventListener('input',e=>{if(e.isTrusted)delete post.dataset.autoPostal;});
+    });
 
 
     const donorPhotoState = { data: '', original: '', dirty: false, loadedForIdCard: '' };
@@ -5895,7 +6004,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.55"></script>
+  <script src="js/supabase-history.js?v=15.6.56"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -6136,6 +6245,7 @@ function cameraCanvasDataUrl(maxWidth=800,maxHeight=800,quality=.86){
   return canvas.toDataURL('image/jpeg',quality);
 }
 
+// v15.6.56: Passport uses document Scanner/Scan Bridge (not Smart Card Reader) + postal-code auto lookup
 // v15.6.55: crop the on-screen guide before document OCR so room/background text
 // cannot be mistaken for donor name/address.
 async function cropCameraGuideDataUrl(dataUrl){
@@ -7042,14 +7152,14 @@ async function scanIdDocument(){
     const msg=String(err?.message||err||'');
     if(/ยกเลิก/.test(msg)) setDocOcrStatus('ยกเลิกการสแกน','muted');
     else if(/Scan Bridge|fetch|Failed to fetch|abort/i.test(msg)){
-      setDocOcrStatus('ไม่พบ Scan Bridge · เปิด Start-CNMI-Scan-Bridge.cmd บนคอมนี้ก่อน','error');
-      alert('ยังเชื่อมต่อเครื่องสแกนไม่ได้\nกรุณาเปิด CNMI Scan Bridge บนคอมเครื่องนี้ แล้วลองอีกครั้ง');
+      setDocOcrStatus('ไม่พบ Scan Bridge · เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสารก่อน','error');
+      alert('ยังเชื่อมต่อเครื่องสแกนเอกสารไม่ได้\nกรุณาเปิด CNMI Scan Bridge บนคอมที่ต่อ Scanner แล้วลองอีกครั้ง');
     }else{
       setDocOcrStatus('สแกน/อ่านบัตรไม่สำเร็จ: '+msg,'error');
       alert('สแกน/อ่านบัตรไม่สำเร็จ\n'+msg);
     }
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML=oldText||(getRegisterIdentityType()==='passport'?'🛂 สแกน Passport':'🖨️ สแกนบัตร / ใบขับขี่');}
+    if(btn){btn.disabled=false;btn.innerHTML=oldText||(getRegisterIdentityType()==='passport'?'🖨️ สแกน Passport':'🖨️ สแกนบัตร / ใบขับขี่');}
   }
 }
 window.scanIdDocument=scanIdDocument;
