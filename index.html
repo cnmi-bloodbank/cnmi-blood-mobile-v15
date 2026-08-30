@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.50"></script>
+  <script src="js/supabase-backend.js?v=15.6.51"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -2343,7 +2343,7 @@
               <div class="col-md-7"><label class="fw-bold">ไฟล์รายชื่อจากหน่วย</label><input id="prereg-file" type="file" class="form-control" accept=".xlsx,.xls"></div>
               <div class="col-md-2"><button id="prereg-import-btn" type="button" class="btn btn-warning w-100" onclick="importAdvanceRegistrationFile()">📥 นำเข้ารายชื่อ</button></div>
             </div>
-            <div id="prereg-import-status" class="small mt-2 text-muted">รองรับไฟล์ที่มี ชื่อ-นามสกุล / Donor ID / จำนวนครั้งเดิม / เลขประชาชน / วันเกิด / เบอร์โทร ฯลฯ</div>
+            <div id="prereg-import-status" class="small mt-2 text-muted">สลับ/เพิ่ม/ลดคอลัมน์ได้ ระบบหาแถวหัวตารางและจับคอลัมน์จากชื่อให้อัตโนมัติ · ต้องมีอย่างน้อยคอลัมน์ชื่อผู้บริจาค</div>
             <div id="prereg-summary" class="advance-summary-grid"></div>
             <div id="prereg-list"></div>
           </div>
@@ -5895,7 +5895,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.50"></script>
+  <script src="js/supabase-history.js?v=15.6.51"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -7160,35 +7160,76 @@ function splitAdvanceThaiName(full=''){
   const parts=s.split(' ').filter(Boolean);return {prefix,fname:parts.shift()||'',lname:parts.join(' ')};
 }
 function parseAdvanceThaiDate(v){
-  if(v instanceof Date&&!Number.isNaN(v.getTime()))return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${v.getFullYear()+543}`;
-  if(typeof v==='number'&&Number.isFinite(v)){const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000);return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${d.getUTCFullYear()+543}`;}
+  if(v instanceof Date&&!Number.isNaN(v.getTime())){const y=v.getFullYear(),be=y>=2400?y:y+543;return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${be}`;}
+  if(typeof v==='number'&&Number.isFinite(v)){const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000),y=d.getUTCFullYear(),be=y>=2400?y:y+543;return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${be}`;}
   const s=String(v||'').trim();if(!s||s==='-')return'';
   let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${String(Number(m[1])).padStart(2,'0')}-${String(Number(m[2])).padStart(2,'0')}-${m[3]}`;
   const months={มกราคม:1,กุมภาพันธ์:2,มีนาคม:3,เมษายน:4,พฤษภาคม:5,มิถุนายน:6,กรกฎาคม:7,สิงหาคม:8,กันยายน:9,ตุลาคม:10,พฤศจิกายน:11,ธันวาคม:12};
   m=s.match(/(\d{1,2})\s+([^\s]+)\s+(\d{4})/);if(m&&months[m[2]])return `${String(Number(m[1])).padStart(2,'0')}-${String(months[m[2]]).padStart(2,'0')}-${m[3]}`;
   return s;
 }
+function advanceHeaderMatchScore(header,aliases=[]){
+  const h=normalizeAdvanceHeader(header);if(!h)return 0;let best=0;
+  for(const a0 of aliases){const a=normalizeAdvanceHeader(a0);if(!a)continue;if(h===a)best=Math.max(best,100+a.length);else if(h.includes(a))best=Math.max(best,70+a.length);}
+  return best;
+}
+const ADVANCE_HEADER_ALIASES={
+  seq:['ลำดับที่','ลำดับ','no','number'],
+  fullName:['ชื่อ-นามสกุล','ชื่อ นามสกุล','ชื่อและนามสกุล','ชื่อผู้บริจาค','ชื่อผู้ลงทะเบียน','ชื่อสกุล','fullname','name surname'],
+  fname:['ชื่อจริง','ชื่อ','firstname','first name'],
+  lname:['นามสกุล','surname','lastname','last name'],
+  emp:['รหัสพนักงาน','รหัสบุคลากร','employee id','employeeid','รหัสเจ้าหน้าที่'],
+  dept:['แผนก/ฝ่าย','แผนก','ฝ่าย','หน่วยงาน','สังกัด','department'],
+  phone:['เบอร์โทรศัพท์','เบอร์โทร','โทรศัพท์','หมายเลขโทรศัพท์','มือถือ','mobile','phone'],
+  group:['กรุ๊ปเลือด','กรุ๊ป','หมู่เลือด','blood group','bloodgroup','abo'],
+  donor:['donor id','donorid','รหัสผู้บริจาค','เลขผู้บริจาค','เลข donor','donor number','เลขบัตรบริจาค'],
+  count:['จำนวนครั้งกาชาด','จำนวนครั้งที่บริจาค','จำนวนครั้งบริจาค','จำนวนครั้งเดิม','ครั้งที่เคยบริจาค','ครั้งเดิม','ครั้งที่','จำนวนครั้ง','donation count','donationcount'],
+  last:['วันที่บริจาคล่าสุด','บริจาคล่าสุดเมื่อ','วันที่บริจาคครั้งล่าสุด','บริจาคล่าสุด','last donation date','lastdonationdate'],
+  id:['เลขบัตรประชาชนจากกาชาด','เลขประชาชนจากกาชาด','เลขบัตรประชาชน','เลขประจำตัวประชาชน','เลขประชาชน','บัตรประชาชน','thai id','thaiid','citizen id','citizenid'],
+  birth:['วันเดือนปีเกิด','วัน/เดือน/ปีเกิด','ว/ด/ป เกิด','วดปเกิด','วันเกิด','date of birth','dateofbirth','dob'],
+  note:['หมายเหตุ','ข้อมูลเพิ่มเติม','note','notes','remark','remarks'],
+  passport:['passport number','passport no','passportnumber','passportno','เลขpassport','เลขพาสปอร์ต','พาสปอร์ต']
+};
+function detectAdvanceHeaderRow(rows){
+  let best={index:-1,score:-1,matches:0};const scan=Math.min(rows.length,120);
+  for(let i=0;i<scan;i++){
+    const row=rows[i]||[];let score=0,matches=0;
+    for(const cell of row){let cellBest=0;for(const aliases of Object.values(ADVANCE_HEADER_ALIASES))cellBest=Math.max(cellBest,advanceHeaderMatchScore(cell,aliases));if(cellBest){matches++;score+=cellBest;}}
+    const hasName=row.some(c=>advanceHeaderMatchScore(c,ADVANCE_HEADER_ALIASES.fullName)>=70||advanceHeaderMatchScore(c,ADVANCE_HEADER_ALIASES.fname)>=70);
+    if(hasName&&matches>=2)score+=250;if(score>best.score)best={index:i,score,matches};
+  }
+  return best.index;
+}
+function mapAdvanceHeaders(rawHeaders){
+  const used=new Set(),mapped={};
+  const pick=(key)=>{let best={idx:-1,score:0};for(let i=0;i<rawHeaders.length;i++){if(used.has(i))continue;const score=advanceHeaderMatchScore(rawHeaders[i],ADVANCE_HEADER_ALIASES[key]||[]);if(score>best.score)best={idx:i,score};}if(best.idx>=0&&best.score>=50){used.add(best.idx);return best.idx;}return -1;};
+  ['fullName','lname','fname','id','passport','donor','count','last','birth','phone','emp','dept','group','note','seq'].forEach(k=>mapped[k]=pick(k));
+  return mapped;
+}
 function parseAdvanceWorkbookMatrix(matrix,fileName=''){
-  const rows=Array.isArray(matrix)?matrix:[];
-  const hi=rows.findIndex(r=>{const h=(r||[]).map(normalizeAdvanceHeader);return h.some(x=>x.includes('ชื่อนามสกุล')||x==='ชื่อ')&&h.some(x=>x.includes('ลำดับ')||x.includes('รหัสพนักงาน')||x.includes('เบอร์โทร'));});
+  const rows=Array.isArray(matrix)?matrix:[];const hi=detectAdvanceHeaderRow(rows);
   if(hi<0)throw new Error('หาแถวหัวตารางรายชื่อผู้บริจาคไม่พบ');
-  const headers=(rows[hi]||[]).map(normalizeAdvanceHeader);
-  const idx=(...patterns)=>headers.findIndex(h=>patterns.some(p=>h.includes(normalizeAdvanceHeader(p))));
-  const ix={seq:idx('ลำดับ'),name:idx('ชื่อนามสกุล','ชื่อ-นามสกุล'),emp:idx('รหัสพนักงาน'),dept:idx('แผนก','ฝ่าย'),phone:idx('เบอร์โทร'),group:idx('กรุ๊ปเลือด','หมู่เลือด'),donor:idx('donoridกาชาด','donorid'),count:idx('จำนวนครั้งกาชาด','จำนวนครั้ง'),last:idx('บริจาคล่าสุดเมื่อ','บริจาคล่าสุด'),id:idx('เลขประชาชนจากกาชาด','เลขประชาชน','เลขบัตรประชาชน'),birth:idx('วดปเกิด','วันเกิด'),note:idx('column1','หมายเหตุ'),passport:idx('passportnumber','passport')};
-  if(ix.name<0)throw new Error('ไม่พบคอลัมน์ชื่อ-นามสกุล');
+  const rawHeaders=(rows[hi]||[]).map(v=>advanceCellText(v));const ix=mapAdvanceHeaders(rawHeaders);
+  if(ix.fullName<0&&ix.fname<0)throw new Error('ไม่พบคอลัมน์ชื่อผู้บริจาค');
   const out=[];
   for(let ri=hi+1;ri<rows.length;ri++){
-    const r=rows[ri]||[],full=advanceCellText(r[ix.name]);if(!full||full==='.')continue;
-    const nm=splitAdvanceThaiName(full),rawId=ix.id>=0?advanceCellText(r[ix.id]):'',id=rawId.replace(/\D/g,''),validId=/^\d{13}$/.test(id)&&(typeof isValidThaiNationalId!=='function'||isValidThaiNationalId(id));
+    const r=rows[ri]||[];let full='';
+    if(ix.fullName>=0)full=advanceCellText(r[ix.fullName]);
+    if(!full&&ix.fname>=0)full=[advanceCellText(r[ix.fname]),ix.lname>=0?advanceCellText(r[ix.lname]):''].filter(Boolean).join(' ').trim();
+    if(!full||full==='.'||full==='-')continue;
+    let nm=splitAdvanceThaiName(full);if(ix.fullName<0&&ix.fname>=0){const f=splitAdvanceThaiName(advanceCellText(r[ix.fname]));nm={prefix:f.prefix,fname:f.fname||advanceCellText(r[ix.fname]),lname:ix.lname>=0?advanceCellText(r[ix.lname]):f.lname};}
+    const rawId=ix.id>=0?advanceCellText(r[ix.id]):'',id=rawId.replace(/\D/g,''),validId=/^\d{13}$/.test(id)&&(typeof isValidThaiNationalId!=='function'||isValidThaiNationalId(id));
     const pass=ix.passport>=0?advanceCellText(r[ix.passport]).toUpperCase().replace(/[^A-Z0-9]/g,''):'';
     const countRaw=ix.count>=0?advanceCellText(r[ix.count]):'',count=/^\d+$/.test(countRaw)?Number(countRaw):null;
     const emp=ix.emp>=0?advanceCellText(r[ix.emp]):'',phone=ix.phone>=0?advanceCellText(r[ix.phone]).replace(/\s+/g,''):'';
-    const sourceKey=(validId?`THAI:${id}`:(pass?`PASS:${pass}`:(emp?`EMP:${emp}`:`NAME:${full}|TEL:${phone}`))).slice(0,220);
+    const sourceKey=(validId?`THAI:${id}`:(pass?`PASS:${pass}`:(emp&&emp!=='-'?`EMP:${emp}`:`NAME:${full}|TEL:${phone}`))).slice(0,220);
     let note=ix.note>=0?advanceCellText(r[ix.note]):'';if(rawId&&rawId!=='-'&&!validId)note=[note,'เลขประชาชนในไฟล์ต้องตรวจสอบ'].filter(Boolean).join(' · ');if(countRaw&&countRaw!=='-'&&count===null)note=[note,'จำนวนครั้งเดิมไม่ชัดเจน'].filter(Boolean).join(' · ');
-    out.push({sourceKey,sourceRow:ri+1,identityType:validId?'thai':(pass?'passport':'unknown'),idCard:validId?id:'',passportNumber:pass,prefix:nm.prefix,fname:nm.fname,lname:nm.lname,employeeId:emp,department:ix.dept>=0?advanceCellText(r[ix.dept]):'',phone,bloodGroup:ix.group>=0?advanceCellText(r[ix.group]):'',donorId:ix.donor>=0?advanceCellText(r[ix.donor]).replace(/^[-\s]+$/,''):'' ,lastDonationNo:count,lastDonationDate:ix.last>=0?parseAdvanceThaiDate(r[ix.last]):'',birth:ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'',note});
+    out.push({sourceKey,sourceRow:ri+1,identityType:validId?'thai':(pass?'passport':'unknown'),idCard:validId?id:'',passportNumber:pass,prefix:nm.prefix,fname:nm.fname,lname:nm.lname,employeeId:emp,department:ix.dept>=0?advanceCellText(r[ix.dept]):'',phone,bloodGroup:ix.group>=0?advanceCellText(r[ix.group]):'',donorId:ix.donor>=0?advanceCellText(r[ix.donor]).replace(/^[-\s]+$/,''):'',lastDonationNo:count,lastDonationDate:ix.last>=0?parseAdvanceThaiDate(r[ix.last]):'',birth:ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'',note});
   }
   if(!out.length)throw new Error('ไม่พบรายชื่อผู้บริจาคในไฟล์');
-  return out;
+  const labels={fullName:'ชื่อ-นามสกุล',fname:'ชื่อ',lname:'นามสกุล',id:'เลขประชาชน',passport:'Passport',donor:'Donor ID',count:'จำนวนครั้ง',last:'บริจาคล่าสุด',birth:'วันเกิด',phone:'เบอร์โทร',emp:'รหัสพนักงาน',dept:'แผนก',group:'หมู่เลือด',note:'หมายเหตุ'};
+  const detected=Object.entries(ix).filter(([k,v])=>v>=0&&labels[k]).map(([k,v])=>`${labels[k]} ← ${rawHeaders[v]}`);
+  return {rows:out,meta:{headerRow:hi+1,detected}};
 }
 async function importAdvanceRegistrationFile(){
   if(!['admin','sup_manager','manager','staff'].includes(currentUser?.role||''))return alert('บัญชีนี้ไม่มีสิทธิ์นำเข้ารายชื่อผู้บริจาคแจ้งล่วงหน้า');
@@ -7196,8 +7237,8 @@ async function importAdvanceRegistrationFile(){
   if(!date)return alert('กรุณาเลือกวันที่ออกหน่วย');if(!file)return alert('กรุณาเลือกไฟล์รายชื่อจากหน่วย');
   try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-    const rows=parseAdvanceWorkbookMatrix(matrix,file.name);const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows,replacePlanned:true});
-    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · ยังไม่สร้าง DN/Visit และยังไม่เพิ่มจำนวนครั้ง`;}
+    const parsed=parseAdvanceWorkbookMatrix(matrix,file.name),rows=parsed.rows;const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows,replacePlanned:true});
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · พบหัวตารางแถว ${parsed.meta.headerRow} · จับคอลัมน์ตามชื่ออัตโนมัติ · ยังไม่สร้าง DN/Visit และยังไม่เพิ่มจำนวนครั้ง`;st.title=parsed.meta.detected.join(' | ');}
     await loadAdvanceRegistrations();
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='นำเข้าไม่สำเร็จ: '+(err.message||err);}alert('นำเข้ารายชื่อไม่สำเร็จ\n'+(err.message||err));}
   finally{if(btn){btn.disabled=false;btn.textContent='📥 นำเข้ารายชื่อ';}}
