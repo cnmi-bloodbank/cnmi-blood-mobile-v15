@@ -6198,6 +6198,7 @@ async function selectHistoryPassport(passport){
 window.selectHistoryPassport=selectHistoryPassport;
 
 
+// v15.6.58: Thai-ID detail OCR no longer re-guesses document type after ID is already verified
 const cnmiCameraState = { stream:null, mode:'donor', capturedDataUrl:'', selectedDeviceId:'', modal:null, previewMirrored:false };
 window.cnmiCameraState = cnmiCameraState;
 
@@ -6656,7 +6657,7 @@ async function processPhoneScreenCameraDataUrl(dataUrl){
     if(result?.idCard){
       const parsed={rawText:result.rawText||'',idCard:result.idCard,birthDate:''};
       applyOcrParsedFields(parsed);
-      await verifyThaiIdentityAndLookup({detailImage:target,method:'phone-camera',statusText:`อ่านบัตรจากหน้าจอโทรศัพท์สำเร็จ (${result.source})`});
+      await verifyThaiIdentityAndLookup({detailImage:target,docTypeHint:'thai_id',method:'phone-camera',statusText:`อ่านบัตรจากหน้าจอโทรศัพท์สำเร็จ (${result.source})`});
       return parsed;
     }
     if(result?.candidates?.length) allCandidates.push(...result.candidates);
@@ -7159,7 +7160,7 @@ async function processScannedDocumentMultiView(rawDataUrl,{showPreviewOnFail=tru
         cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
         window.cnmiLastScannedDocumentDataUrl=phoneCard.dataUrl;
         applyOcrParsedFields(parsed);
-        await verifyThaiIdentityAndLookup({detailImage:phoneCard.dataUrl,method:'scanner',statusText:'อ่านบัตรจากภาพสแกนสำเร็จ'});
+        await verifyThaiIdentityAndLookup({detailImage:phoneCard.dataUrl,docTypeHint:'thai_id',method:'scanner',statusText:'อ่านบัตรจากภาพสแกนสำเร็จ'});
         return parsed;
       }
       if(focused?.ambiguous && focused.candidates?.length){
@@ -7211,7 +7212,7 @@ async function processScannedDocumentMultiView(rawDataUrl,{showPreviewOnFail=tru
       window.cnmiLastScannedDocumentDataUrl=view.dataUrl;
       applyOcrParsedFields(parsed);
       const detailImage=(phoneCard?.detected&&phoneCard.dataUrl)?phoneCard.dataUrl:(autoCrop||view.dataUrl);
-      await verifyThaiIdentityAndLookup({detailImage,method:'scanner',statusText:`อ่านบัตรสำเร็จ · ${view.label}`});
+      await verifyThaiIdentityAndLookup({detailImage,docTypeHint:(phoneCard?.detected||/เลขบัตรด้านบน|กรอบบัตร|บัตรบนหน้าจอ/.test(view.label))?'thai_id':'',method:'scanner',statusText:`อ่านบัตรสำเร็จ · ${view.label}`});
       return parsed;
     }
   }
@@ -7342,12 +7343,14 @@ function normalizeThaiOcrText(text=''){
     .replace(/[ \t]+/g,' ');
 }
 function normalizeThaiPrefix(v=''){
-  const s=String(v||'').replace(/\s+/g,'').replace(/\.$/,'');
-  if(/^น\.?ส\.?$/.test(s)||s==='นางสาว')return 'นางสาว';
-  if(/^ด\.?ช\.?$/.test(s)||s==='เด็กชาย')return 'เด็กชาย';
-  if(/^ด\.?ญ\.?$/.test(s)||s==='เด็กหญิง')return 'เด็กหญิง';
-  if(s.startsWith('นาย'))return 'นาย';
-  if(s.startsWith('นาง'))return 'นาง';
+  const raw=String(v||'').replace(/\s+/g,'').replace(/\.$/,'');
+  const thai=raw.replace(/[^ก-๙]/g,'');
+  // OCR ของบัตรจริงมักอ่าน น.ส. เป็น น.สี. / นสี / นศ ได้ แม้ชื่อด้านหลังจะชัด
+  if(/^น\.?ส\.?$/.test(raw)||raw==='นางสาว'||/^(?:นส|นสี|นศ)$/.test(thai))return 'นางสาว';
+  if(/^ด\.?ช\.?$/.test(raw)||raw==='เด็กชาย'||thai==='ดช')return 'เด็กชาย';
+  if(/^ด\.?ญ\.?$/.test(raw)||raw==='เด็กหญิง'||thai==='ดญ')return 'เด็กหญิง';
+  if(raw.startsWith('นาย'))return 'นาย';
+  if(raw.startsWith('นาง'))return 'นาง';
   return String(v||'').trim();
 }
 function thaiMonthNumber(v=''){
@@ -7404,7 +7407,7 @@ function parseThaiNameLine(line=''){
   if(!/[ก-๙]/.test(src))return null;
   src=src.replace(/^(?:ชื่อตัวและชื่อสกุล|ชื่อ\s*-?\s*นามสกุล|ชื่อ)\s*[:：-]?\s*/i,'').trim();
   src=src.split(/\s+(?:Name|Last\s*name|Surname|Birth|เกิดวันที่|วันเกิด|เลขบัตร|ID\s*No\.?|ที่อยู่|Address)\b/i)[0].trim();
-  const pm=src.match(/^(นางสาว|น\.?\s*ส\.?|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.?\s*ช\.?|ด\.?\s*ญ\.?)\s*/);
+  const pm=src.match(/^(นางสาว|น\.?\s*(?:ส|สี|ศ)\.?|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.?\s*ช\.?|ด\.?\s*ญ\.?)\s*/);
   if(!pm)return null;
   const prefix=normalizeThaiPrefix(pm[1]);
   const tail=src.slice(pm[0].length).trim();
@@ -7558,6 +7561,7 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
     const first=await worker.recognize(dataUrl);
     const fullText=String(first?.data?.text||'');
     let docType=docTypeHint||detectThaiDocumentType(fullText);
+    if(!docType||docType==='unknown')docType='thai_id'; // เลขด้านบนของบัตรประชาชนอ่านได้บ่อยกว่าหัวบัตร; อย่าหยุด detail OCR แค่เพราะอ่านคำว่า Thai National ID Card ไม่ติด
     let parsed=parseThaiIdDocumentDetails(fullText,docType);
     const specs=docType==='driving_license' ? {
       name:[{x:.23,y:.38,w:.73,h:.25},{x:.18,y:.32,w:.78,h:.34}],
@@ -7568,15 +7572,23 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
       address:[{x:.10,y:.57,w:.63,h:.25},{x:.08,y:.53,w:.70,h:.31}]
     };
     if(docType==='thai_id'||docType==='driving_license'){
-      for(const spec of specs.name||[]){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,'6');parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.prefix&&parsed.fname&&parsed.lname)break;}catch{}}
-      for(const spec of specs.birth||[]){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,'6');parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.birthDate)break;}catch{}}
+      // ลองหลาย PSM เพราะบัตรที่เห็นชัดด้วยตาอาจถูก Tesseract แบ่งบรรทัดต่างกันในแต่ละภาพ
+      for(const spec of specs.name||[]){
+        for(const psm of ['6','11']){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.prefix&&parsed.fname&&parsed.lname)break;}catch{}}
+        if(parsed.prefix&&parsed.fname&&parsed.lname)break;
+      }
+      for(const spec of specs.birth||[]){
+        for(const psm of ['6','11']){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.birthDate)break;}catch{}}
+        if(parsed.birthDate)break;
+      }
       if(docType==='thai_id')for(const spec of specs.address||[]){
-        try{
-          const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,'6');
+        for(const psm of ['6','11'])try{
+          const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);
           const addr=parseThaiIdAddressCropText(t);
           if(!parsed.addressParts&&addr.addressParts){parsed.address=addr.address;parsed.addressParts=addr.addressParts;}
           if(parsed.addressParts)break;
         }catch{}
+        if(parsed.addressParts)break;
       }
     }
     if(!(parsed.prefix&&parsed.fname&&parsed.lname)){parsed.prefix='';parsed.fname='';parsed.lname='';}
@@ -7595,13 +7607,27 @@ async function enrichThaiIdFieldsFromImage(dataUrl,{overwrite=false,preserveIden
 }
 window.enrichThaiIdFieldsFromImage=enrichThaiIdFieldsFromImage;
 async function verifyThaiIdentityAndLookup({detailImage='',docTypeHint='',method='document',statusText='ยืนยันตัวตนแล้ว'}={}){
-  if(detailImage){
-    try{await enrichThaiIdFieldsFromImage(detailImage,{overwrite:false,preserveIdentity:true,docTypeHint});}
-    catch(err){console.warn('detail OCR skipped',err);}
-  }
+  // เลขจากเอกสารจริงยืนยันตัวตนก่อน แล้วให้ AI-LIS ชนะเสมอถ้ามีประวัติ
   window.cnmiPreload?.markAdvanceIdentityVerified?.({method});
   setDocOcrStatus(`${statusText} · กำลังค้นประวัติเดิม`,'ok');
   await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+  const source=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
+  let details=null;
+  if(detailImage && source!=='ai-lis'){
+    try{
+      // เอกสารจริงต้องแทนข้อมูลแจ้งล่วงหน้า/ข้อมูลเดิมในฟอร์มได้ แต่ไม่ทับ AI-LIS
+      details=await enrichThaiIdFieldsFromImage(detailImage,{overwrite:true,preserveIdentity:true,docTypeHint});
+    }catch(err){console.warn('detail OCR skipped',err);}
+  }
+  if(source==='ai-lis'){
+    setDocOcrStatus(`${statusText} · พบ AI-LIS ใช้ข้อมูลหลักจาก AI-LIS`,'ok');
+  }else if(details){
+    const got=[];
+    if(details.prefix&&details.fname&&details.lname)got.push('ชื่อ');
+    if(details.birthDate)got.push('วันเกิด');
+    if(details.addressParts)got.push('ที่อยู่');
+    setDocOcrStatus(got.length?`${statusText} · เติม ${got.join(' / ')} จากเอกสารแล้ว · กรุณาตรวจเทียบ`:`${statusText} · เลขบัตรยืนยันแล้ว แต่รายละเอียด OCR ยังไม่มั่นใจ — ใช้ช่องค้นหาที่อยู่/กรอกต่อได้` ,got.length?'ok':'warn');
+  }
 }
 window.verifyThaiIdentityAndLookup=verifyThaiIdentityAndLookup;
 
