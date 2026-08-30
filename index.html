@@ -3029,7 +3029,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.9 - Auto New/Recent donor type");
+    console.log("CNMI Blood Donation v15.6.60 - Canonical Thai Card OCR");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6684,7 +6684,7 @@ window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
 async function processThaiDocumentCameraDataUrl(dataUrl){
   const raw=String(dataUrl||'');
   if(!raw)throw new Error('ยังไม่มีภาพจากกล้อง');
-  setDocOcrStatus('กำลังตัดเฉพาะกรอบเอกสาร · อ่านเลขบัตรก่อน แล้วค่อยอ่านรายละเอียดที่มั่นใจ','busy');
+  setDocOcrStatus('กำลังอ่านเลขบัตรก่อน · จากนั้นระบบจะจัดแนวบัตรและซูมอ่านรายละเอียดทีละช่อง','busy');
   let guideRaw=raw;
   try{guideRaw=await cropCameraGuideDataUrl(raw);}catch(err){console.warn('camera guide crop skipped',err);}
   const attempts=[{dataUrl:guideRaw,label:'ภาพจริง'}];
@@ -7508,6 +7508,134 @@ function parseThaiIdDocumentDetails(rawText='',docTypeHint=''){
   }
   return out;
 }
+
+// v15.6.60: normalize the photographed Thai card before reading details.
+// The camera guide is deliberately larger than the card; OCR must not use that
+// whole guide as if it were the card. This step finds the most card-like 85.6:54
+// rectangle, estimates small text-line rotation, then outputs a canonical card.
+async function cnmiNormalizeThaiCardForOcr(dataUrl,{docTypeHint=''}={}){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onerror=()=>resolve(String(dataUrl||''));
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width,oh=img.naturalHeight||img.height;
+        if(!ow||!oh)return resolve(String(dataUrl||''));
+        const maxAnalyze=1050, sc=Math.min(maxAnalyze/ow,maxAnalyze/oh,1);
+        const aw=Math.max(1,Math.round(ow*sc)),ah=Math.max(1,Math.round(oh*sc));
+        const a=document.createElement('canvas');a.width=aw;a.height=ah;
+        const actx=a.getContext('2d',{willReadFrequently:true});actx.drawImage(img,0,0,aw,ah);
+        const rgba=actx.getImageData(0,0,aw,ah).data;
+        const gray=new Uint8Array(aw*ah),edge=new Uint16Array(aw*ah);
+        for(let y=0;y<ah;y++)for(let x=0;x<aw;x++){
+          const i=(y*aw+x)*4;gray[y*aw+x]=Math.round(.299*rgba[i]+.587*rgba[i+1]+.114*rgba[i+2]);
+        }
+        let edgeSum=0;
+        for(let y=1;y<ah-1;y++)for(let x=1;x<aw-1;x++){
+          const gx=(gray[(y-1)*aw+x+1]+2*gray[y*aw+x+1]+gray[(y+1)*aw+x+1])-(gray[(y-1)*aw+x-1]+2*gray[y*aw+x-1]+gray[(y+1)*aw+x-1]);
+          const gy=(gray[(y+1)*aw+x-1]+2*gray[(y+1)*aw+x]+gray[(y+1)*aw+x+1])-(gray[(y-1)*aw+x-1]+2*gray[(y-1)*aw+x]+gray[(y-1)*aw+x+1]);
+          const m=Math.min(1023,Math.round(Math.hypot(gx,gy)));edge[y*aw+x]=m;edgeSum+=m;
+        }
+        const iw=aw+1, integ=new Float64Array((aw+1)*(ah+1));
+        for(let y=0;y<ah;y++){
+          let row=0;for(let x=0;x<aw;x++){
+            row+=edge[y*aw+x];integ[(y+1)*iw+x+1]=integ[y*iw+x+1]+row;
+          }
+        }
+        const rectSum=(x,y,w,h)=>{
+          x=Math.max(0,Math.min(aw-1,Math.round(x)));y=Math.max(0,Math.min(ah-1,Math.round(y)));
+          w=Math.max(1,Math.min(aw-x,Math.round(w)));h=Math.max(1,Math.min(ah-y,Math.round(h)));
+          const x2=x+w,y2=y+h;return integ[y2*iw+x2]-integ[y*iw+x2]-integ[y2*iw+x]+integ[y*iw+x];
+        };
+        const ratio=1.586;let best=null;
+        // Large-area bonus prevents a text block inside the card from winning.
+        const fracs=[.50,.58,.66,.74,.82,.90,.96];
+        for(const wf of fracs){
+          let rw=Math.round(aw*wf),rh=Math.round(rw/ratio);
+          if(rh>ah*.96){rh=Math.round(ah*.94);rw=Math.round(rh*ratio);}
+          if(rw<120||rh<70||rw>aw||rh>ah)continue;
+          const step=Math.max(6,Math.round(Math.min(rw,rh)/18));
+          const band=Math.max(2,Math.round(Math.min(rw,rh)*.025));
+          for(let y=0;y+rh<=ah;y+=step)for(let x=0;x+rw<=aw;x+=step){
+            const inner=rectSum(x,y,rw,rh)/(rw*rh);
+            const top=rectSum(x,y,rw,band)/(rw*band),bot=rectSum(x,y+rh-band,rw,band)/(rw*band);
+            const lef=rectSum(x,y,band,rh)/(band*rh),rig=rectSum(x+rw-band,y,band,rh)/(band*rh);
+            const area=(rw*rh)/(aw*ah);
+            const cx=x+rw/2,cy=y+rh/2;
+            const centerPenalty=Math.hypot((cx-aw/2)/(aw/2),(cy-ah*.46)/(ah*.55))*20;
+            const score=inner*.72+(top+bot+lef+rig)*.22+area*210-centerPenalty;
+            if(!best||score>best.score)best={x,y,w:rw,h:rh,score};
+          }
+        }
+        if(!best)return resolve(String(dataUrl||''));
+        // Tighten around the high-edge card content without allowing a tiny text crop.
+        const padX=Math.round(best.w*.018),padY=Math.round(best.h*.025);
+        let bx=Math.max(0,best.x-padX),by=Math.max(0,best.y-padY),bw=Math.min(aw-bx,best.w+padX*2),bh=Math.min(ah-by,best.h+padY*2);
+        // Estimate small skew from edge projection. Horizontal card text becomes most
+        // concentrated in rows after the correct rotation.
+        const pts=[];const threshold=Math.max(85,(edgeSum/Math.max(1,aw*ah))*2.2);
+        const sx0=Math.max(1,bx),sy0=Math.max(1,by),sx1=Math.min(aw-1,bx+bw),sy1=Math.min(ah-1,by+bh);
+        const sampleStep=Math.max(1,Math.round(Math.max(bw,bh)/650));
+        for(let y=sy0;y<sy1;y+=sampleStep)for(let x=sx0;x<sx1;x+=sampleStep){
+          const m=edge[y*aw+x];if(m>threshold)pts.push([x-bx,y-by,m]);
+        }
+        let bestAng=0,bestProj=-1;
+        for(let deg=-7;deg<=7;deg+=1){
+          const r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r),bins=new Float64Array(Math.ceil(bh+bw*.28+20));let total=0;
+          for(const q of pts){const yy=q[1]*cs-q[0]*sn+bw*.14;const bi=Math.round(yy);if(bi>=0&&bi<bins.length){bins[bi]+=q[2];total+=q[2];}}
+          if(!total)continue;const sorted=Array.from(bins).sort((a,b)=>b-a);let strong=0;for(let i=0;i<Math.min(14,sorted.length);i++)strong+=sorted[i];
+          const score=strong/total;if(score>bestProj){bestProj=score;bestAng=deg;}
+        }
+        const osx=Math.max(0,Math.round(bx/sc)),osy=Math.max(0,Math.round(by/sc));
+        const osw=Math.min(ow-osx,Math.max(1,Math.round(bw/sc))),osh=Math.min(oh-osy,Math.max(1,Math.round(bh/sc)));
+        const temp=document.createElement('canvas');temp.width=osw;temp.height=osh;
+        const tctx=temp.getContext('2d');tctx.imageSmoothingEnabled=true;tctx.imageSmoothingQuality='high';tctx.drawImage(img,osx,osy,osw,osh,0,0,osw,osh);
+        // Rotate on an expanded canvas then crop the largest centered 1.586 rectangle.
+        const ang=-bestAng*Math.PI/180,cs=Math.abs(Math.cos(ang)),sn=Math.abs(Math.sin(ang));
+        const rw=Math.ceil(osw*cs+osh*sn),rh=Math.ceil(osw*sn+osh*cs);
+        const rot=document.createElement('canvas');rot.width=rw;rot.height=rh;
+        const rctx=rot.getContext('2d');rctx.fillStyle='#fff';rctx.fillRect(0,0,rw,rh);rctx.translate(rw/2,rh/2);rctx.rotate(ang);rctx.drawImage(temp,-osw/2,-osh/2);
+        let cw=Math.min(rw,rh*ratio),ch=cw/ratio;if(ch>rh){ch=rh;cw=ch*ratio;}
+        // Remove a tiny safety border so phone bezel / scanner edge does not enter OCR zones.
+        cw*=.975;ch*=.965;
+        const cx=(rw-cw)/2,cy=(rh-ch)/2,targetW=2400,targetH=Math.round(targetW/ratio);
+        const out=document.createElement('canvas');out.width=targetW;out.height=targetH;
+        const octx=out.getContext('2d',{willReadFrequently:true});octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';octx.drawImage(rot,cx,cy,cw,ch,0,0,targetW,targetH);
+        window.cnmiLastThaiCardNormalizeInfo={detected:true,angle:Number(bestAng.toFixed(1)),sourceWidth:ow,sourceHeight:oh};
+        resolve(out.toDataURL('image/png'));
+      }catch(err){console.warn('Thai card normalize failed',err);resolve(String(dataUrl||''));}
+    };
+    img.src=String(dataUrl||'');
+  });
+}
+window.cnmiNormalizeThaiCardForOcr=cnmiNormalizeThaiCardForOcr;
+
+function cnmiThaiNameKey(v={}){return [v.prefix,v.fname,v.lname].map(x=>String(x||'').replace(/\s+/g,'')).join('|');}
+function cnmiThaiDatePlausible(v=''){
+  const m=String(v||'').match(/^(\d{2})-(\d{2})-(\d{4})$/);if(!m)return false;
+  const d=+m[1],mo=+m[2],be=+m[3];if(d<1||d>31||mo<1||mo>12||be<2440||be>2609)return false;
+  return true;
+}
+function cnmiSafeThaiAddressLine(v=''){
+  const s=String(v||'').trim();if(!s||s.length>90)return '';
+  if(!/^\d{1,5}(?:\s*\/\s*\d{1,5})?/.test(s))return '';
+  const thai=(s.match(/[ก-๙]/g)||[]).length,latin=(s.match(/[A-Za-z]/g)||[]).length,bad=(s.match(/[^ก-๙0-9\s\/\-.]/g)||[]).length;
+  if(latin>1||bad>3||thai<2)return '';
+  return s.replace(/\s+/g,' ').trim();
+}
+async function cnmiValidateOcrAddressParts(parts={}){
+  const out={addressLine:cnmiSafeThaiAddressLine(parts.addressLine||''),subdistrict:'',district:'',province:'',postalCode:''};
+  try{
+    const rows=await cnmiLoadThaiGeoRows();
+    const p=cnmiNormalizeGeoName(parts.province||'','province'),d=cnmiNormalizeGeoName(parts.district||'','district'),sd=cnmiNormalizeGeoName(parts.subdistrict||'','subdistrict');
+    let list=rows;if(p)list=list.filter(r=>r.p===p);if(d)list=list.filter(r=>r.d===d);if(sd)list=list.filter(r=>r.s===sd);
+    if(!list.length)return null;
+    const r=list[0];out.province=r.province;if(d)out.district=r.district;if(sd)out.subdistrict=r.subdistrict;
+    if(!out.district&&!out.subdistrict)return null;
+    return out;
+  }catch{return null;}
+}
+
 function thaiDocumentDetailScore(d={}){
   let score=0;
   if(d.documentType&&d.documentType!=='unknown')score+=2;
@@ -7554,45 +7682,94 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
   if(!window.Tesseract?.createWorker)return null;
   let worker=null;
   try{
-    setDocOcrStatus('อ่านเลขบัตรแล้ว · กำลังอ่านชื่อ/วันเกิด/ที่อยู่จากตำแหน่งบนเอกสาร...','busy');
+    setDocOcrStatus('อ่านเลขบัตรแล้ว · กำลังจัดบัตรให้ตรงและขยายช่องข้อมูล...','busy');
+    const cardImage=await cnmiNormalizeThaiCardForOcr(dataUrl,{docTypeHint});
     worker=await window.Tesseract.createWorker('tha+eng');
     await worker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
-    const first=await worker.recognize(dataUrl);
+    const first=await worker.recognize(cardImage);
     const fullText=String(first?.data?.text||'');
     let docType=docTypeHint||detectThaiDocumentType(fullText);
-    if(!docType||docType==='unknown')docType='thai_id'; // เลขด้านบนของบัตรประชาชนอ่านได้บ่อยกว่าหัวบัตร; อย่าหยุด detail OCR แค่เพราะอ่านคำว่า Thai National ID Card ไม่ติด
+    if(!docType||docType==='unknown')docType='thai_id';
     let parsed=parseThaiIdDocumentDetails(fullText,docType);
+    // Do not trust a one-off full-page name/address. Targeted crops below must
+    // independently support them before data is written to the form.
+    parsed.prefix='';parsed.fname='';parsed.lname='';
+    if(docType==='thai_id'){parsed.address='';parsed.addressParts=null;}
+
     const specs=docType==='driving_license' ? {
-      name:[{x:.23,y:.38,w:.73,h:.25},{x:.18,y:.32,w:.78,h:.34}],
-      birth:[{x:.36,y:.57,w:.58,h:.18},{x:.26,y:.52,w:.68,h:.25}]
+      name:[
+        {x:.25,y:.39,w:.70,h:.13,maxWidth:2300},{x:.22,y:.35,w:.74,h:.20,maxWidth:2300}
+      ],
+      birth:[
+        {x:.37,y:.60,w:.55,h:.13,maxWidth:1900},{x:.31,y:.55,w:.62,h:.20,maxWidth:1900}
+      ]
     } : {
-      name:[{x:.16,y:.22,w:.68,h:.24},{x:.12,y:.18,w:.74,h:.31}],
-      birth:[{x:.30,y:.39,w:.48,h:.18},{x:.22,y:.34,w:.58,h:.26}],
-      address:[{x:.10,y:.57,w:.63,h:.25},{x:.08,y:.53,w:.70,h:.31}]
+      // Canonical Thai ID layout after geometric normalization.
+      name:[
+        {x:.18,y:.25,w:.66,h:.105,maxWidth:2400},{x:.15,y:.215,w:.72,h:.17,maxWidth:2400}
+      ],
+      birth:[
+        {x:.30,y:.49,w:.48,h:.105,maxWidth:1900},{x:.26,y:.455,w:.55,h:.17,maxWidth:1900}
+      ],
+      address:[
+        {x:.065,y:.635,w:.66,h:.20,maxWidth:2400},{x:.055,y:.59,w:.70,h:.27,maxWidth:2400}
+      ]
     };
-    if(docType==='thai_id'||docType==='driving_license'){
-      // ลองหลาย PSM เพราะบัตรที่เห็นชัดด้วยตาอาจถูก Tesseract แบ่งบรรทัดต่างกันในแต่ละภาพ
-      for(const spec of specs.name||[]){
-        for(const psm of ['6','11']){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.prefix&&parsed.fname&&parsed.lname)break;}catch{}}
-        if(parsed.prefix&&parsed.fname&&parsed.lname)break;
-      }
-      for(const spec of specs.birth||[]){
-        for(const psm of ['6','11']){try{const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);parsed=mergeThaiDetail(parsed,parseThaiIdDocumentDetails(t,docType));if(parsed.birthDate)break;}catch{}}
-        if(parsed.birthDate)break;
-      }
-      if(docType==='thai_id')for(const spec of specs.address||[]){
-        for(const psm of ['6','11'])try{
-          const t=await recognizeThaiDetailCrop(worker,dataUrl,spec,psm);
-          const addr=parseThaiIdAddressCropText(t);
-          if(!parsed.addressParts&&addr.addressParts){parsed.address=addr.address;parsed.addressParts=addr.addressParts;}
-          if(parsed.addressParts)break;
+
+    setDocOcrStatus('กำลังอ่านชื่อจากบรรทัดชื่อโดยเฉพาะ...','busy');
+    const nameVotes=new Map();
+    for(const spec of specs.name||[]){
+      for(const psm of ['7','6','11']){
+        try{
+          const t=await recognizeThaiDetailCrop(worker,cardImage,spec,psm);
+          const d=parseThaiIdDocumentDetails(t,docType);
+          if(d.prefix&&d.fname&&d.lname){
+            const key=cnmiThaiNameKey(d),v=nameVotes.get(key)||{...d,count:0};v.count++;nameVotes.set(key,v);
+          }
         }catch{}
-        if(parsed.addressParts)break;
       }
     }
+    const names=[...nameVotes.values()].sort((a,b)=>b.count-a.count);
+    if(names[0] && names[0].count>=2){
+      // Require the same Thai name from at least two independent OCR passes.
+      // One plausible-looking pass is not enough to write a person's name.
+      parsed.prefix=names[0].prefix;parsed.fname=names[0].fname;parsed.lname=names[0].lname;
+    }
+
+    setDocOcrStatus('กำลังอ่านวันเกิดและตรวจซ้ำหลายรอบ...','busy');
+    const birthVotes=new Map();
+    const addBirth=(v)=>{if(cnmiThaiDatePlausible(v))birthVotes.set(v,(birthVotes.get(v)||0)+1);};
+    addBirth(parseThaiDocumentBirth(normalizeThaiOcrText(fullText).split('\n'),docType));
+    for(const spec of specs.birth||[]){
+      for(const psm of ['7','6','11'])try{
+        const t=await recognizeThaiDetailCrop(worker,cardImage,spec,psm);addBirth(parseThaiDocumentBirth(normalizeThaiOcrText(t).split('\n'),docType)||parseThaiDocumentDate(t));
+      }catch{}
+    }
+    const births=[...birthVotes.entries()].sort((a,b)=>b[1]-a[1]);
+    if(births[0] && (births[0][1]>=2 || birthVotes.size===1))parsed.birthDate=births[0][0];else parsed.birthDate='';
+
+    if(docType==='thai_id'){
+      setDocOcrStatus('กำลังอ่านที่อยู่เฉพาะกรอบที่อยู่และตรวจชื่อพื้นที่...','busy');
+      const addrCandidates=[];
+      for(const spec of specs.address||[])for(const psm of ['6','11'])try{
+        const t=await recognizeThaiDetailCrop(worker,cardImage,spec,psm);
+        const a=parseThaiIdAddressCropText(t);if(a?.addressParts)addrCandidates.push(a.addressParts);
+      }catch{}
+      let accepted=null;
+      for(const a of addrCandidates){const checked=await cnmiValidateOcrAddressParts(a);if(checked){accepted=checked;break;}}
+      if(accepted){parsed.addressParts=accepted;parsed.address=joinRegistrationAddress(accepted);}
+      else{parsed.address='';parsed.addressParts=null;}
+    }
+
     if(!(parsed.prefix&&parsed.fname&&parsed.lname)){parsed.prefix='';parsed.fname='';parsed.lname='';}
-    if(parsed.documentType==='driving_license'){parsed.address='';parsed.addressParts=null;}
+    if(docType==='driving_license'){parsed.address='';parsed.addressParts=null;}
     if(parsed.addressParts)parsed.addressParts.postalCode='';
+    if(!parsed.gender){
+      if(['นาย','เด็กชาย'].includes(parsed.prefix))parsed.gender='M';
+      else if(['นาง','นางสาว','เด็กหญิง'].includes(parsed.prefix))parsed.gender='F';
+    }
+    parsed.documentType=docType;
+    parsed.normalizedCardImage=cardImage;
     return parsed;
   }catch(err){console.warn('Thai document detail OCR failed',err);return null;}
   finally{try{await worker?.terminate?.();}catch{}}
