@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.47"></script>
+  <script src="js/supabase-backend.js?v=15.6.49"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1747,6 +1747,23 @@
 .app-layout.auth-hidden { display: none !important; }
 .login-screen.auth-hidden { display: none !important; }
 
+/* v15.6.49 advance pre-registration */
+.advance-import-panel{background:#fffaf2;border:1px solid #f1d49b;border-radius:16px;padding:16px;margin-top:18px}
+.advance-summary-grid{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.advance-summary-chip{border-radius:999px;padding:6px 10px;font-weight:800;font-size:.82rem;border:1px solid #d9e4f2;background:#fff}
+.advance-summary-chip.ai{color:#087f5b;background:#ecfdf5;border-color:#a7f3d0}
+.advance-summary-chip.advance{color:#a15c00;background:#fff7e6;border-color:#ffd591}
+.advance-summary-chip.review{color:#b42318;background:#fff1f0;border-color:#ffccc7}
+.advance-summary-chip.done{color:#175cd3;background:#eff8ff;border-color:#b2ddff}
+.advance-list-wrap{max-height:420px;overflow:auto;border:1px solid #e1e8f0;border-radius:12px;background:#fff}
+.advance-list-table{margin:0;font-size:.88rem}
+.advance-list-table thead th{position:sticky;top:0;background:#f8fbff;z-index:2;white-space:nowrap}
+.advance-source-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:.76rem;font-weight:800;white-space:nowrap}
+.advance-source-badge.ai{background:#d1fae5;color:#067647}.advance-source-badge.advance{background:#fff1cc;color:#8a4b00}.advance-source-badge.review{background:#fee4e2;color:#b42318}.advance-source-badge.done{background:#dbeafe;color:#175cd3}
+.advance-register-banner{border:1px solid #f1d49b;background:#fffaf2;border-radius:12px;padding:10px 12px;margin-bottom:12px;display:none}
+.advance-modal-search{position:sticky;top:0;background:#fff;z-index:3;padding-bottom:10px}
+.advance-modal-row{border:1px solid #e1e8f0;border-radius:12px;padding:12px;margin-bottom:8px;background:#fff}
+.advance-modal-row:hover{border-color:#84adff;background:#f8fbff}
 </style>
 </head>
 
@@ -1989,10 +2006,14 @@
           <div class="main-card">
             <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
 
-      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap py-2 mb-3">
-        <div><strong>ผู้บริจาคเดิม:</strong> ค้นประวัติก่อนลงทะเบียน</div>
-        <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
+      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap py-2 mb-2">
+        <div><strong>ผู้บริจาคเดิม:</strong> ค้นจากประวัติหลักหรือรายชื่อที่หน่วยแจ้งล่วงหน้า</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
+          <button class="btn btn-outline-primary btn-sm" type="button" onclick="openAdvanceRegistrationModal()">📋 รายชื่อแจ้งล่วงหน้า</button>
+        </div>
       </div>
+      <div id="advance-register-banner" class="advance-register-banner"></div>
       <div id="register-event-location" class="alert alert-warning py-2 mb-3"><strong>📍 สถานที่ออกหน่วย:</strong> กำลังตรวจสอบ...</div>
 
       <div class="row g-3">
@@ -2309,6 +2330,24 @@
           <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.14 → ทำทีละคนให้จบ ส่วนที่ 1 → ส่วนที่ 2 → ✓ Complete → คนถัดไป</div>
           <hr class="my-3">
 
+          <div class="advance-import-panel" data-admin-only="true">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+              <div>
+                <h5 class="fw-bold mb-1" style="color:#8a4b00;">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
+                <div class="small text-muted">นำเข้า Excel จากหน่วยก่อนวันออกหน่วย · ยังไม่สร้าง DN และยังไม่ +1 จนกว่าผู้บริจาคมาจริง</div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAdvanceRegistrations()">🔄 ดูรายชื่อวันที่นี้</button>
+            </div>
+            <div class="row g-2 align-items-end mt-1">
+              <div class="col-md-3"><label class="fw-bold">วันที่ออกหน่วย</label><input id="prereg-event-date" type="date" class="form-control" onchange="loadAdvanceRegistrations().catch(()=>{})"></div>
+              <div class="col-md-7"><label class="fw-bold">ไฟล์รายชื่อจากหน่วย</label><input id="prereg-file" type="file" class="form-control" accept=".xlsx,.xls"></div>
+              <div class="col-md-2"><button id="prereg-import-btn" type="button" class="btn btn-warning w-100" onclick="importAdvanceRegistrationFile()">📥 นำเข้ารายชื่อ</button></div>
+            </div>
+            <div id="prereg-import-status" class="small mt-2 text-muted">รองรับไฟล์ที่มี ชื่อ-นามสกุล / Donor ID / จำนวนครั้งเดิม / เลขประชาชน / วันเกิด / เบอร์โทร ฯลฯ</div>
+            <div id="prereg-summary" class="advance-summary-grid"></div>
+            <div id="prereg-list"></div>
+          </div>
+
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f5fbff;">
             <h5 class="fw-bold text-primary mb-2">📍 สถานที่ออกหน่วย <span class="badge text-bg-secondary">Admin เท่านั้น</span></h5>
             <div class="small text-muted mb-2">ตั้งครั้งเดียว ใช้ร่วมทุกคอม</div>
@@ -2368,7 +2407,7 @@
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ตั้งสถานที่ → ตั้งช่วงเลขถุง → ส่งออก LIS CSV → ถ้าเปลี่ยนคอม ให้ดาวน์โหลด “โปรแกรมสำหรับคอมเครื่องนี้” จากหน้าเตรียมออกหน่วย</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงอ่านบัตรหรือเลือกชื่อจากรายชื่อ → ระบบใช้ AI-LIS เป็นหลัก ถ้าไม่มีจึงใช้จำนวนครั้งที่หน่วยแจ้ง → ส่งออก LIS CSV</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อ Scanner → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
@@ -2747,10 +2786,32 @@
               <div class="detail-label">ที่อยู่</div>
               <div id="vd-address" class="detail-value detail-address"></div>
             </div>
-            <div class="col-md-6"><div class="detail-label">เวลาบันทึกผลคัดกรอง</div><div id="vd-save-time" class="detail-value"></div></div>
-            <div class="col-md-6"><div class="detail-label">สรุปเหตุผล</div><div id="vd-reason" class="detail-value"></div></div>
+            <div class="col-md-4"><div class="detail-label">เวลาบันทึกผลคัดกรอง</div><div id="vd-save-time" class="detail-value"></div></div>
+            <div class="col-md-4"><div class="detail-label">แหล่งจำนวนครั้งเดิม</div><div id="vd-history-source" class="detail-value"></div></div>
+            <div class="col-md-4"><div class="detail-label">สรุปเหตุผล</div><div id="vd-reason" class="detail-value"></div></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="advanceRegistrationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="advance-modal-search">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8"><input id="advance-modal-query" class="form-control" placeholder="ค้นชื่อ / รหัสพนักงาน / เบอร์โทร / เลขบัตร" oninput="renderAdvanceRegistrationModalList()"></div>
+            <div class="col-md-4"><input id="advance-modal-date" type="date" class="form-control" onchange="loadAdvanceModalData()"></div>
+          </div>
+        </div>
+        <div id="advance-modal-status" class="small text-muted mb-2"></div>
+        <div id="advance-modal-list"></div>
       </div>
     </div>
   </div>
@@ -4357,6 +4418,12 @@ async function resetPasswordWithOtp() {
           alert((res && res.message) ? res.message : "บันทึกไม่สำเร็จ");
           return;
         }
+        try {
+          const histSource=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
+          const advance=window.cnmiPreload?.getActiveAdvanceRegistration?.()||null;
+          await window.cnmiSupabaseApi?.markRegistrationHistorySource?.({dn:res.dn,source:histSource,preregistrationId:advance?.id||null});
+          res.historySource=histSource;
+        } catch(sourceErr) { console.warn('mark registration history source failed',sourceErr); }
         let photoNotice = "";
         if (window.cnmiDonorPhotoState?.dirty) {
           try {
@@ -4956,6 +5023,8 @@ async function adminResetPassword(username, fullName) {
       window.clearDonorPhoto(false);
       donorPhotoState.loadedForIdCard = '';
       window.cnmiPreload?.clearPanel?.();
+      window.cnmiPreload?.clearAdvanceRegistration?.();
+      updateAdvanceRegisterBanner(null);
       const preloadStatus = document.getElementById("preload-register-status");
       if (preloadStatus) { preloadStatus.textContent = ""; preloadStatus.className = "register-status-line text-muted"; }
       setRegisterIdentityType('thai',{clear:false});
@@ -5826,7 +5895,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.47"></script>
+  <script src="js/supabase-history.js?v=15.6.49"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -7081,6 +7150,88 @@ async function refreshRegisterEventLocation(){
   try{const r=await window.cnmiSupabaseApi.getOutreachEvent(date);if(r?.unitName){box.className='alert alert-success py-2 mb-3';box.innerHTML='<strong>📍 สถานที่ออกหน่วยวันนี้:</strong> '+escapeHtml(r.unitName);}else{box.className='alert alert-danger py-2 mb-3';box.innerHTML='<strong>⚠ ยังไม่ได้ตั้งสถานที่ออกหน่วยวันนี้</strong> — กรุณาให้ Admin ตั้งที่เมนู เตรียมออกหน่วย ก่อนบันทึก DN';}}catch(err){box.className='alert alert-warning py-2 mb-3';box.textContent='ตรวจสถานที่ออกหน่วยไม่สำเร็จ: '+(err.message||err);}
 }
 
+const advanceRegistrationUiState={rows:[],modalRows:[]};
+function normalizeAdvanceHeader(v){return String(v??'').trim().toLowerCase().replace(/[\s_\-./()]+/g,'').replace(/[?:：]/g,'');}
+function advanceCellText(v){if(v===null||v===undefined)return'';if(v instanceof Date&&!Number.isNaN(v.getTime()))return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${v.getFullYear()+543}`;if(typeof v==='number'&&Number.isFinite(v))return String(v).replace(/\.0+$/,'');return String(v).trim();}
+function splitAdvanceThaiName(full=''){
+  let s=String(full||'').replace(/\s+/g,' ').trim(),prefix='';
+  const prefixes=['นางสาว','น.ส.','น.ส','นาย','นาง','ด.ช.','ด.ญ.','เด็กชาย','เด็กหญิง'];
+  for(const x of prefixes){if(s.startsWith(x)){prefix=x;s=s.slice(x.length).trim();break;}}
+  const parts=s.split(' ').filter(Boolean);return {prefix,fname:parts.shift()||'',lname:parts.join(' ')};
+}
+function parseAdvanceThaiDate(v){
+  if(v instanceof Date&&!Number.isNaN(v.getTime()))return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${v.getFullYear()+543}`;
+  if(typeof v==='number'&&Number.isFinite(v)){const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000);return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${d.getUTCFullYear()+543}`;}
+  const s=String(v||'').trim();if(!s||s==='-')return'';
+  let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${String(Number(m[1])).padStart(2,'0')}-${String(Number(m[2])).padStart(2,'0')}-${m[3]}`;
+  const months={มกราคม:1,กุมภาพันธ์:2,มีนาคม:3,เมษายน:4,พฤษภาคม:5,มิถุนายน:6,กรกฎาคม:7,สิงหาคม:8,กันยายน:9,ตุลาคม:10,พฤศจิกายน:11,ธันวาคม:12};
+  m=s.match(/(\d{1,2})\s+([^\s]+)\s+(\d{4})/);if(m&&months[m[2]])return `${String(Number(m[1])).padStart(2,'0')}-${String(months[m[2]]).padStart(2,'0')}-${m[3]}`;
+  return s;
+}
+function parseAdvanceWorkbookMatrix(matrix,fileName=''){
+  const rows=Array.isArray(matrix)?matrix:[];
+  const hi=rows.findIndex(r=>{const h=(r||[]).map(normalizeAdvanceHeader);return h.some(x=>x.includes('ชื่อนามสกุล')||x==='ชื่อ')&&h.some(x=>x.includes('ลำดับ')||x.includes('รหัสพนักงาน')||x.includes('เบอร์โทร'));});
+  if(hi<0)throw new Error('หาแถวหัวตารางรายชื่อผู้บริจาคไม่พบ');
+  const headers=(rows[hi]||[]).map(normalizeAdvanceHeader);
+  const idx=(...patterns)=>headers.findIndex(h=>patterns.some(p=>h.includes(normalizeAdvanceHeader(p))));
+  const ix={seq:idx('ลำดับ'),name:idx('ชื่อนามสกุล','ชื่อ-นามสกุล'),emp:idx('รหัสพนักงาน'),dept:idx('แผนก','ฝ่าย'),phone:idx('เบอร์โทร'),group:idx('กรุ๊ปเลือด','หมู่เลือด'),donor:idx('donoridกาชาด','donorid'),count:idx('จำนวนครั้งกาชาด','จำนวนครั้ง'),last:idx('บริจาคล่าสุดเมื่อ','บริจาคล่าสุด'),id:idx('เลขประชาชนจากกาชาด','เลขประชาชน','เลขบัตรประชาชน'),birth:idx('วดปเกิด','วันเกิด'),note:idx('column1','หมายเหตุ'),passport:idx('passportnumber','passport')};
+  if(ix.name<0)throw new Error('ไม่พบคอลัมน์ชื่อ-นามสกุล');
+  const out=[];
+  for(let ri=hi+1;ri<rows.length;ri++){
+    const r=rows[ri]||[],full=advanceCellText(r[ix.name]);if(!full||full==='.')continue;
+    const nm=splitAdvanceThaiName(full),rawId=ix.id>=0?advanceCellText(r[ix.id]):'',id=rawId.replace(/\D/g,''),validId=/^\d{13}$/.test(id)&&(typeof isValidThaiNationalId!=='function'||isValidThaiNationalId(id));
+    const pass=ix.passport>=0?advanceCellText(r[ix.passport]).toUpperCase().replace(/[^A-Z0-9]/g,''):'';
+    const countRaw=ix.count>=0?advanceCellText(r[ix.count]):'',count=/^\d+$/.test(countRaw)?Number(countRaw):null;
+    const emp=ix.emp>=0?advanceCellText(r[ix.emp]):'',phone=ix.phone>=0?advanceCellText(r[ix.phone]).replace(/\s+/g,''):'';
+    const sourceKey=(validId?`THAI:${id}`:(pass?`PASS:${pass}`:(emp?`EMP:${emp}`:`NAME:${full}|TEL:${phone}`))).slice(0,220);
+    let note=ix.note>=0?advanceCellText(r[ix.note]):'';if(rawId&&rawId!=='-'&&!validId)note=[note,'เลขประชาชนในไฟล์ต้องตรวจสอบ'].filter(Boolean).join(' · ');if(countRaw&&countRaw!=='-'&&count===null)note=[note,'จำนวนครั้งเดิมไม่ชัดเจน'].filter(Boolean).join(' · ');
+    out.push({sourceKey,sourceRow:ri+1,identityType:validId?'thai':(pass?'passport':'unknown'),idCard:validId?id:'',passportNumber:pass,prefix:nm.prefix,fname:nm.fname,lname:nm.lname,employeeId:emp,department:ix.dept>=0?advanceCellText(r[ix.dept]):'',phone,bloodGroup:ix.group>=0?advanceCellText(r[ix.group]):'',donorId:ix.donor>=0?advanceCellText(r[ix.donor]).replace(/^[-\s]+$/,''):'' ,lastDonationNo:count,lastDonationDate:ix.last>=0?parseAdvanceThaiDate(r[ix.last]):'',birth:ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'',note});
+  }
+  if(!out.length)throw new Error('ไม่พบรายชื่อผู้บริจาคในไฟล์');
+  return out;
+}
+async function importAdvanceRegistrationFile(){
+  if(!isRealAdmin()||getAdminViewMode()==='staff')return alert('ใช้ได้เฉพาะมุมมอง Admin');
+  const date=document.getElementById('prereg-event-date')?.value||'',file=document.getElementById('prereg-file')?.files?.[0],st=document.getElementById('prereg-import-status'),btn=document.getElementById('prereg-import-btn');
+  if(!date)return alert('กรุณาเลือกวันที่ออกหน่วย');if(!file)return alert('กรุณาเลือกไฟล์รายชื่อจากหน่วย');
+  try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+    const rows=parseAdvanceWorkbookMatrix(matrix,file.name);const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows,replacePlanned:true});
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · ยังไม่สร้าง DN/Visit และยังไม่เพิ่มจำนวนครั้ง`;}
+    await loadAdvanceRegistrations();
+  }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='นำเข้าไม่สำเร็จ: '+(err.message||err);}alert('นำเข้ารายชื่อไม่สำเร็จ\n'+(err.message||err));}
+  finally{if(btn){btn.disabled=false;btn.textContent='📥 นำเข้ารายชื่อ';}}
+}
+window.importAdvanceRegistrationFile=importAdvanceRegistrationFile;
+function normalizeAdvanceSearch(v){return String(v||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9ก-๙]/g,'');}
+async function classifyAdvanceRows(rows){
+  const ids=[...new Set((rows||[]).map(r=>r.idCard).filter(x=>/^\d{13}$/.test(x)))],central=ids.length?await window.cnmiSupabaseApi.getDonorHistories(ids).catch(()=>({})):{};
+  return (rows||[]).map(r=>({...r,centralProfile:central?.[r.idCard]||null}));
+}
+function advanceRowSource(r){if(r.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว'};if(r.centralProfile)return {key:'ai',label:'AI-LIS'};if(Number.isInteger(Number(r.lastDonationNo)))return {key:'advance',label:'รายชื่อหน่วย'};return {key:'review',label:'ต้องตรวจวันจริง'};}
+function renderAdvancePrepareList(){
+  const rows=advanceRegistrationUiState.rows,box=document.getElementById('prereg-list'),sum=document.getElementById('prereg-summary');if(!box||!sum)return;
+  const counts={ai:0,advance:0,review:0,done:0};rows.forEach(r=>counts[advanceRowSource(r).key]++);
+  sum.innerHTML=`<span class="advance-summary-chip">ทั้งหมด ${rows.length}</span><span class="advance-summary-chip ai">AI-LIS ${counts.ai}</span><span class="advance-summary-chip advance">ใช้ข้อมูลแจ้งล่วงหน้า ${counts.advance}</span><span class="advance-summary-chip review">ต้องตรวจ ${counts.review}</span><span class="advance-summary-chip done">มาจริงแล้ว ${counts.done}</span>`;
+  if(!rows.length){box.innerHTML='<div class="alert alert-light border mb-0">ยังไม่มีรายชื่อแจ้งล่วงหน้าของวันที่นี้</div>';return;}
+  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ชื่อ-นามสกุล</th><th>แผนก</th><th>เลขประชาชน</th><th>Donor ID ที่แจ้ง</th><th>ครั้งเดิม</th><th>แหล่งที่จะใช้</th><th>สถานะ</th></tr></thead><tbody>${rows.map((r,i)=>{const s=advanceRowSource(r),last=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</strong>${r.note?`<div class="small text-danger">${escapeHtml(r.note)}</div>`:''}</td><td>${escapeHtml(r.department||'-')}</td><td>${r.idCard?escapeHtml(r.idCard.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5')):'-'}</td><td>${escapeHtml(r.donorId||'-')}</td><td>${last}</td><td><span class="advance-source-badge ${s.key}">${s.label}</span></td><td>${r.registeredDn?`DN ${escapeHtml(r.registeredDn)}`:'รอวันจริง'}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+async function loadAdvanceRegistrations(){
+  const date=document.getElementById('prereg-event-date')?.value||getLocalDateInputValue();const box=document.getElementById('prereg-list');if(box)box.innerHTML='<div class="small text-primary">กำลังโหลดรายชื่อ...</div>';
+  try{advanceRegistrationUiState.rows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));renderAdvancePrepareList();return advanceRegistrationUiState.rows;}catch(err){console.error(err);if(box)box.innerHTML=`<div class="alert alert-danger">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml(err.message||err)}</div>`;return[];}
+}
+window.loadAdvanceRegistrations=loadAdvanceRegistrations;
+function updateAdvanceRegisterBanner(row){const box=document.getElementById('advance-register-banner');if(!box)return;if(!row){box.style.display='none';box.innerHTML='';return;}const last=Number.isInteger(Number(row.lastDonationNo))?`${Number(row.lastDonationNo)} ครั้ง`:'ไม่ระบุ';box.style.display='block';box.innerHTML=`<strong>📋 เลือกจากรายชื่อแจ้งล่วงหน้า:</strong> ${escapeHtml([row.prefix,row.fname,row.lname].filter(Boolean).join(' '))} · ครั้งเดิมที่แจ้ง <strong>${last}</strong>${row.centralProfile?' · <span class="text-success fw-bold">พบ AI-LIS — ระบบจะใช้ AI-LIS เป็นหลัก</span>':' · <span class="text-warning-emphasis fw-bold">ยังไม่พบ AI-LIS — ใช้จำนวนครั้งที่แจ้งเมื่อมาจริง</span>'}`;}
+window.updateAdvanceRegisterBanner=updateAdvanceRegisterBanner;
+async function openAdvanceRegistrationModal(){const date=document.getElementById('advance-modal-date');if(date)date.value=getLocalDateInputValue();document.getElementById('advance-modal-query')&&(document.getElementById('advance-modal-query').value='');await loadAdvanceModalData();bootstrap.Modal.getOrCreateInstance(document.getElementById('advanceRegistrationModal')).show();}
+window.openAdvanceRegistrationModal=openAdvanceRegistrationModal;
+async function loadAdvanceModalData(){const date=document.getElementById('advance-modal-date')?.value||getLocalDateInputValue(),st=document.getElementById('advance-modal-status');if(st)st.textContent='กำลังโหลด...';try{advanceRegistrationUiState.modalRows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));if(st)st.textContent=`${advanceRegistrationUiState.modalRows.length} รายชื่อ · เลือกเฉพาะคนที่มาหน้างานจริง`;renderAdvanceRegistrationModalList();}catch(err){if(st)st.textContent='โหลดไม่สำเร็จ: '+(err.message||err);}}
+window.loadAdvanceModalData=loadAdvanceModalData;
+function renderAdvanceRegistrationModalList(){const q=normalizeAdvanceSearch(document.getElementById('advance-modal-query')?.value),box=document.getElementById('advance-modal-list');if(!box)return;const rows=(advanceRegistrationUiState.modalRows||[]).filter(r=>!q||normalizeAdvanceSearch([r.prefix,r.fname,r.lname,r.employeeId,r.phone,r.idCard,r.donorId,r.department].join(' ')).includes(q));if(!rows.length){box.innerHTML='<div class="alert alert-light border">ไม่พบรายชื่อ</div>';return;}box.innerHTML=rows.map(r=>{const s=advanceRowSource(r),last=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';return `<div class="advance-modal-row d-flex justify-content-between align-items-center gap-3 flex-wrap"><div><div class="fw-bold">${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</div><div class="small text-muted">${r.employeeId?'รหัส '+escapeHtml(r.employeeId)+' · ':''}${escapeHtml(r.department||'')}${r.phone?' · '+escapeHtml(r.phone):''}</div><div class="small mt-1">ครั้งเดิม: <strong>${last}</strong>${r.donorId?' · Donor ID ที่แจ้ง '+escapeHtml(r.donorId):''} · <span class="advance-source-badge ${s.key}">${s.label}</span></div>${r.note?`<div class="small text-danger mt-1">⚠ ${escapeHtml(r.note)}</div>`:''}</div><button type="button" class="btn btn-primary btn-sm" onclick="selectAdvanceRegistration('${r.id}')" ${r.status==='registered'?'disabled':''}>${r.status==='registered'?'ลงทะเบียนแล้ว':'เลือกคนนี้'}</button></div>`;}).join('');}
+window.renderAdvanceRegistrationModalList=renderAdvanceRegistrationModalList;
+async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');if(row.idCard||row.passportNumber){setTimeout(()=>window.cnmiPreload?.lookupFromRegister?.({fill:true}).then(()=>{const a=window.cnmiPreload?.getActiveAdvanceRegistration?.()||row;updateAdvanceRegisterBanner({...row,...a,centralProfile:row.centralProfile});}).catch(()=>{}),150);}}
+window.selectAdvanceRegistration=selectAdvanceRegistration;
+
 async function loadOutreachEvent(){
   if(!isRealAdmin() || getAdminViewMode()==='staff')return;
   const date=document.getElementById('event-date')?.value||'';const st=document.getElementById('event-status');
@@ -7141,7 +7292,7 @@ async function saveBagRange(){
   };
   document.addEventListener('DOMContentLoaded',()=>{
     const today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-    ['lis-export-date','bag-outreach-date','event-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
+    ['lis-export-date','bag-outreach-date','event-date','prereg-event-date','advance-modal-date'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today;});
   });
 })();
 </script>
