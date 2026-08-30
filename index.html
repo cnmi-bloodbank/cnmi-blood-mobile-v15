@@ -1564,7 +1564,7 @@
 .camera-device-row select { max-width:420px; }
 .camera-controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .camera-controls .btn { min-width:130px; }
-/* v15.6.61: close camera before OCR and show visible processing progress */
+/* v15.6.62: Thai-name component consensus; retains v15.6.61 camera/progress UX */
 .ocr-progress-stage{display:flex;align-items:flex-start;gap:10px;padding:8px 0;color:#687b8d;}
 .ocr-progress-stage .ocr-stage-dot{width:25px;height:25px;border-radius:50%;border:2px solid #cbd8e5;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex:0 0 auto;background:#fff;}
 .ocr-progress-stage.is-active{color:#1554a2;font-weight:800;}
@@ -3040,7 +3040,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.61 - OCR Progress + Camera UX");
+    console.log("CNMI Blood Donation v15.6.62 - Thai Name Consensus OCR");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -7716,6 +7716,85 @@ async function cnmiNormalizeThaiCardForOcr(dataUrl,{docTypeHint=''}={}){
 window.cnmiNormalizeThaiCardForOcr=cnmiNormalizeThaiCardForOcr;
 
 function cnmiThaiNameKey(v={}){return [v.prefix,v.fname,v.lname].map(x=>String(x||'').replace(/\s+/g,'')).join('|');}
+// v15.6.62: Thai names are decided component-by-component instead of requiring
+// the exact whole line to repeat. A clear card can still produce one missing
+// vowel/tone mark between Tesseract passes; fuzzy consensus avoids throwing the
+// entire name away while still requiring independent support before autofill.
+function cnmiThaiNameToken(v=''){
+  return cleanThaiNameToken(String(v||'').normalize('NFC'));
+}
+function cnmiEditDistance(a='',b=''){
+  const x=[...String(a||'')],y=[...String(b||'')];
+  if(!x.length)return y.length;if(!y.length)return x.length;
+  let prev=Array.from({length:y.length+1},(_,i)=>i),cur=new Array(y.length+1);
+  for(let i=1;i<=x.length;i++){
+    cur[0]=i;
+    for(let j=1;j<=y.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(x[i-1]===y[j-1]?0:1));
+    [prev,cur]=[cur,prev];
+  }
+  return prev[y.length];
+}
+function cnmiThaiTokenSimilarity(a='',b=''){
+  const x=cnmiThaiNameToken(a),y=cnmiThaiNameToken(b);if(!x||!y)return 0;if(x===y)return 1;
+  const max=Math.max([...x].length,[...y].length);if(!max)return 0;
+  return 1-(cnmiEditDistance(x,y)/max);
+}
+function cnmiThaiNameCandidateQuality(v=''){
+  const s=cnmiThaiNameToken(v);if(!isLikelyThaiPersonNameToken(s))return -99;
+  let q=0;const n=[...s].length;
+  if(n>=3&&n<=14)q+=3;else if(n<=20)q+=1;
+  if(!/(.)\1\1/.test(s))q+=1;
+  if(!/(?:ชื่อ|สกุล|วันที่|อยู่|บัตร|จังหวัด|อำเภอ|ตำบล)/.test(s))q+=2;
+  return q;
+}
+function cnmiPickThaiNameConsensus(tokens=[]){
+  const vals=tokens.map(cnmiThaiNameToken).filter(isLikelyThaiPersonNameToken);
+  if(vals.length<2)return null;
+  // Cluster close OCR variants. For typical Thai names one character/mark error
+  // should remain in the same cluster, but clearly different words should not.
+  const clusters=[];
+  for(const token of vals){
+    let best=null,bestSim=0;
+    for(const c of clusters){
+      const sim=Math.max(...c.items.map(x=>cnmiThaiTokenSimilarity(token,x)));
+      if(sim>bestSim){bestSim=sim;best=c;}
+    }
+    const len=[...token].length;
+    const minSim=len<=4?.78:.72;
+    if(best&&bestSim>=minSim)best.items.push(token);else clusters.push({items:[token]});
+  }
+  clusters.sort((a,b)=>b.items.length-a.items.length);
+  const top=clusters[0];if(!top||top.items.length<2)return null;
+  // Choose the medoid: the actual OCR spelling most similar to the other passes.
+  const ranked=top.items.map(token=>{
+    const sim=top.items.reduce((sum,x)=>sum+cnmiThaiTokenSimilarity(token,x),0);
+    return {token,score:sim+cnmiThaiNameCandidateQuality(token)*.08};
+  }).sort((a,b)=>b.score-a.score);
+  return {value:ranked[0].token,count:top.items.length,total:vals.length};
+}
+function parseThaiNameCropText(rawText=''){
+  const text=normalizeThaiOcrText(rawText),lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+  const tries=[];
+  for(let i=0;i<lines.length;i++){
+    tries.push(lines[i]);
+    if(i+1<lines.length)tries.push(lines[i]+' '+lines[i+1]);
+  }
+  // OCR sometimes drops the line break after the Thai field label.
+  tries.push(lines.filter(x=>/[ก-๙]/.test(x)&&!/(?:Name|Last\s*name|Date\s*of\s*Birth|Identification)/i.test(x)).join(' '));
+  for(const line of tries){
+    const nm=parseThaiNameLine(line);if(nm)return nm;
+  }
+  // Last-resort parser inside the tightly-cropped name zone. It still requires a
+  // recognizable Thai title and two plausible Thai person-name tokens.
+  const thaiOnly=tries.join(' ').replace(/(?:ชื่อตัวและชื่อสกุล|ชื่อ\s*-?\s*นามสกุล|ชื่อ)\s*[:：-]?/g,' ').replace(/\s+/g,' ').trim();
+  const pm=thaiOnly.match(/(?:^|\s)(นางสาว|น\.?\s*(?:ส|สี|ศ)\.?|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.?\s*ช\.?|ด\.?\s*ญ\.?)\s*/);
+  if(!pm)return null;
+  const prefix=normalizeThaiPrefix(pm[1]);
+  const tail=thaiOnly.slice((pm.index||0)+pm[0].length);
+  const words=(tail.match(/[ก-๙]+/g)||[]).map(cnmiThaiNameToken).filter(isLikelyThaiPersonNameToken);
+  if(words.length<2)return null;
+  return {prefix,fname:words[0],lname:words[1]};
+}
 function cnmiThaiDatePlausible(v=''){
   const m=String(v||'').match(/^(\d{2})-(\d{2})-(\d{4})$/);if(!m)return false;
   const d=+m[1],mo=+m[2],be=+m[3];if(d<1||d>31||mo<1||mo>12||be<2440||be>2609)return false;
@@ -7811,7 +7890,10 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
     } : {
       // Canonical Thai ID layout after geometric normalization.
       name:[
-        {x:.18,y:.25,w:.66,h:.105,maxWidth:2400},{x:.15,y:.215,w:.72,h:.17,maxWidth:2400}
+        {x:.18,y:.25,w:.66,h:.105,maxWidth:2600},
+        {x:.15,y:.215,w:.72,h:.17,maxWidth:2600},
+        {x:.265,y:.245,w:.57,h:.085,maxWidth:2800},
+        {x:.205,y:.225,w:.64,h:.125,maxWidth:2800}
       ],
       birth:[
         {x:.30,y:.49,w:.48,h:.105,maxWidth:1900},{x:.26,y:.455,w:.55,h:.17,maxWidth:1900}
@@ -7821,25 +7903,29 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
       ]
     };
 
-    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังอ่านชื่อจากตำแหน่งชื่อบนบัตรและตรวจซ้ำหลายรอบ');
-    setDocOcrStatus('กำลังอ่านชื่อจากบรรทัดชื่อโดยเฉพาะ...','busy');
-    const nameVotes=new Map();
+    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังอ่านคำนำหน้า / ชื่อ / นามสกุลแยกกันจากตำแหน่งชื่อบนบัตร');
+    setDocOcrStatus('กำลังอ่านคำนำหน้า ชื่อ และนามสกุลจากกรอบชื่อโดยเฉพาะ...','busy');
+    const nameCandidates=[];
     for(const spec of specs.name||[]){
       for(const psm of ['7','6','11']){
         try{
           const t=await recognizeThaiDetailCrop(worker,cardImage,spec,psm);
-          const d=parseThaiIdDocumentDetails(t,docType);
-          if(d.prefix&&d.fname&&d.lname){
-            const key=cnmiThaiNameKey(d),v=nameVotes.get(key)||{...d,count:0};v.count++;nameVotes.set(key,v);
-          }
+          const d=parseThaiNameCropText(t)||parseThaiIdDocumentDetails(t,docType);
+          if(d?.prefix&&d?.fname&&d?.lname)nameCandidates.push({prefix:normalizeThaiPrefix(d.prefix),fname:d.fname,lname:d.lname});
         }catch{}
       }
     }
-    const names=[...nameVotes.values()].sort((a,b)=>b.count-a.count);
-    if(names[0] && names[0].count>=2){
-      // Require the same Thai name from at least two independent OCR passes.
-      // One plausible-looking pass is not enough to write a person's name.
-      parsed.prefix=names[0].prefix;parsed.fname=names[0].fname;parsed.lname=names[0].lname;
+    if(nameCandidates.length>=2){
+      const prefixCounts=new Map();
+      for(const d of nameCandidates){const p=normalizeThaiPrefix(d.prefix);if(p)prefixCounts.set(p,(prefixCounts.get(p)||0)+1);}
+      const prefixes=[...prefixCounts.entries()].sort((a,b)=>b[1]-a[1]);
+      const first=cnmiPickThaiNameConsensus(nameCandidates.map(x=>x.fname));
+      const last=cnmiPickThaiNameConsensus(nameCandidates.map(x=>x.lname));
+      // Accept only when first name and surname each have support from at least
+      // two OCR passes. They no longer have to be perfect in the same pass.
+      if(prefixes[0]?.[1]>=2 && first?.count>=2 && last?.count>=2){
+        parsed.prefix=prefixes[0][0];parsed.fname=first.value;parsed.lname=last.value;
+      }
     }
 
     setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','ชื่อเสร็จแล้ว · กำลังอ่านวันเกิดและตรวจซ้ำ');
