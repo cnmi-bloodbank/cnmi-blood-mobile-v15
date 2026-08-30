@@ -1564,6 +1564,17 @@
 .camera-device-row select { max-width:420px; }
 .camera-controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .camera-controls .btn { min-width:130px; }
+/* v15.6.61: close camera before OCR and show visible processing progress */
+.ocr-progress-stage{display:flex;align-items:flex-start;gap:10px;padding:8px 0;color:#687b8d;}
+.ocr-progress-stage .ocr-stage-dot{width:25px;height:25px;border-radius:50%;border:2px solid #cbd8e5;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex:0 0 auto;background:#fff;}
+.ocr-progress-stage.is-active{color:#1554a2;font-weight:800;}
+.ocr-progress-stage.is-active .ocr-stage-dot{border-color:#2f80ed;background:#eaf3ff;color:#1554a2;}
+.ocr-progress-stage.is-done{color:#18794e;}
+.ocr-progress-stage.is-done .ocr-stage-dot{border-color:#20a464;background:#e9f8f0;color:#18794e;}
+.ocr-progress-stage.is-error{color:#b42318;}
+.ocr-progress-stage.is-error .ocr-stage-dot{border-color:#dc3545;background:#fff0f0;color:#b42318;}
+.ocr-progress-summary{font-weight:800;color:#26445f;min-height:24px;}
+.ocr-progress-detail{color:#64798d;min-height:22px;}
 .donor-photo-actions .btn { border-radius:10px; }
 @media (max-width:768px) {
   .camera-live-shell { min-height:260px; }
@@ -3029,7 +3040,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.60 - Canonical Thai Card OCR");
+    console.log("CNMI Blood Donation v15.6.61 - OCR Progress + Camera UX");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6541,11 +6552,23 @@ function getScanOcrPreviewModal(){
   if(!el||!window.bootstrap?.Modal) return null;
   return bootstrap.Modal.getOrCreateInstance(el);
 }
-function showLastScannedPreview(dataUrl,candidates=[]){
+function showLastScannedPreview(dataUrl,candidates=[],options={}){
+  // Do not expose the last internal OCR transform (which may be flipped or tightly
+  // auto-cropped). Staff must see the real source image they actually captured.
+  hideOcrProgress();
+  const source=String(options?.source||'scanner');
   cnmiLastScannedDocumentDataUrl=String(dataUrl||'');
   window.cnmiLastScannedDocumentDataUrl=cnmiLastScannedDocumentDataUrl;
   const img=document.getElementById('scan-ocr-preview-img');
   if(img) img.src=cnmiLastScannedDocumentDataUrl;
+  const title=document.getElementById('scan-ocr-preview-title');
+  const help=document.getElementById('scan-ocr-preview-help');
+  if(title)title.textContent=source==='camera'?'📷 ภาพจากกล้องที่ใช้ตรวจ':'🪪 ภาพที่สแกนได้';
+  if(help){
+    help.innerHTML=source==='camera'
+      ? '<span class="scan-source-badge">📷 ภาพในกรอบจากกล้อง</span> ภาพนี้เป็นภาพต้นทางที่ผู้ใช้ถ่าย ไม่ใช่ภาพที่ OCR กลับด้านหรือตัดซูมภายใน'
+      : '<span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรประชาชนหรือใบขับขี่ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ';
+  }
   const box=document.getElementById('scan-ocr-candidates');
   if(box){
     const valid=(Array.isArray(candidates)?candidates:[]).filter(x=>x?.idCard&&isValidThaiNationalId(x.idCard));
@@ -6554,7 +6577,7 @@ function showLastScannedPreview(dataUrl,candidates=[]){
       box.innerHTML='<div class="fw-bold mb-2">พบเลขบัตรที่เป็นไปได้มากกว่า 1 ค่า — เลือกเลขที่เห็นบนบัตรจริง</div>'+valid.map(x=>`<button type="button" class="btn btn-outline-primary me-2 mb-2" onclick="selectScannedIdCandidate('${x.idCard}')">ใช้เลข ${x.idCard}</button>`).join('');
     }else{ box.style.display='none'; box.innerHTML=''; }
   }
-  getScanOcrPreviewModal()?.show();
+  setTimeout(()=>getScanOcrPreviewModal()?.show(),120);
 }
 async function selectScannedIdCandidate(id){
   const clean=String(id||'').replace(/\D/g,'');
@@ -6634,10 +6657,12 @@ async function tryPhoneIdOcrTarget(target,label='ภาพจริง'){
 async function processPhoneScreenCameraDataUrl(dataUrl){
   const raw=String(dataUrl||'');
   if(!raw) throw new Error('ยังไม่มีภาพจากกล้อง');
+  setOcrProgress(2,'2/5 จัดภาพเอกสาร','ตัดพื้นที่ในกรอบและเตรียมภาพจากหน้าจอ');
   setDocOcrStatus('กำลังตัดเฉพาะกรอบเอกสาร แล้วตรวจภาพจริงและภาพกลับซ้าย–ขวา...','busy');
 
   let guideRaw=raw;
   try{guideRaw=await cropCameraGuideDataUrl(raw);}catch(err){console.warn('camera guide crop skipped',err);}
+  setOcrProgress(3,'3/5 อ่านเลขประจำตัว','กำลังอ่านเลข 13 หลักจากภาพจริงและภาพกลับซ้าย–ขวา');
   const attempts=[];
   attempts.push({dataUrl:guideRaw,label:'ภาพจริง'});
   try{
@@ -6646,14 +6671,16 @@ async function processPhoneScreenCameraDataUrl(dataUrl){
   }catch(err){ console.warn('prepare flipped camera image failed',err); }
 
   const allCandidates=[];
-  let fallbackPreview=guideRaw;
+  // Keep the user-facing preview as the original guide crop. Internal attempts
+  // may flip/crop aggressively, but those are never shown to staff.
+  const fallbackPreview=guideRaw;
   for(const attempt of attempts){
     let phoneCard=null;
     try{ phoneCard=await locatePhoneDisplayedCardDataUrl(attempt.dataUrl); }catch{}
     const target=(phoneCard?.detected&&phoneCard.dataUrl) ? phoneCard.dataUrl : attempt.dataUrl;
-    fallbackPreview=target || fallbackPreview;
     const result=await tryPhoneIdOcrTarget(target,attempt.label);
     if(result?.idCard){
+      setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','เลขบัตรผ่านการตรวจแล้ว กำลังค้นประวัติและอ่านข้อมูลบนบัตร');
       const parsed={rawText:result.rawText||'',idCard:result.idCard,birthDate:''};
       applyOcrParsedFields(parsed);
       await verifyThaiIdentityAndLookup({detailImage:target,docTypeHint:'thai_id',method:'phone-camera',statusText:`อ่านบัตรจากหน้าจอโทรศัพท์สำเร็จ (${result.source})`});
@@ -6669,14 +6696,15 @@ async function processPhoneScreenCameraDataUrl(dataUrl){
   }
   if(unique.length){
     setDocOcrStatus('พบเลขที่เป็นไปได้ · กรุณาเทียบกับเลขบนหน้าจอโทรศัพท์','warn');
-    showLastScannedPreview(fallbackPreview,unique);
+    showLastScannedPreview(fallbackPreview,unique,{source:'camera'});
     return {ambiguous:true,candidates:unique};
   }
 
+  cnmiLastRawScannedDocumentDataUrl='';window.cnmiLastRawScannedDocumentDataUrl='';
   cnmiLastScannedDocumentDataUrl=fallbackPreview;
   window.cnmiLastScannedDocumentDataUrl=fallbackPreview;
   setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ แม้ลองทั้งภาพจริงและภาพกลับด้านแล้ว','error');
-  showLastScannedPreview(fallbackPreview,[]);
+  showLastScannedPreview(fallbackPreview,[],{source:'camera'});
   throw new Error('ยังอ่านเลขบัตรจากหน้าจอโทรศัพท์ไม่ได้');
 }
 window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
@@ -6684,23 +6712,27 @@ window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
 async function processThaiDocumentCameraDataUrl(dataUrl){
   const raw=String(dataUrl||'');
   if(!raw)throw new Error('ยังไม่มีภาพจากกล้อง');
+  setOcrProgress(2,'2/5 จัดภาพเอกสาร','ตัดเฉพาะพื้นที่ในกรอบและเตรียมภาพสำหรับ OCR');
   setDocOcrStatus('กำลังอ่านเลขบัตรก่อน · จากนั้นระบบจะจัดแนวบัตรและซูมอ่านรายละเอียดทีละช่อง','busy');
   let guideRaw=raw;
   try{guideRaw=await cropCameraGuideDataUrl(raw);}catch(err){console.warn('camera guide crop skipped',err);}
+  setOcrProgress(3,'3/5 อ่านเลขประจำตัว','กำลังลองภาพจริงและภาพกลับซ้าย–ขวา พร้อมตรวจเลข 13 หลัก');
   const attempts=[{dataUrl:guideRaw,label:'ภาพจริง'}];
   try{attempts.push({dataUrl:await flipImageDataUrlHorizontal(guideRaw),label:'ภาพกลับซ้าย–ขวา'});}catch{}
   const candidates=[];
-  let preview=guideRaw;
+  // User-facing failure preview stays on the original guide crop. Do not replace
+  // it with a flipped or auto-detected internal OCR target.
+  const preview=guideRaw;
   for(const attempt of attempts){
     let target=attempt.dataUrl,phoneDetected=false;
     try{
       const phoneCard=await locatePhoneDisplayedCardDataUrl(attempt.dataUrl);
       if(phoneCard?.detected&&phoneCard.dataUrl){target=phoneCard.dataUrl;phoneDetected=true;}
     }catch{}
-    preview=target||preview;
     try{
       let r=phoneDetected ? await tryPhoneIdOcrTarget(target,attempt.label) : await recognizeThaiIdDigitsRobust(target);
       if(r?.idCard){
+        setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','เลขบัตรผ่านการตรวจแล้ว กำลังค้น AI-LIS และอ่านข้อมูลบนเอกสาร');
         const parsed={rawText:r.rawText||'',idCard:r.idCard,birthDate:''};
         applyOcrParsedFields(parsed);
         await verifyThaiIdentityAndLookup({detailImage:target,method:'usb-camera-document',statusText:`อ่านเลขบัตรสำเร็จ (${attempt.label}) · เติมเฉพาะรายละเอียดที่มั่นใจ`});
@@ -6711,6 +6743,7 @@ async function processThaiDocumentCameraDataUrl(dataUrl){
         const lower=await cropCardBandDataUrl(target,'bottom');
         const lowerResult=await recognizeThaiIdDigitsRobust(lower);
         if(lowerResult?.idCard){
+          setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','พบเลขจากบริเวณล่างของใบขับขี่ กำลังตรวจประวัติและอ่านรายละเอียด');
           const parsed={rawText:lowerResult.rawText||'',idCard:lowerResult.idCard,birthDate:''};
           applyOcrParsedFields(parsed);
           await verifyThaiIdentityAndLookup({detailImage:target,docTypeHint:'driving_license',method:'usb-camera-document',statusText:`อ่านเลขบัตรจากใบขับขี่สำเร็จ (${attempt.label}) · เติมเฉพาะรายละเอียดที่มั่นใจ`});
@@ -6725,33 +6758,60 @@ async function processThaiDocumentCameraDataUrl(dataUrl){
     const id=String(c?.idCard||'').replace(/\D/g,'');
     if(id&&isValidThaiNationalId(id)&&!seen.has(id)){seen.add(id);unique.push(c);}
   }
+  cnmiLastRawScannedDocumentDataUrl='';window.cnmiLastRawScannedDocumentDataUrl='';
   cnmiLastScannedDocumentDataUrl=preview;window.cnmiLastScannedDocumentDataUrl=preview;
   if(unique.length){
     setDocOcrStatus('พบเลขที่เป็นไปได้ · กรุณาเทียบกับเลขบนบัตร','warn');
-    showLastScannedPreview(preview,unique);
+    showLastScannedPreview(preview,unique,{source:'camera'});
     return {ambiguous:true,candidates:unique};
   }
   setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ · จัดเอกสารให้อยู่เต็มกรอบและให้ตัวเลขคมแล้วลองใหม่','error');
-  showLastScannedPreview(preview,[]);
+  showLastScannedPreview(preview,[],{source:'camera'});
   throw new Error('ยังอ่านเลขบัตรจากกล้องไม่ได้');
 }
 window.processThaiDocumentCameraDataUrl=processThaiDocumentCameraDataUrl;
 
+async function hideBootstrapModalAndWait(el,instance,timeout=550){
+  if(!el||!instance)return;
+  await new Promise(resolve=>{
+    let done=false;const finish=()=>{if(done)return;done=true;el.removeEventListener('hidden.bs.modal',finish);resolve();};
+    el.addEventListener('hidden.bs.modal',finish,{once:true});
+    try{instance.hide();}catch{finish();return;}
+    setTimeout(finish,timeout);
+  });
+}
 async function useCapturedCameraImage(){
   const dataUrl=cnmiCameraState.capturedDataUrl;
   if(!dataUrl) return alert('กรุณากดถ่ายรูปก่อน');
-  try{
-    if(cnmiCameraState.mode==='passport'){
-      await processPassportDocumentDataUrl(dataUrl,{source:'camera'});
-    }else if(cnmiCameraState.mode==='phone-id'){
-      await processPhoneScreenCameraDataUrl(dataUrl);
-    }else if(cnmiCameraState.mode==='document'){
-      await processThaiDocumentCameraDataUrl(dataUrl);
-    }else{
-      setDonorPhotoPreview(dataUrl,{markDirty:true,loadedForIdCard:String(document.getElementById('id_card')?.value||'').replace(/\D/g,'')});
-    }
+  const mode=cnmiCameraState.mode;
+  if(mode==='donor'){
+    setDonorPhotoPreview(dataUrl,{markDirty:true,loadedForIdCard:String(document.getElementById('id_card')?.value||'').replace(/\D/g,'')});
     closeCameraCapture();
-  }catch(err){ alert(err.message||err); }
+    return;
+  }
+  // Keep the captured image in a local variable, stop the camera, and close the large
+  // camera modal BEFORE OCR. This exposes the registration page immediately.
+  const modalEl=document.getElementById('usbCameraModal');
+  stopCameraStream();
+  cnmiCameraState.capturedDataUrl='';
+  retakeCameraFrame(false);
+  await hideBootstrapModalAndWait(modalEl,getUsbCameraModal());
+  showOcrProgress(mode==='passport'?'กำลังอ่าน Passport':'กำลังอ่านบัตร');
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    let result=null;
+    if(mode==='passport')result=await processPassportDocumentDataUrl(dataUrl,{source:'camera'});
+    else if(mode==='phone-id')result=await processPhoneScreenCameraDataUrl(dataUrl);
+    else result=await processThaiDocumentCameraDataUrl(dataUrl);
+    // Ambiguous/failure flows may already have opened the real source preview.
+    if(result?.ambiguous){hideOcrProgress();return;}
+    completeOcrProgress('อ่านเสร็จแล้ว · ตรวจข้อมูลบนฟอร์มก่อนบันทึก');
+  }catch(err){
+    console.error('camera document OCR failed',err);
+    const previewOpen=document.getElementById('scanOcrPreviewModal')?.classList.contains('show');
+    if(previewOpen)hideOcrProgress();
+    else failOcrProgress(String(err?.message||err||'อ่านเอกสารไม่สำเร็จ'));
+  }
 }
 window.useCapturedCameraImage=useCapturedCameraImage;
 
@@ -7284,6 +7344,51 @@ function setDocOcrStatus(message, tone='muted') {
   el.className = 'doc-ocr-status' + (tone ? ' is-' + tone : '');
   el.textContent = message || '';
 }
+
+// v15.6.61: lightweight visible OCR progress. Camera closes first, then this modal
+// shows the actual stage so staff never stare at a frozen captured frame.
+let cnmiOcrProgressStep=0;
+function getOcrProgressModal(){
+  const el=document.getElementById('ocrProgressModal');
+  if(!el||!window.bootstrap?.Modal)return null;
+  return bootstrap.Modal.getOrCreateInstance(el,{backdrop:'static',keyboard:false});
+}
+function setOcrProgress(step,summary='',detail='',tone='busy'){
+  const n=Math.max(1,Math.min(5,Number(step)||1));
+  cnmiOcrProgressStep=n;
+  const bar=document.getElementById('ocr-progress-bar');
+  if(bar){bar.style.width=`${n*20}%`;bar.setAttribute('aria-valuenow',String(n*20));}
+  const summaryEl=document.getElementById('ocr-progress-summary');
+  const detailEl=document.getElementById('ocr-progress-detail');
+  if(summaryEl)summaryEl.textContent=summary||`ขั้นตอน ${n}/5`;
+  if(detailEl)detailEl.textContent=detail||'';
+  for(let i=1;i<=5;i++){
+    const row=document.getElementById(`ocr-progress-stage-${i}`);
+    const dot=row?.querySelector('.ocr-stage-dot');
+    if(!row)continue;
+    row.classList.remove('is-active','is-done','is-error');
+    if(i<n){row.classList.add('is-done');if(dot)dot.textContent='✓';}
+    else if(i===n){row.classList.add(tone==='error'?'is-error':'is-active');if(dot)dot.textContent=tone==='error'?'!':String(i);}
+    else if(dot)dot.textContent=String(i);
+  }
+  const close=document.getElementById('ocr-progress-close');
+  if(close)close.style.display=tone==='error'?'inline-block':'none';
+}
+function showOcrProgress(title='กำลังอ่านเอกสาร'){
+  const titleEl=document.getElementById('ocr-progress-title');
+  if(titleEl)titleEl.textContent=title;
+  setOcrProgress(1,'1/5 รับภาพ','รับภาพแล้ว กำลังปิดกล้องและเตรียมประมวลผล');
+  getOcrProgressModal()?.show();
+}
+function hideOcrProgress(){try{getOcrProgressModal()?.hide();}catch{}}
+function completeOcrProgress(message='อ่านเอกสารเสร็จแล้ว'){
+  setOcrProgress(5,'5/5 เติมข้อมูลลงฟอร์ม',message,'ok');
+  setTimeout(()=>hideOcrProgress(),850);
+}
+function failOcrProgress(message='อ่านเอกสารไม่สำเร็จ'){
+  setOcrProgress(Math.max(1,cnmiOcrProgressStep),`หยุดที่ขั้นตอน ${Math.max(1,cnmiOcrProgressStep)}/5`,message,'error');
+}
+window.setOcrProgress=setOcrProgress;window.showOcrProgress=showOcrProgress;window.hideOcrProgress=hideOcrProgress;
 function getSmartCaptureModal(){
   const el=document.getElementById('smartCaptureModal');
   if(!el||!window.bootstrap?.Modal) return null;
@@ -7716,6 +7821,7 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
       ]
     };
 
+    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังอ่านชื่อจากตำแหน่งชื่อบนบัตรและตรวจซ้ำหลายรอบ');
     setDocOcrStatus('กำลังอ่านชื่อจากบรรทัดชื่อโดยเฉพาะ...','busy');
     const nameVotes=new Map();
     for(const spec of specs.name||[]){
@@ -7736,6 +7842,7 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
       parsed.prefix=names[0].prefix;parsed.fname=names[0].fname;parsed.lname=names[0].lname;
     }
 
+    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','ชื่อเสร็จแล้ว · กำลังอ่านวันเกิดและตรวจซ้ำ');
     setDocOcrStatus('กำลังอ่านวันเกิดและตรวจซ้ำหลายรอบ...','busy');
     const birthVotes=new Map();
     const addBirth=(v)=>{if(cnmiThaiDatePlausible(v))birthVotes.set(v,(birthVotes.get(v)||0)+1);};
@@ -7749,6 +7856,7 @@ async function recognizeThaiIdDocumentDetails(dataUrl,docTypeHint=''){
     if(births[0] && (births[0][1]>=2 || birthVotes.size===1))parsed.birthDate=births[0][0];else parsed.birthDate='';
 
     if(docType==='thai_id'){
+      setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังอ่านที่อยู่จากกรอบที่อยู่และตรวจตำบล/อำเภอ/จังหวัดกับฐานข้อมูล');
       setDocOcrStatus('กำลังอ่านที่อยู่เฉพาะกรอบที่อยู่และตรวจชื่อพื้นที่...','busy');
       const addrCandidates=[];
       for(const spec of specs.address||[])for(const psm of ['6','11'])try{
@@ -7785,6 +7893,7 @@ window.enrichThaiIdFieldsFromImage=enrichThaiIdFieldsFromImage;
 async function verifyThaiIdentityAndLookup({detailImage='',docTypeHint='',method='document',statusText='ยืนยันตัวตนแล้ว'}={}){
   // เลขจากเอกสารจริงยืนยันตัวตนก่อน แล้วให้ AI-LIS ชนะเสมอถ้ามีประวัติ
   window.cnmiPreload?.markAdvanceIdentityVerified?.({method});
+  setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังค้น AI-LIS/Blood Mobile และตรวจว่าต้องอ่านรายละเอียดจากเอกสารต่อหรือไม่');
   setDocOcrStatus(`${statusText} · กำลังค้นประวัติเดิม`,'ok');
   await window.cnmiPreload?.lookupFromRegister?.({fill:true});
   const source=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
@@ -7795,6 +7904,7 @@ async function verifyThaiIdentityAndLookup({detailImage='',docTypeHint='',method
       details=await enrichThaiIdFieldsFromImage(detailImage,{overwrite:true,preserveIdentity:true,docTypeHint});
     }catch(err){console.warn('detail OCR skipped',err);}
   }
+  setOcrProgress(5,'5/5 เติมข้อมูลลงฟอร์ม',source==='ai-lis'?'พบ AI-LIS กำลังใช้ข้อมูลหลักจาก AI-LIS':'กำลังเติมเฉพาะข้อมูลจากเอกสารที่อ่านได้อย่างมั่นใจ');
   if(source==='ai-lis'){
     setDocOcrStatus(`${statusText} · พบ AI-LIS ใช้ข้อมูลหลักจาก AI-LIS`,'ok');
   }else if(details){
@@ -8044,15 +8154,19 @@ async function recognizePassportPrintedFields(dataUrl){
 }
 async function processPassportDocumentDataUrl(dataUrl,{source='document'}={}){
   let raw=String(dataUrl||'');if(!raw)throw new Error('ยังไม่มีภาพ Passport');
+  if(source==='camera')setOcrProgress(2,'2/5 จัดภาพ Passport','ตัดเฉพาะกรอบเอกสารและเตรียม MRZ');
   if(source==='camera'){
     try{raw=await cropCameraGuideDataUrl(raw);}catch(err){console.warn('passport camera guide crop skipped',err);}
+    setOcrProgress(3,'3/5 อ่าน MRZ','กำลังอ่าน MRZ 2 บรรทัดและตรวจ Checksum');
   }
   const parsed=await recognizePassportMrz(raw);
   if(parsed?.mrzValid&&parsed?.passportNumber){
     applyPassportParsedFields(parsed,{overwrite:true});
     window.cnmiPreload?.markAdvanceIdentityVerified?.({method:`passport-${source}-mrz`});
+    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','MRZ ผ่าน Checksum · กำลังค้นประวัติเดิม');
     setDocOcrStatus(`✅ MRZ Checksum ผ่าน · Passport ${parsed.passportNumber} · กำลังค้นประวัติเดิม`,'ok');
     await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+    setOcrProgress(5,'5/5 เติมข้อมูลลงฟอร์ม','เติมข้อมูล Passport และประวัติที่ค้นพบลงฟอร์ม');
     return parsed;
   }
 
@@ -8072,8 +8186,10 @@ async function processPassportDocumentDataUrl(dataUrl,{source='document'}={}){
 
   applyPassportParsedFields(printed,{overwrite:true});
   // printed OCR เป็น fallback จึงยังไม่ถือเป็นการยืนยันรายชื่อแจ้งล่วงหน้าอัตโนมัติ
+  setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','MRZ ยังไม่ครบ จึงใช้ช่องข้อมูลด้านบนเป็น fallback และค้นประวัติเดิม');
   setDocOcrStatus(`⚠ เติมข้อมูลจากช่องบน Passport ${printed.passportNumber} · MRZ Checksum ยังไม่ครบ กรุณาตรวจเลข/ชื่อ/วันเกิดกับเล่มจริงก่อนบันทึก`,'warn');
   await window.cnmiPreload?.lookupFromRegister?.({fill:true});
+  setOcrProgress(5,'5/5 เติมข้อมูลลงฟอร์ม','เติมข้อมูลที่อ่านได้แล้ว · กรุณาตรวจเทียบกับ Passport จริง');
   return printed;
 }
 window.processPassportDocumentDataUrl=processPassportDocumentDataUrl;
@@ -8503,17 +8619,39 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
+<div class="modal fade" id="ocrProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ocr-progress-title">กำลังอ่านเอกสาร</h5>
+      </div>
+      <div class="modal-body">
+        <div class="progress mb-3" style="height:10px;">
+          <div id="ocr-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:20%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"></div>
+        </div>
+        <div id="ocr-progress-summary" class="ocr-progress-summary mb-1">1/5 รับภาพ</div>
+        <div id="ocr-progress-detail" class="ocr-progress-detail mb-3">รับภาพแล้ว กำลังเตรียมประมวลผล</div>
+        <div class="ocr-progress-stage" id="ocr-progress-stage-1"><span class="ocr-stage-dot">1</span><div><strong>รับภาพ</strong><div class="small">เก็บภาพต้นฉบับจากกล้อง</div></div></div>
+        <div class="ocr-progress-stage" id="ocr-progress-stage-2"><span class="ocr-stage-dot">2</span><div><strong>จัดภาพเอกสาร</strong><div class="small">ตัดกรอบและเตรียมภาพสำหรับอ่าน</div></div></div>
+        <div class="ocr-progress-stage" id="ocr-progress-stage-3"><span class="ocr-stage-dot">3</span><div><strong>อ่านเลขประจำตัว / MRZ</strong><div class="small">ตรวจเลขและ Checksum ตามชนิดเอกสาร</div></div></div>
+        <div class="ocr-progress-stage" id="ocr-progress-stage-4"><span class="ocr-stage-dot">4</span><div><strong>ตรวจประวัติและรายละเอียด</strong><div class="small">ค้นประวัติหลักและอ่านข้อมูลที่จำเป็น</div></div></div>
+        <div class="ocr-progress-stage" id="ocr-progress-stage-5"><span class="ocr-stage-dot">5</span><div><strong>เติมข้อมูลลงฟอร์ม</strong><div class="small">เติมเฉพาะข้อมูลที่ผ่านเงื่อนไขความมั่นใจ</div></div></div>
+        <div class="text-end mt-3"><button id="ocr-progress-close" type="button" class="btn btn-outline-secondary" style="display:none" data-bs-dismiss="modal">ปิด</button></div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal fade" id="scanOcrPreviewModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">🪪 ภาพที่สแกนได้</h5>
+        <h5 class="modal-title" id="scan-ocr-preview-title">🪪 ภาพที่สแกนได้</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="scan-preview-wrap">
           <img id="scan-ocr-preview-img" alt="ภาพบัตรที่สแกน">
-          <div class="scan-preview-help"><span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรประชาชนหรือใบขับขี่ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ</div>
+          <div class="scan-preview-help" id="scan-ocr-preview-help"><span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรประชาชนหรือใบขับขี่ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ</div>
           <div id="scan-ocr-candidates" class="alert alert-warning mt-3 text-start" style="display:none;"></div>
         </div>
         <div class="scan-preview-actions">
