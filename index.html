@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.52"></script>
+  <script src="js/supabase-backend.js?v=15.6.53"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -2031,7 +2031,7 @@
               <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
               <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
               <button id="scan-id-doc-btn" title="ใช้กับบัตรประชาชนหรือใบขับขี่ตัวจริงบน Scanner" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
-              <button id="phone-screen-id-btn" title="เปิด USB Camera เพื่ออ่านเลขบัตรจากภาพที่แสดงบนโทรศัพท์" type="button" class="btn btn-outline-primary" onclick="openPhoneScreenIdCamera()">📱 อ่านจากหน้าจอโทรศัพท์</button>
+              <button id="phone-screen-id-btn" title="เปิด USB Camera เพื่ออ่านบัตรประชาชน ใบขับขี่ หรือภาพบัตรบนหน้าจอโทรศัพท์" type="button" class="btn btn-outline-primary" onclick="openThaiDocumentCamera()">📷 อ่านด้วยกล้อง</button>
             </div>
           </div>
 
@@ -2401,7 +2401,7 @@
   <div class="main-card">
     <div class="guide-grid">
       <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร, Passport Number, ชื่อ, Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
-      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยใช้ Card Reader, Scanner หรือ “อ่านจากหน้าจอโทรศัพท์” ด้วย USB Camera → ระบบช่วยเติมข้อมูลจากบัตรและค่อยค้นประวัติหลังยืนยันตัวตน · ต่างชาติสแกน Passport/MRZ หรือกรอก Passport Number → ตรวจข้อมูล → บันทึก</p></div>
+      <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยใช้ Card Reader, Scanner หรือ “อ่านด้วยกล้อง” สำหรับบัตรประชาชน/ใบขับขี่/ภาพบัตรบนหน้าจอโทรศัพท์ → ระบบช่วยเติมข้อมูลจากบัตรและค่อยค้นประวัติหลังยืนยันตัวตน · ต่างชาติสแกน Passport/MRZ หรือกรอก Passport Number → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
       <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
@@ -5895,7 +5895,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.52"></script>
+  <script src="js/supabase-history.js?v=15.6.53"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -6071,12 +6071,17 @@ async function openCameraCapture(mode='donor'){
   const title=document.getElementById('usb-camera-title');
   const guide=document.getElementById('usb-phone-screen-guide');
   const tip=document.getElementById('usb-phone-screen-tip');
-  if(cnmiCameraState.mode==='phone-id'){
-    if(title) title.textContent='📱 อ่านบัตรจากหน้าจอโทรศัพท์';
+  if(cnmiCameraState.mode==='phone-id' || cnmiCameraState.mode==='document'){
+    if(title) title.textContent=cnmiCameraState.mode==='phone-id'?'📱 อ่านบัตรจากหน้าจอโทรศัพท์':'📷 อ่านบัตรประชาชน / ใบขับขี่ด้วยกล้อง';
     if(guide) guide.style.display='block';
-    if(tip) tip.style.display='block';
+    if(tip){
+      tip.style.display='block';
+      tip.textContent=cnmiCameraState.mode==='phone-id'
+        ? 'ถือมือถือให้นิ่ง · เปิดภาพบัตรให้เต็มจอ · ให้เลขบัตรอ่านได้ด้วยตาในภาพสด'
+        : 'ให้บัตรอยู่ในกรอบและตัวหนังสือคม · ใช้ได้ทั้งบัตรจริง ใบขับขี่ หรือภาพบัตรบนหน้าจอโทรศัพท์';
+    }
   }else{
-    if(title) title.textContent=cnmiCameraState.mode==='document'?'🪪 ถ่ายรูปบัตร / ใบขับขี่':'📷 ถ่ายรูปผู้บริจาค';
+    if(title) title.textContent='📷 ถ่ายรูปผู้บริจาค';
     if(guide) guide.style.display='none';
     if(tip) tip.style.display='none';
   }
@@ -6087,6 +6092,12 @@ async function openCameraCapture(mode='donor'){
 }
 window.openCameraCapture=openCameraCapture;
 
+function openThaiDocumentCamera(){
+  setRegisterIdentityType('thai',{clear:false});
+  setDocOcrStatus('เปิดกล้องแล้ว · ให้บัตรประชาชน/ใบขับขี่/ภาพบัตรบนหน้าจออยู่ในกรอบและอ่านตัวหนังสือได้ชัด','busy');
+  return openCameraCapture('document');
+}
+window.openThaiDocumentCamera=openThaiDocumentCamera;
 function openPhoneScreenIdCamera(){
   setRegisterIdentityType('thai',{clear:false});
   setDocOcrStatus('เปิดกล้องแล้วให้ภาพบัตรบนหน้าจอโทรศัพท์อยู่ในกรอบ','busy');
@@ -6409,6 +6420,61 @@ async function processPhoneScreenCameraDataUrl(dataUrl){
 }
 window.processPhoneScreenCameraDataUrl=processPhoneScreenCameraDataUrl;
 
+async function processThaiDocumentCameraDataUrl(dataUrl){
+  const raw=String(dataUrl||'');
+  if(!raw)throw new Error('ยังไม่มีภาพจากกล้อง');
+  setDocOcrStatus('กำลังอ่านบัตรจากกล้อง · ระบบจะลองภาพจริงและภาพกลับซ้าย–ขวาให้อัตโนมัติ','busy');
+  const attempts=[{dataUrl:raw,label:'ภาพจริง'}];
+  try{attempts.push({dataUrl:await flipImageDataUrlHorizontal(raw),label:'ภาพกลับซ้าย–ขวา'});}catch{}
+  const candidates=[];
+  let preview=raw;
+  for(const attempt of attempts){
+    let target=attempt.dataUrl,phoneDetected=false;
+    try{
+      const phoneCard=await locatePhoneDisplayedCardDataUrl(attempt.dataUrl);
+      if(phoneCard?.detected&&phoneCard.dataUrl){target=phoneCard.dataUrl;phoneDetected=true;}
+    }catch{}
+    preview=target||preview;
+    try{
+      let r=phoneDetected ? await tryPhoneIdOcrTarget(target,attempt.label) : await recognizeThaiIdDigitsRobust(target);
+      if(r?.idCard){
+        const parsed={rawText:r.rawText||'',idCard:r.idCard,birthDate:''};
+        applyOcrParsedFields(parsed);
+        await verifyThaiIdentityAndLookup({detailImage:target,method:'usb-camera-document',statusText:`อ่านเอกสารด้วยกล้องสำเร็จ (${attempt.label})`});
+        return parsed;
+      }
+      if(r?.candidates?.length)candidates.push(...r.candidates);
+      // ใบขับขี่ไทยวางเลขบัตรประชาชนไว้ช่วงล่าง จึงซูมครึ่งล่างเพิ่มเฉพาะเมื่อภาพเต็มยังอ่านไม่ได้
+      if(!phoneDetected){
+        const lower=await cropCardBandDataUrl(target,'bottom');
+        const lowerResult=await recognizeThaiIdDigitsRobust(lower);
+        if(lowerResult?.idCard){
+          const parsed={rawText:lowerResult.rawText||'',idCard:lowerResult.idCard,birthDate:''};
+          applyOcrParsedFields(parsed);
+          await verifyThaiIdentityAndLookup({detailImage:target,method:'usb-camera-document',statusText:`อ่านเลขบัตรจากช่วงล่างของเอกสารสำเร็จ (${attempt.label})`});
+          return parsed;
+        }
+        if(lowerResult?.candidates?.length)candidates.push(...lowerResult.candidates);
+      }
+    }catch(err){console.warn('generic document camera OCR failed',attempt.label,err);}
+  }
+  const unique=[],seen=new Set();
+  for(const c of candidates){
+    const id=String(c?.idCard||'').replace(/\D/g,'');
+    if(id&&isValidThaiNationalId(id)&&!seen.has(id)){seen.add(id);unique.push(c);}
+  }
+  cnmiLastScannedDocumentDataUrl=preview;window.cnmiLastScannedDocumentDataUrl=preview;
+  if(unique.length){
+    setDocOcrStatus('พบเลขที่เป็นไปได้ · กรุณาเทียบกับเลขบนบัตร','warn');
+    showLastScannedPreview(preview,unique);
+    return {ambiguous:true,candidates:unique};
+  }
+  setDocOcrStatus('ยังอ่านเลข 13 หลักไม่ได้ · จัดบัตรให้ตรงและให้ตัวเลขคมแล้วลองใหม่','error');
+  showLastScannedPreview(preview,[]);
+  throw new Error('ยังอ่านเลขบัตรจากกล้องไม่ได้');
+}
+window.processThaiDocumentCameraDataUrl=processThaiDocumentCameraDataUrl;
+
 async function useCapturedCameraImage(){
   const dataUrl=cnmiCameraState.capturedDataUrl;
   if(!dataUrl) return alert('กรุณากดถ่ายรูปก่อน');
@@ -6416,7 +6482,7 @@ async function useCapturedCameraImage(){
     if(cnmiCameraState.mode==='phone-id'){
       await processPhoneScreenCameraDataUrl(dataUrl);
     }else if(cnmiCameraState.mode==='document'){
-      await processIdDocumentDataUrl(dataUrl);
+      await processThaiDocumentCameraDataUrl(dataUrl);
     }else{
       setDonorPhotoPreview(dataUrl,{markDirty:true,loadedForIdCard:String(document.getElementById('id_card')?.value||'').replace(/\D/g,'')});
     }
@@ -6926,7 +6992,7 @@ async function scanIdDocument(){
       await processPassportDocumentDataUrl(rawScan);
       setDocOcrStatus('อ่าน Passport สำเร็จ · ตรวจข้อมูลที่ระบบเติมอีกครั้ง','ok');
     }else{
-      setDocOcrStatus('สแกนสำเร็จ · กำลังหาเลขบัตร รวมกรณีแสดงบัตรบนหน้าจอโทรศัพท์...','busy');
+      setDocOcrStatus('สแกนสำเร็จ · กำลังอ่านเลขบัตรจากบัตรประชาชนหรือใบขับขี่...','busy');
       const parsed=await processScannedDocumentMultiView(rawScan,{showPreviewOnFail:true});
       if(parsed?.ambiguous) return;
       setDocOcrStatus('อ่านเลขบัตรสำเร็จ · ตรวจข้อมูลที่ระบบดึงขึ้นมาอีกครั้ง','ok');
@@ -7054,53 +7120,134 @@ function parseThaiDocumentDate(text=''){
   if(m){const d=Number(m[1]),mo=thaiMonthNumber(m[2]),be=normalizeBirthYearToBE(m[3]);if(d>=1&&d<=31&&mo&&be)return `${String(d).padStart(2,'0')}-${String(mo).padStart(2,'0')}-${be}`;}
   return '';
 }
+function detectThaiDocumentType(rawText=''){
+  const text=normalizeThaiOcrText(rawText);
+  if(/(?:ใบอนุญาตขับรถ|driving\s+licen[cs]e|private\s+car\s+driving|เลขบัตรประจำตัว\s*\/\s*id\s*no\.?)/i.test(text))return 'driving_license';
+  if(/(?:บัตรประจำตัวประชาชน|thai\s+national\s+id\s+card|identification\s+number|เลขประจำตัวประชาชน)/i.test(text))return 'thai_id';
+  return 'unknown';
+}
+function parseThaiNameLine(line=''){
+  let src=normalizeThaiOcrText(line).trim();
+  if(!/[ก-๙]/.test(src))return null;
+  const label=src.match(/(?:ชื่อตัวและชื่อสกุล|ชื่อ\s*-?\s*นามสกุล|ชื่อ)\s*[:：-]?\s*(.*)$/i);
+  let tail=label?String(label[1]||'').trim():src;
+  tail=tail.split(/\s+(?:Name|Last\s*name|Surname|Birth|เกิดวันที่|วันเกิด|เลขบัตร|ID\s*No\.?|ที่อยู่|Address)\b/i)[0].trim();
+  const pm=tail.match(/^(นางสาว|น\.?\s*ส\.?|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.?\s*ช\.?|ด\.?\s*ญ\.?)\s*/);
+  if(!label&&!pm)return null;
+  let prefix='';
+  if(pm){prefix=normalizeThaiPrefix(pm[1]);tail=tail.slice(pm[0].length).trim();}
+  const words=(tail.match(/[ก-๙]+/g)||[]).filter(w=>w.length>=2&&!/^(?:ชื่อ|สกุล|นามสกุล|เกิดวันที่|วันเกิด)$/.test(w));
+  if(words.length<2)return null;
+  return {prefix,fname:words[0],lname:words.slice(1).join(' ')};
+}
+function parseThaiDocumentBirth(lines=[],docType='unknown'){
+  const thaiPriority=docType==='driving_license'
+    ? [/(?:เกิดวันที่)\s*[:：-]?\s*(.*)$/i,/(?:วันเกิด)\s*[:：-]?\s*(.*)$/i]
+    : [/(?:เกิดวันที่|วันเกิด)\s*[:：-]?\s*(.*)$/i];
+  for(const rx of thaiPriority){
+    for(const line of lines){
+      if(!/[ก-๙]/.test(line))continue;
+      const m=line.match(rx);if(!m)continue;
+      const d=parseThaiDocumentDate(m[1]||line);if(d)return d;
+    }
+  }
+  for(const line of lines){
+    if(!/(?:date\s*of\s*birth|birth\s*date|dob)/i.test(line))continue;
+    const d=parseThaiDocumentDate(line);if(d)return d;
+  }
+  return '';
+}
 function parseThaiIdDocumentDetails(rawText=''){
   const text=normalizeThaiOcrText(rawText),lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
-  const out={rawText:text,idCard:extractThirteenDigitId(text),prefix:'',fname:'',lname:'',birthDate:'',gender:'',address:'',addressParts:null};
-  const birthLine=lines.find(x=>/(?:วันเกิด|เกิดวันที่|date\s*of\s*birth|birth\s*date|dob)/i.test(x));
-  out.birthDate=parseThaiDocumentDate(birthLine||'')||'';
-  if(!out.birthDate){
-    for(const line of lines){const d=parseThaiDocumentDate(line);if(d&&/(?:เกิด|birth)/i.test(line)){out.birthDate=d;break;}}
+  const documentType=detectThaiDocumentType(text);
+  const out={rawText:text,documentType,idCard:extractThirteenDigitId(text),prefix:'',fname:'',lname:'',birthDate:'',gender:'',address:'',addressParts:null};
+  out.birthDate=parseThaiDocumentBirth(lines,documentType);
+
+  const nameLines=[];
+  for(const line of lines){
+    if(!/[ก-๙]/.test(line))continue;
+    if(/(?:ชื่อตัวและชื่อสกุล|^\s*ชื่อ(?:\s|[:：-])|\sชื่อ\s)/.test(line))nameLines.push(line);
   }
-  const prefixRx=/(นางสาว|น\.?\s*ส\.?|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.?\s*ช\.?|ด\.?\s*ญ\.?)/;
-  const stopRx=/(?:เลขประจำตัว|identification|วันเกิด|birth|ศาสนา|religion|ที่อยู่|address|วันออกบัตร|date of issue|วันบัตรหมดอายุ|date of expiry|เจ้าพนักงาน)/i;
-  for(const line0 of lines){
-    if(stopRx.test(line0)&&!/(?:ชื่อ|name)/i.test(line0))continue;
-    const m=line0.match(prefixRx);if(!m)continue;
-    let tail=line0.slice(m.index).replace(/^(?:ชื่อ(?:ตัวและชื่อสกุล)?|name)\s*/i,'').trim();
-    const pm=tail.match(prefixRx);if(!pm)continue;
-    const pref=normalizeThaiPrefix(pm[1]);tail=tail.slice((pm.index||0)+pm[0].length).trim();
-    tail=tail.split(/\s+(?:Name|Last\s*name|Surname|เกิด|Birth|ที่อยู่|Address)\b/i)[0].trim();
-    const thaiWords=(tail.match(/[ก-๙]+/g)||[]).filter(w=>w.length>=2&&!/^(?:ชื่อ|สกุล|นามสกุล)$/.test(w));
-    if(thaiWords.length>=2){out.prefix=pref;out.fname=thaiWords[0];out.lname=thaiWords.slice(1,3).join(' ');break;}
+  for(const line of [...nameLines,...lines]){
+    if(!/[ก-๙]/.test(line))continue;
+    if(/(?:วันอนุญาต|วันสิ้นอายุ|วันออกบัตร|วันหมดอายุ|เกิดวันที่|วันเกิด|ที่อยู่|เลขประจำตัว|เลขบัตร)/.test(line)&&!/(?:ชื่อ)/.test(line))continue;
+    const nm=parseThaiNameLine(line);
+    if(nm){out.prefix=nm.prefix;out.fname=nm.fname;out.lname=nm.lname;break;}
   }
+
   if(!out.gender){
-    if(/(?:เพศ\s*ชาย|sex\s*[:\-]?\s*m\b|\bmale\b)/i.test(text)||['นาย','เด็กชาย'].includes(out.prefix))out.gender='M';
-    else if(/(?:เพศ\s*หญิง|sex\s*[:\-]?\s*f\b|\bfemale\b)/i.test(text)||['นาง','นางสาว','เด็กหญิง'].includes(out.prefix))out.gender='F';
+    if(['นาย','เด็กชาย'].includes(out.prefix)||/(?:เพศ\s*ชาย|sex\s*[:\-]?\s*m\b|\bmale\b)/i.test(text))out.gender='M';
+    else if(['นาง','นางสาว','เด็กหญิง'].includes(out.prefix)||/(?:เพศ\s*หญิง|sex\s*[:\-]?\s*f\b|\bfemale\b)/i.test(text))out.gender='F';
   }
-  const addrIdx=lines.findIndex(x=>/(?:^|\s)(?:ที่อยู่|address)(?:\s|:|$)/i.test(x));
-  if(addrIdx>=0){
-    let parts=[];
-    let first=lines[addrIdx].replace(/^.*?(?:ที่อยู่|address)\s*[:：-]?\s*/i,'').trim();
-    if(first)parts.push(first);
-    for(let i=addrIdx+1;i<Math.min(lines.length,addrIdx+4);i++){
-      const line=lines[i];if(/(?:วันออกบัตร|date of issue|วันบัตรหมดอายุ|date of expiry|เจ้าพนักงาน|religion|ศาสนา)/i.test(line))break;
-      if(/[ก-๙]/.test(line))parts.push(line);
+
+  if(documentType!=='driving_license'){
+    const addrIdx=lines.findIndex(x=>/(?:^|\s)(?:ที่อยู่)(?:\s|:|$)/i.test(x));
+    if(addrIdx>=0){
+      const parts=[];
+      const first=lines[addrIdx].replace(/^.*?(?:ที่อยู่)\s*[:：-]?\s*/i,'').trim();
+      if(first)parts.push(first);
+      for(let i=addrIdx+1;i<Math.min(lines.length,addrIdx+4);i++){
+        const line=lines[i];
+        if(/(?:วันออกบัตร|date of issue|วันบัตรหมดอายุ|date of expiry|เจ้าพนักงาน|religion|ศาสนา)/i.test(line))break;
+        if(/[ก-๙]/.test(line))parts.push(line);
+      }
+      out.address=parts.join(' ').replace(/\s+/g,' ').trim();
+      if(out.address)out.addressParts=window.cnmiParseThaiAddressText?.(out.address)||{addressLine:out.address};
     }
-    out.address=parts.join(' ').replace(/\s+/g,' ').trim();
-    if(out.address)out.addressParts=window.cnmiParseThaiAddressText?.(out.address)||{addressLine:out.address};
   }
   return out;
+}
+function thaiDocumentDetailScore(d={}){
+  let score=0;
+  if(d.documentType&&d.documentType!=='unknown')score+=2;
+  if(d.prefix)score+=1;
+  if(d.fname)score+=3;
+  if(d.lname)score+=3;
+  if(d.birthDate)score+=3;
+  if(d.gender)score+=1;
+  if(d.documentType==='thai_id'&&d.address)score+=2;
+  return score;
+}
+async function cropThaiDocumentDetailArea(dataUrl,docType='unknown'){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onerror=()=>reject(new Error('เปิดภาพเอกสารไม่สำเร็จ'));
+    img.onload=()=>{
+      try{
+        const ow=img.naturalWidth||img.width,oh=img.naturalHeight||img.height;
+        let x=.08,y=.16,w=.82,h=.72;
+        if(docType==='driving_license'){x=.24;y=.36;w=.73;h=.52;}
+        const sx=Math.round(ow*x),sy=Math.round(oh*y),sw=Math.max(1,Math.round(ow*w)),sh=Math.max(1,Math.round(oh*h));
+        const maxW=2200,scale=Math.min(maxW/sw,1.8);
+        const c=document.createElement('canvas');c.width=Math.max(1,Math.round(sw*scale));c.height=Math.max(1,Math.round(sh*scale));
+        const ctx=c.getContext('2d');ctx.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);
+        resolve(c.toDataURL('image/jpeg',.96));
+      }catch(err){reject(err);}
+    };
+    img.src=String(dataUrl||'');
+  });
 }
 async function recognizeThaiIdDocumentDetails(dataUrl){
   if(!window.Tesseract?.createWorker)return null;
   let worker=null;
   try{
-    setDocOcrStatus('อ่านเลขบัตรแล้ว · กำลังอ่านชื่อ วันเกิด เพศ และที่อยู่จากเอกสาร...','busy');
+    setDocOcrStatus('อ่านเลขบัตรแล้ว · กำลังอ่านข้อมูลภาษาไทยจากเอกสาร...','busy');
     worker=await window.Tesseract.createWorker('tha+eng');
     await worker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
-    const {data}=await worker.recognize(dataUrl);
-    return parseThaiIdDocumentDetails(String(data?.text||''));
+    const first=await worker.recognize(dataUrl);
+    let combined=String(first?.data?.text||'');
+    let parsed=parseThaiIdDocumentDetails(combined);
+    const needFocus=!parsed.fname||!parsed.lname||!parsed.birthDate;
+    if(needFocus&&parsed.documentType!=='unknown'){
+      try{
+        const crop=await cropThaiDocumentDetailArea(dataUrl,parsed.documentType);
+        const second=await worker.recognize(crop);
+        const merged=combined+'\n'+String(second?.data?.text||'');
+        const parsed2=parseThaiIdDocumentDetails(merged);
+        if(thaiDocumentDetailScore(parsed2)>=thaiDocumentDetailScore(parsed)){combined=merged;parsed=parsed2;}
+      }catch(err){console.warn('focused Thai document OCR skipped',err);}
+    }
+    return parsed;
   }catch(err){console.warn('Thai document detail OCR failed',err);return null;}
   finally{try{await worker?.terminate?.();}catch{}}
 }
@@ -7600,7 +7747,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div class="col-md-6">
             <div class="camera-choice-card">
               <div class="camera-choice-title">สแกนบัตร / ใบขับขี่</div>
-              <div class="camera-choice-sub">สแกนจากเครื่องที่ต่อกับคอม แล้วระบบช่วยอ่านเลขบัตร ชื่อ วันเกิด เพศ และที่อยู่เท่าที่เห็นบนเอกสาร</div>
+              <div class="camera-choice-sub">Scanner ยังเป็นทางสำรองสำหรับบัตรจริง · ใบขับขี่จะไม่เติมที่อยู่ ส่วนบัตรประชาชนจะอ่านที่อยู่เท่าที่เห็นบนบัตร</div>
               <div class="camera-choice-actions">
                 <button type="button" class="btn btn-primary" onclick="closeSmartCaptureModal();scanIdDocument()">🖨️ สแกนเอกสาร</button>
               </div>
@@ -7624,7 +7771,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="modal-body">
         <div class="scan-preview-wrap">
           <img id="scan-ocr-preview-img" alt="ภาพบัตรที่สแกน">
-          <div class="scan-preview-help"><span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรหรือโทรศัพท์ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ</div>
+          <div class="scan-preview-help"><span class="scan-source-badge">🖨️ ภาพเต็มจาก Scanner</span> <strong class="ms-1">วางบัตรประชาชนหรือใบขับขี่ไว้กลางกระจกได้</strong> ระบบจะลองทั้งกรอบบัตร พื้นที่กลาง และภาพเต็มให้อัตโนมัติ</div>
           <div id="scan-ocr-candidates" class="alert alert-warning mt-3 text-start" style="display:none;"></div>
         </div>
         <div class="scan-preview-actions">
