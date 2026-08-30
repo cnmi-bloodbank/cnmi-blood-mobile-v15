@@ -1,9 +1,11 @@
-﻿(() => {
+(() => {
   'use strict';
   const $=id=>document.getElementById(id);
   const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9ก-๙]/g,'');
   const mem=new Map();
   let activeAdvanceRegistration=null;
+  let advanceIdentityVerified=false;
+  let verifiedAdvanceIdentityKey='';
   let currentRegistrationHistorySource='manual';
   const pick=(raw,names)=>{const n={};Object.keys(raw||{}).forEach(k=>n[norm(k)]=raw[k]);for(const name of names){const direct=raw?.[name];if(direct!==undefined&&direct!==null&&String(direct).trim()!=='')return direct;const v=n[norm(name)];if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;}return '';};
   const donorIdText=v=>String(v??'').trim().replace(/\.0+$/,'');
@@ -78,7 +80,41 @@
     return {profiles:[...profiles.values()],summary:{importedAt:new Date().toISOString(),donorProfiles:profiles.size,sourceDonorRows:g.donors.rows.length,donorWithNote:n,donorWithDefer:d,donorWithSeroNat:s,invalidIdCardRows:invalid,unmatchedAlertDonorIds:unmatched.size,sourceFromDate,sourceThroughDate,sourceFromDateThai:thaiDateFromYmd(sourceFromDate),sourceThroughDateThai:thaiDateFromYmd(sourceThroughDate)}};
   }
   function setText(id,text,cls){const n=$(id);if(!n)return;n.textContent=text;if(cls)n.className=cls;}
-  function clearPanel(){const p=$('donor-history-panel');if(p){p.hidden=true;p.replaceChildren();}}
+  const centralLockIds=['prefix','fname','lname','birth_date','gender','address','subdistrict','district','province','postal_code','phone','donor_id','donation_no','occupation_type','occupation_detail'];
+  function setCentralProfileLock(profile=null,lock=false){
+    const valueMap={prefix:profile?.prefix,fname:profile?.fname,lname:profile?.lname,birth_date:profile?.birth,gender:profile?.gender,address:profile?.addressLine||profile?.address,subdistrict:profile?.subdistrict,district:profile?.district,province:profile?.province,postal_code:profile?.postalCode,phone:profile?.phone,donor_id:(profile?.donorIds||[])[0]||'',donation_no:(profile?.donationHistory||[])[0]?.donationNo||'',occupation_type:profile?.occupation,occupation_detail:profile?.occupation};
+    centralLockIds.forEach(id=>{
+      const el=$(id);if(!el)return;
+      const should=!!lock&&String(valueMap[id]??'').trim()!=='';
+      el.classList.toggle('cnmi-central-locked',should);
+      if(should){el.setAttribute('aria-readonly','true');el.title='ข้อมูลจาก AI-LIS ใช้เป็นข้อมูลหลัก ไม่แก้จากหน้าออกหน่วย';}
+      else{el.removeAttribute('aria-readonly');if(el.title==='ข้อมูลจาก AI-LIS ใช้เป็นข้อมูลหลัก ไม่แก้จากหน้าออกหน่วย')el.removeAttribute('title');}
+      if(el.tagName==='SELECT'){el.style.pointerEvents=should?'none':'';el.tabIndex=should?-1:0;}
+      else if('readOnly' in el)el.readOnly=should;
+    });
+  }
+  function clearPanel(){setCentralProfileLock(null,false);const p=$('donor-history-panel');if(p){p.hidden=true;p.replaceChildren();}}
+  function currentAdvanceIdentityKey(){
+    const kind=window.getRegisterIdentityType?.()||'thai';
+    return kind==='passport'?String($('passport_number')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''):String($('id_card')?.value||'').replace(/\D/g,'');
+  }
+  function isAdvanceIdentityVerified(){return !!activeAdvanceRegistration&&advanceIdentityVerified&&!!verifiedAdvanceIdentityKey&&currentAdvanceIdentityKey()===verifiedAdvanceIdentityKey;}
+  function invalidateAdvanceIdentityVerification(){
+    if(!activeAdvanceRegistration)return;
+    advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';
+    window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);
+  }
+  function markAdvanceIdentityVerified({method='manual'}={}){
+    if(!activeAdvanceRegistration)return true;
+    const kind=window.getRegisterIdentityType?.()||'thai',key=currentAdvanceIdentityKey();
+    if(kind==='thai'&&!/^\d{13}$/.test(key))return false;
+    if(kind==='passport'&&key.length<5)return false;
+    advanceIdentityVerified=true;verifiedAdvanceIdentityKey=key;
+    activeAdvanceRegistration={...activeAdvanceRegistration,identityVerified:true,verifiedIdentityKey:key,verifyMethod:method};
+    window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);
+    return true;
+  }
+
   const line=(text,cls='')=>{const d=document.createElement('div');d.className=cls;d.textContent=text;return d;};
   function listBox(title,items,formatter,cls,max=5){const box=document.createElement('div');box.className=`preload-alert ${cls}`;box.appendChild(line(title,'fw-bold'));const ul=document.createElement('ul');ul.className='mb-0 mt-1 ps-4';items.slice(0,max).forEach(x=>{const li=document.createElement('li');li.textContent=formatter(x);ul.appendChild(li);});if(items.length>max){const li=document.createElement('li');li.textContent=`ดูเพิ่มเติมได้ในประวัติทั้งหมด (${items.length.toLocaleString()} รายการ)`;li.className='text-muted';ul.appendChild(li);}box.appendChild(ul);return box;}
   function donationOrdinal(hist){const rows=Array.isArray(hist)?hist:[];const first=rows.find(x=>String(x?.donationNo||'').trim());if(!first)return '';return String(first.donationNo).trim().replace(/\.0+$/,'');}
@@ -135,7 +171,7 @@
     const reportedDonorId=String(a.donorId||'').trim();
     const donorId=/^\d{1,16}$/.test(reportedDonorId)?reportedDonorId:'';
     const last=Number.isInteger(Number(a.lastDonationNo))?Number(a.lastDonationNo):null;
-    return {identityType:a.identityType||'thai',identityKey:a.idCard||a.passportNumber||'',idCard:a.idCard||'',passportNumber:a.passportNumber||'',nationality:'',prefix:a.prefix||'',fname:a.fname||'',lname:a.lname||'',birth:a.birth||'',gender:'',address:'',addressLine:'',subdistrict:'',district:'',province:'',postalCode:'',phone:a.phone||'',occupation:'',photoData:'',photoUpdatedAt:'',bloodGroupHistory:a.bloodGroup||'',donorIds:donorId?[donorId]:[],donorIdsAll:donorId?[donorId]:[],donationHistory:[],mobileVisits:[],alerts:{notes:[],defers:[],seroNat:[]},advanceRegistration:a,advanceLastDonationNo:last,historySource:'advance-list'};
+    return {identityType:a.identityType||'thai',identityKey:a.idCard||a.passportNumber||'',idCard:a.idCard||'',passportNumber:a.passportNumber||'',nationality:'',prefix:a.prefix||'',fname:a.fname||'',lname:a.lname||'',birth:a.birth||'',gender:'',address:'',addressLine:'',subdistrict:'',district:'',province:'',postalCode:'',phone:a.phone||'',occupation:'',photoData:'',photoUpdatedAt:'',bloodGroupHistory:a.bloodGroup||'',donorIds:[],donorIdsAll:[],donationHistory:[],mobileVisits:[],alerts:{notes:[],defers:[],seroNat:[]},advanceRegistration:a,advanceLastDonationNo:last,historySource:'advance-list'};
   }
   function advanceSourceBox(p){
     const a=p?.advanceRegistration;if(!a)return null;
@@ -183,7 +219,7 @@
     const histDonor=hist.find(x=>String(x?.donorId||'').trim())?.donorId||'';
     const mobileDonor=mobile.find(x=>String(x?.donorId||'').trim())?.donorId||'';
     const rawAdvanceDonor=String(p?.advanceRegistration?.donorId||'').trim();
-    const advanceDonor=/^\d{1,16}$/.test(rawAdvanceDonor)?rawAdvanceDonor:'';
+    const advanceDonor=(isAdvanceIdentityVerified()&&/^\d{1,16}$/.test(rawAdvanceDonor))?rawAdvanceDonor:'';
     const donorId=(todayMobile?.donorId||histDonor||mobileDonor||p?.donorIds?.[0]||p?.donorIdsAll?.[0]||advanceDonor||'');
     if(todayMobile?.donationNo){const current=Number(String(todayMobile.donationNo).replace(/\.0+$/,''));return {donorId:String(donorId||''),lastDonationNo:String(Number.isInteger(current)&&current>0?current-1:0),historySource:'blood-mobile'};}
     const histNums=hist.map(x=>Number(String(x?.donationNo||'').replace(/\.0+$/,''))).filter(n=>Number.isInteger(n)&&n>0);
@@ -196,29 +232,38 @@
   }
   function applyAdvanceRegistration(a,{force=false}={}){
     if(!a)return null;
-    activeAdvanceRegistration=a;
+    setCentralProfileLock(null,false);
+    activeAdvanceRegistration=a;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';
     const p=advanceToProfile(a);
     const set=(id,v)=>{const el=$(id);if(!el||v===undefined||v===null||String(v).trim()==='')return;if(force||!String(el.value||'').trim())el.value=String(v).trim();};
     if(a.identityType==='passport'){window.setRegisterIdentityType?.('passport',{clear:false});set('passport_number',a.passportNumber);}else{window.setRegisterIdentityType?.('thai',{clear:false});set('id_card',a.idCard);}
     set('prefix',a.prefix);set('fname',a.fname);set('lname',a.lname);set('birth_date',a.birth);set('phone',a.phone);
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource;
-    const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&sug.donorId){donorEl.value=sug.donorId;donorEl.dataset.userEdited='0';}if(noEl){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
-    renderProfile(p);setText('preload-register-status','ใช้ข้อมูลจากรายชื่อหน่วยแจ้งล่วงหน้า · ตรวจข้อมูลก่อนบันทึก','register-status-line text-warning fw-bold');
+    const donorEl=$('donor_id'),noEl=$('donation_no');
+    if(donorEl){donorEl.value='';donorEl.dataset.userEdited='0';}
+    if(noEl){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
+    renderProfile(p);
+    setText('preload-register-status','ใช้ข้อมูลจากรายชื่อหน่วยแจ้งล่วงหน้า · เลขบัตร/Passport ยังไม่ยืนยัน และยังไม่ค้น AI-LIS','register-status-line text-warning fw-bold');
+    window.updateAdvanceRegisterBanner?.(a);
     return p;
   }
+
   async function lookupFromRegister({fill=true}={}){
     const kind=window.getRegisterIdentityType?.()||'thai';
     let p=null,identityValue='',advance=null;
     const selectedBefore=activeAdvanceRegistration;
     const eventDate=currentLocalYmd();
+    const selectedIsVerified=!selectedBefore||isAdvanceIdentityVerified();
     if(kind==='passport'){
       identityValue=String($('passport_number')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-      if(identityValue.length<5){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status','','register-status-line text-muted');return null;}
-      [p,advance]=await Promise.all([findDonorPassport(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'passport',passportNumber:identityValue}).catch(()=>null)]);
+      if(identityValue.length<5){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรอยืนยัน Passport':'','register-status-line text-muted');return null;}
+      if(selectedBefore&&!selectedIsVerified){advance=selectedBefore;}
+      else [p,advance]=await Promise.all([findDonorPassport(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'passport',passportNumber:identityValue}).catch(()=>null)]);
     }else{
       identityValue=String($('id_card')?.value||'').replace(/\D/g,'');
-      if(!/^\d{13}$/.test(identityValue)){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status','','register-status-line text-muted');return null;}
-      [p,advance]=await Promise.all([findDonor(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'thai',idCard:identityValue}).catch(()=>null)]);
+      if(!/^\d{13}$/.test(identityValue)){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรอยืนยันเลขบัตร':'','register-status-line text-muted');return null;}
+      if(selectedBefore&&!selectedIsVerified){advance=selectedBefore;}
+      else [p,advance]=await Promise.all([findDonor(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'thai',idCard:identityValue}).catch(()=>null)]);
     }
     const hadCentral=!!p;
     if(!advance&&selectedBefore&&selectedBefore.status!=='registered')advance=selectedBefore;
@@ -226,13 +271,31 @@
     window.updateAdvanceRegisterBanner?.(advance?{...advance,centralProfile:hadCentral?{}:null}:null);
     if(p){p={...p,advanceRegistration:advance||null};}
     else if(advance){p=advanceToProfile(advance);}
-    if(!p){clearPanel();currentRegistrationHistorySource='manual';if(!window.cnmiDonorPhotoState?.dirty)window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}setText('preload-register-status',kind==='passport'?'ไม่พบประวัติ Passport/รายชื่อแจ้งล่วงหน้า':'ไม่พบประวัติหรือรายชื่อแจ้งล่วงหน้า','register-status-line text-secondary');return null;}
+    if(!p){clearPanel();currentRegistrationHistorySource='manual';if(!window.cnmiDonorPhotoState?.dirty)window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}setText('preload-register-status',kind==='passport'?'ไม่พบประวัติ Passport':'ไม่พบประวัติ AI-LIS/Blood Mobile','register-status-line text-secondary');return null;}
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource||'manual';
-    if(fill){const map={prefix:p.prefix,fname:p.fname,lname:p.lname,birth_date:p.birth,gender:genderCode(p.gender),address:p.addressLine||p.address,subdistrict:cleanArea(p.subdistrict,'subdistrict'),district:cleanArea(p.district,'district'),province:cleanArea(p.province,'province'),postal_code:p.postalCode,phone:p.phone,nationality:p.nationality};Object.entries(map).forEach(([id0,v])=>{const n=$(id0);if(n&&!n.value&&v)n.value=v;});try{window.setOccupationUiFromStored?.(p.occupation||'',false);}catch{}const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1'&&sug.donorId){donorEl.value=sug.donorId;donorEl.dataset.userEdited='0';}if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}}
-    window.setDonorPhotoPreview?.(p.photoData||'',{setOriginal:true,loadedForIdCard:p.identityKey||identityValue,preserveDirty:true});renderProfile(p);const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0);const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'รายชื่อหน่วยแจ้งล่วงหน้า':'ข้อมูลที่กรอก';setText('preload-register-status',alerts?`พบประวัติ · มีรายการเตือน ${alerts} รายการ · ใช้จำนวนครั้งจาก ${sourceLabel}`:`พบข้อมูลแล้ว · ใช้จำนวนครั้งจาก ${sourceLabel}`,alerts?'register-status-line text-danger fw-bold':(currentRegistrationHistorySource==='advance-list'?'register-status-line text-warning fw-bold':'register-status-line text-success fw-bold'));return p;
+    if(fill){
+      const map={prefix:p.prefix,fname:p.fname,lname:p.lname,birth_date:p.birth,gender:genderCode(p.gender),address:p.addressLine||p.address,subdistrict:cleanArea(p.subdistrict,'subdistrict'),district:cleanArea(p.district,'district'),province:cleanArea(p.province,'province'),postal_code:p.postalCode,phone:p.phone,nationality:p.nationality};
+      const centralWins=hadCentral&&currentRegistrationHistorySource==='ai-lis';
+      Object.entries(map).forEach(([id0,v])=>{const n=$(id0);if(n&&v&&(centralWins||!n.value))n.value=v;});
+      try{window.setOccupationUiFromStored?.(p.occupation||'',centralWins);}catch{}
+      const donorEl=$('donor_id'),noEl=$('donation_no');
+      if(donorEl&&donorEl.dataset.userEdited!=='1'){donorEl.value=sug.donorId||'';donorEl.dataset.userEdited='0';}
+      if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
+    }
+    window.setDonorPhotoPreview?.(p.photoData||'',{setOriginal:true,loadedForIdCard:p.identityKey||identityValue,preserveDirty:true});
+    renderProfile(p);
+    setCentralProfileLock(p,currentRegistrationHistorySource==='ai-lis');
+    const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0);
+    const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'รายชื่อหน่วยแจ้งล่วงหน้า':'ข้อมูลที่กรอก';
+    let message=alerts?`พบประวัติ · มีรายการเตือน ${alerts} รายการ · ใช้จำนวนครั้งจาก ${sourceLabel}`:`พบข้อมูลแล้ว · ใช้จำนวนครั้งจาก ${sourceLabel}`;
+    if(currentRegistrationHistorySource==='ai-lis')message+=' · ข้อมูลหลักจาก AI-LIS ถูกล็อกไม่ให้แก้ในหน้าออกหน่วย';
+    if(activeAdvanceRegistration&&!isAdvanceIdentityVerified())message='รายชื่อแจ้งล่วงหน้ายังไม่ยืนยันตัวตน · ยังไม่ค้น AI-LIS';
+    setText('preload-register-status',message,alerts?'register-status-line text-danger fw-bold':(currentRegistrationHistorySource==='advance-list'?'register-status-line text-warning fw-bold':'register-status-line text-success fw-bold'));
+    return p;
   }
+
   async function refreshSummary(){const s=await window.cnmiSupabaseApi.getHistorySummary();const box=$('preload-summary'),coverage=$('preload-coverage');if(!box)return s;if(!s){box.textContent='ยังไม่มีฐานประวัติ 4 Reports ใน Supabase';box.className='fw-bold text-danger';if(coverage)coverage.textContent='';return null;}const x=s.summary||{};box.textContent=`ฐานกลางอัปเดต ${s.completed_at?new Date(s.completed_at).toLocaleString('th-TH'):''} · ผู้บริจาค ${Number(x.donorProfiles||0).toLocaleString()} คน · Note ${Number(x.donorWithNote||0).toLocaleString()} · Defer ${Number(x.donorWithDefer||0).toLocaleString()} · Sero/NAT ${Number(x.donorWithSeroNat||0).toLocaleString()}`;box.className='fw-bold text-success';if(coverage){if(x.sourceThroughDate){const from=x.sourceFromDateThai||thaiDateFromYmd(x.sourceFromDate),to=x.sourceThroughDateThai||thaiDateFromYmd(x.sourceThroughDate);coverage.innerHTML=`<strong>ข้อมูลรายชื่อผู้บริจาครอบล่าสุด:</strong> ${from&&from!==to?escapeHtml(from)+' – ':''}${escapeHtml(to)} <span class="text-muted">(อ้างอิงวันที่บริจาคล่าสุดในไฟล์รายชื่อ)</span><br><strong>รอบถัดไป:</strong> แนะนำ Export รายงานทั้ง 4 ไฟล์โดยเริ่มซ้ำจากวันที่ <strong>${escapeHtml(to)}</strong> เพื่อกันข้อมูลตกหล่น ระบบจะรวมรายการเดิมให้โดยไม่เพิ่มซ้ำ`;coverage.className='alert alert-info py-2 px-3 mb-3';}else{coverage.textContent='ยังอ่านวันที่ล่าสุดจากไฟล์รายชื่อผู้บริจาคไม่ได้ กรุณาตรวจช่วงวันที่ใน AI-LIS ก่อน Export รอบถัดไป';coverage.className='alert alert-warning py-2 px-3 mb-3';}}return s;}
-  window.cnmiPreload={findDonor,findDonorPassport,findMany,upsertBasic,getSummary:refreshSummary,hasData:async()=>!!(await window.cnmiSupabaseApi.getHistorySummary()),refreshSummary,lookupFromRegister,renderProfile,clearPanel,applyAdvanceRegistration,getActiveAdvanceRegistration:()=>activeAdvanceRegistration,getRegistrationHistorySource:()=>currentRegistrationHistorySource,clearAdvanceRegistration:()=>{activeAdvanceRegistration=null;currentRegistrationHistorySource='manual';}};
+  window.cnmiPreload={findDonor,findDonorPassport,findMany,upsertBasic,getSummary:refreshSummary,hasData:async()=>!!(await window.cnmiSupabaseApi.getHistorySummary()),refreshSummary,lookupFromRegister,renderProfile,clearPanel,applyAdvanceRegistration,getActiveAdvanceRegistration:()=>activeAdvanceRegistration,getRegistrationHistorySource:()=>currentRegistrationHistorySource,isAdvanceIdentityVerified,markAdvanceIdentityVerified,invalidateAdvanceIdentityVerification,confirmAdvanceIdentityForLookup:async()=>{if(!markAdvanceIdentityVerified({method:'staff-confirm'}))return alert('กรุณาตรวจเลขบัตร/Passport ในช่องให้ถูกต้องก่อนยืนยัน');await lookupFromRegister({fill:true});},clearAdvanceRegistration:()=>{activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';setCentralProfileLock(null,false);window.updateAdvanceRegisterBanner?.(null);}};
   window.importOnlinePreload=async()=>{const files=[...($('preload-report-files')?.files||[])];if(files.length!==4)return alert('กรุณาเลือกไฟล์รายงาน 4 ไฟล์พร้อมกัน');const btn=$('preload-import-btn');try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน Excel...';}setText('preload-import-status','กำลังอ่านและรวมรายงาน 4 ชุด...','small fw-bold text-primary mt-2');const built=await buildProfiles(files);setText('preload-import-status',`เตรียม ${built.profiles.length.toLocaleString()} คนแล้ว · กำลังส่งขึ้น Supabase...`,'small fw-bold text-primary mt-2');await window.cnmiSupabaseApi.importSnapshot(built.profiles,built.summary,(phase,done,total)=>setText('preload-import-status',`${phase==='donors'?'อัปเดตผู้บริจาค':'อัปโหลดประวัติ'} ${done.toLocaleString()}/${total.toLocaleString()}`,'small fw-bold text-primary mt-2'));mem.clear();const current=await refreshSummary();const s=current?.summary||built.summary;alert(`อัปเดตฐานกลางสำเร็จ (เพิ่ม/ปรับปรุงจากฐานเดิม)
 ผู้บริจาคในฐานรวม ${Number(s.donorProfiles||0).toLocaleString()} คน
 Donor Note ${Number(s.donorWithNote||0).toLocaleString()} คน
@@ -254,5 +317,5 @@ ${built.summary.sourceThroughDateThai?`ข้อมูลรายชื่อ�
     ];
     downloadCsv(cols.map(c=>csvEscape(c[0])).join(',')+'\r\n'+rows.map(r=>cols.map(c=>csvEscape(c[1](r)??'')).join(',')).join('\r\n'),`CNMI-LIS-${date}.csv`);
   }catch(err){console.error(err);alert(`ส่งออก LIS CSV ไม่สำเร็จ\n${err.message||err}`);}};
-  let debounce=null;document.addEventListener('DOMContentLoaded',()=>{const identityChanged=()=>{clearTimeout(debounce);clearPanel();window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}try{const occ=$('occupation_type');if(occ&&occ.dataset.userEdited!=='1')window.setOccupationUiFromStored?.('',true);}catch{}debounce=setTimeout(()=>lookupFromRegister({fill:true}).catch(console.warn),180);};$('id_card')?.addEventListener('input',identityChanged);$('passport_number')?.addEventListener('input',identityChanged);$('id_card')?.addEventListener('blur',()=>lookupFromRegister({fill:true}).catch(console.warn));$('passport_number')?.addEventListener('blur',()=>lookupFromRegister({fill:true}).catch(console.warn));setTimeout(()=>refreshSummary().catch(()=>{}),500);});
+  let debounce=null;document.addEventListener('DOMContentLoaded',()=>{const identityChanged=()=>{clearTimeout(debounce);if(activeAdvanceRegistration)invalidateAdvanceIdentityVerification();clearPanel();window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}try{const occ=$('occupation_type');if(occ&&occ.dataset.userEdited!=='1')window.setOccupationUiFromStored?.('',true);}catch{}debounce=setTimeout(()=>lookupFromRegister({fill:true}).catch(console.warn),180);};$('id_card')?.addEventListener('input',identityChanged);$('passport_number')?.addEventListener('input',identityChanged);$('id_card')?.addEventListener('blur',()=>lookupFromRegister({fill:true}).catch(console.warn));$('passport_number')?.addEventListener('blur',()=>lookupFromRegister({fill:true}).catch(console.warn));setTimeout(()=>refreshSummary().catch(()=>{}),500);});
 })();
