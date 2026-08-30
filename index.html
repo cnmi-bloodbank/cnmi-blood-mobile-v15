@@ -1564,7 +1564,7 @@
 .camera-device-row select { max-width:420px; }
 .camera-controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .camera-controls .btn { min-width:130px; }
-/* v15.6.62: Thai-name component consensus; retains v15.6.61 camera/progress UX */
+/* v15.6.63: automatic second-pass camera OCR; retains v15.6.62 Thai-name consensus */
 .ocr-progress-stage{display:flex;align-items:flex-start;gap:10px;padding:8px 0;color:#687b8d;}
 .ocr-progress-stage .ocr-stage-dot{width:25px;height:25px;border-radius:50%;border:2px solid #cbd8e5;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex:0 0 auto;background:#fff;}
 .ocr-progress-stage.is-active{color:#1554a2;font-weight:800;}
@@ -3040,7 +3040,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.62 - Thai Name Consensus OCR");
+    console.log("CNMI Blood Donation v15.6.63 - Auto Retry Camera OCR");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6639,6 +6639,29 @@ async function flipImageDataUrlHorizontal(dataUrl){
 }
 window.flipImageDataUrlHorizontal=flipImageDataUrlHorizontal;
 
+// v15.6.63: if the specialized camera path cannot resolve the ID, automatically
+// run the same broad OCR pass that previously only ran after staff pressed
+// "ลองอ่านอีกครั้ง". The preview is shown only after this automatic pass fails.
+async function tryGenericThaiIdCameraFallback(dataUrl,{method='usb-camera-auto-retry',statusText='อ่านเลขบัตรสำเร็จจากการลองซ้ำอัตโนมัติ',docTypeHint='thai_id'}={}){
+  const src=String(dataUrl||'');
+  if(!src)return null;
+  try{
+    setOcrProgress(3,'3/5 อ่านเลขประจำตัว','รอบแรกยังไม่ชัด · กำลังลองอ่านซ้ำอัตโนมัติจากภาพเต็มในกรอบ');
+    setDocOcrStatus('รอบแรกยังไม่ชัด · ระบบกำลังลองอ่านซ้ำอัตโนมัติ ไม่ต้องกดปุ่มเพิ่ม','busy');
+    const r=await recognizeThaiIdDigitsRobust(src);
+    if(!r?.idCard)return null;
+    const parsed={rawText:r.rawText||'',idCard:r.idCard,birthDate:''};
+    applyOcrParsedFields(parsed);
+    setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','อ่านเลขได้จากรอบอัตโนมัติแล้ว · กำลังค้นประวัติและอ่านรายละเอียด');
+    await verifyThaiIdentityAndLookup({detailImage:src,docTypeHint,method,statusText});
+    return parsed;
+  }catch(err){
+    console.warn('automatic generic Thai ID camera retry failed',err);
+    return null;
+  }
+}
+window.tryGenericThaiIdCameraFallback=tryGenericThaiIdCameraFallback;
+
 async function tryPhoneIdOcrTarget(target,label='ภาพจริง'){
   try{
     setDocOcrStatus(`กำลังอ่านเลขบัตรจากหน้าจอโทรศัพท์ · ${label}`,'busy');
@@ -6688,6 +6711,15 @@ async function processPhoneScreenCameraDataUrl(dataUrl){
     }
     if(result?.candidates?.length) allCandidates.push(...result.candidates);
   }
+
+  // Before asking staff to inspect/retry, automatically run the broad pass on
+  // exactly the source crop shown to the user. This mirrors the old retry button.
+  const autoRetry=await tryGenericThaiIdCameraFallback(fallbackPreview,{
+    method:'phone-camera-auto-retry',
+    statusText:'อ่านบัตรจากหน้าจอโทรศัพท์สำเร็จ (ลองซ้ำอัตโนมัติ)',
+    docTypeHint:'thai_id'
+  });
+  if(autoRetry)return autoRetry;
 
   const unique=[]; const seen=new Set();
   for(const c of allCandidates){
@@ -6753,6 +6785,15 @@ async function processThaiDocumentCameraDataUrl(dataUrl){
       }
     }catch(err){console.warn('generic document camera OCR failed',attempt.label,err);}
   }
+  // v15.6.63: the old UI required staff to press "ลองอ่านอีกครั้ง" here.
+  // Run that broad OCR automatically first; only open the preview if it also fails.
+  const autoRetry=await tryGenericThaiIdCameraFallback(preview,{
+    method:'usb-camera-document-auto-retry',
+    statusText:'อ่านเลขบัตรสำเร็จ (ลองซ้ำอัตโนมัติ)',
+    docTypeHint:'thai_id'
+  });
+  if(autoRetry)return autoRetry;
+
   const unique=[],seen=new Set();
   for(const c of candidates){
     const id=String(c?.idCard||'').replace(/\D/g,'');
