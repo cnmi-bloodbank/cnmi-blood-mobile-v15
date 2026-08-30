@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.49"></script>
+  <script src="js/supabase-backend.js?v=15.6.50"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -2330,7 +2330,7 @@
           <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.14 → ทำทีละคนให้จบ ส่วนที่ 1 → ส่วนที่ 2 → ✓ Complete → คนถัดไป</div>
           <hr class="my-3">
 
-          <div class="advance-import-panel" data-admin-only="true">
+          <div class="advance-import-panel">
             <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
               <div>
                 <h5 class="fw-bold mb-1" style="color:#8a4b00;">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
@@ -5895,7 +5895,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.49"></script>
+  <script src="js/supabase-history.js?v=15.6.50"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -7191,7 +7191,7 @@ function parseAdvanceWorkbookMatrix(matrix,fileName=''){
   return out;
 }
 async function importAdvanceRegistrationFile(){
-  if(!isRealAdmin()||getAdminViewMode()==='staff')return alert('ใช้ได้เฉพาะมุมมอง Admin');
+  if(!['admin','sup_manager','manager','staff'].includes(currentUser?.role||''))return alert('บัญชีนี้ไม่มีสิทธิ์นำเข้ารายชื่อผู้บริจาคแจ้งล่วงหน้า');
   const date=document.getElementById('prereg-event-date')?.value||'',file=document.getElementById('prereg-file')?.files?.[0],st=document.getElementById('prereg-import-status'),btn=document.getElementById('prereg-import-btn');
   if(!date)return alert('กรุณาเลือกวันที่ออกหน่วย');if(!file)return alert('กรุณาเลือกไฟล์รายชื่อจากหน่วย');
   try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
