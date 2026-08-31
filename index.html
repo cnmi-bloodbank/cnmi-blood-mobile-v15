@@ -1564,7 +1564,7 @@
 .camera-device-row select { max-width:420px; }
 .camera-controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .camera-controls .btn { min-width:130px; }
-/* v15.6.63: automatic second-pass camera OCR; retains v15.6.62 Thai-name consensus */
+/* v15.6.64: automatic second-pass camera OCR; retains v15.6.62 Thai-name consensus */
 .ocr-progress-stage{display:flex;align-items:flex-start;gap:10px;padding:8px 0;color:#687b8d;}
 .ocr-progress-stage .ocr-stage-dot{width:25px;height:25px;border-radius:50%;border:2px solid #cbd8e5;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex:0 0 auto;background:#fff;}
 .ocr-progress-stage.is-active{color:#1554a2;font-weight:800;}
@@ -2311,15 +2311,15 @@
                 <div class="desktop-tools-sub">เปลี่ยนคอมเมื่อไร ดาวน์โหลดจากตรงนี้ได้เลย</div>
               </div>
               <div class="desktop-tools-actions">
-                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.3.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
+                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.4.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="checkDesktopTools()">🔄 ตรวจว่าเปิดอยู่ไหม</button>
               </div>
             </div>
             <div class="desktop-tool-grid">
               <div class="desktop-tool-card">
-                <div class="desktop-tool-name">💳 Card Bridge v1.0</div>
+                <div class="desktop-tool-name">💳 Card Bridge v1.1</div>
                 <div class="desktop-tool-use">เปิดค้างไว้ก่อนใช้ปุ่มอ่านบัตรประชาชน</div>
-                <a class="btn btn-outline-primary btn-sm" href="CNMI-Card-Bridge-v1.0.zip" download>ดาวน์โหลด Card Bridge</a>
+                <a class="btn btn-outline-primary btn-sm" href="CNMI-Card-Bridge-v1.1.zip" download>ดาวน์โหลด Card Bridge</a>
               </div>
               <div class="desktop-tool-card">
                 <div class="desktop-tool-name">🖨️ Scan Bridge v1.3</div>
@@ -3040,7 +3040,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.63 - Auto Retry Camera OCR");
+    console.log("CNMI Blood Donation v15.6.64 - Auto Retry Camera OCR");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6639,7 +6639,7 @@ async function flipImageDataUrlHorizontal(dataUrl){
 }
 window.flipImageDataUrlHorizontal=flipImageDataUrlHorizontal;
 
-// v15.6.63: if the specialized camera path cannot resolve the ID, automatically
+// v15.6.64: if the specialized camera path cannot resolve the ID, automatically
 // run the same broad OCR pass that previously only ran after staff pressed
 // "ลองอ่านอีกครั้ง". The preview is shown only after this automatic pass fails.
 async function tryGenericThaiIdCameraFallback(dataUrl,{method='usb-camera-auto-retry',statusText='อ่านเลขบัตรสำเร็จจากการลองซ้ำอัตโนมัติ',docTypeHint='thai_id'}={}){
@@ -6785,7 +6785,7 @@ async function processThaiDocumentCameraDataUrl(dataUrl){
       }
     }catch(err){console.warn('generic document camera OCR failed',attempt.label,err);}
   }
-  // v15.6.63: the old UI required staff to press "ลองอ่านอีกครั้ง" here.
+  // v15.6.64: the old UI required staff to press "ลองอ่านอีกครั้ง" here.
   // Run that broad OCR automatically first; only open the preview if it also fails.
   const autoRetry=await tryGenericThaiIdCameraFallback(preview,{
     method:'usb-camera-document-auto-retry',
