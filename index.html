@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.71"></script>
+  <script src="js/supabase-backend.js?v=15.6.73"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1867,6 +1867,8 @@
 
 /* v15.6.69: simpler advance-list instructions + Donor Reaction */
 /* v15.6.70: Red Cross history is linked by name + surname + DOB; reported citizen ID is reference only */
+/* v15.6.73: AI-LIS style DN = YYMMDD + 4-digit running */
+/* v15.6.72: LIS Assistant v2.15 Safe Back + Resume */
 /* v15.6.71: alphanumeric DN + structured FM-CNBBC-063 donor reaction */
 .register-quick-start{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f7fbff;border:1px solid #cfe2ff;border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:.88rem;color:#35536f}
 .register-quick-start strong{color:#174f91}.register-quick-divider{color:#9babbc;font-weight:900}
@@ -2135,7 +2137,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               </div>
               <div class="col-lg-2 col-md-4">
                 <label class="small fw-bold">DN ออกหน่วย</label>
-                <input id="donor-search-dn" class="form-control" autocomplete="off" placeholder="เช่น 202608310012 / A12345" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+                <input id="donor-search-dn" class="form-control" autocomplete="off" placeholder="เช่น 2608310012 / A12345" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
               </div>
               <div class="col-lg-2 col-md-4">
                 <label class="small fw-bold">เลขถุง</label>
@@ -2452,7 +2454,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <div class="desktop-tools-sub">เปลี่ยนคอมเมื่อไร ดาวน์โหลดจากตรงนี้ได้เลย</div>
               </div>
               <div class="desktop-tools-actions">
-                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.4.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
+                <a class="btn btn-primary btn-sm" href="CNMI-Desktop-Tools-Pack-v1.5.zip" download>⬇️ ดาวน์โหลดทั้งหมด</a>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="checkDesktopTools()">🔄 ตรวจว่าเปิดอยู่ไหม</button>
               </div>
             </div>
@@ -2468,7 +2470,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <a class="btn btn-outline-primary btn-sm" href="CNMI-Scan-Bridge-v1.3.zip" download>ดาวน์โหลด Scan Bridge</a>
               </div>
               <div class="desktop-tool-card">
-                <div class="desktop-tool-name">🧾 LIS Assistant v2.14</div>
+                <div class="desktop-tool-name">🧾 LIS Assistant v2.15</div>
                 <div class="desktop-tool-use">เปิดเมื่อจะนำข้อมูล/ผลคัดกรองไปช่วยกรอก AI-LIS</div>
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="downloadLisAssistantBundle()">ดาวน์โหลด LIS Assistant</button>
               </div>
@@ -2495,7 +2497,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <button class="btn btn-success" onclick="exportOnlineLisCsv()">ส่งออก LIS CSV สำหรับ Assistant</button>
 
           </div>
-          <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.14 → ทำทีละคนให้จบ ส่วนที่ 1 → ส่วนที่ 2 → ✓ Complete → คนถัดไป</div>
+          <div class="small text-muted mt-2">กลับ รพ.: ส่งออก CSV → LIS Assistant v2.15 → ทำทีละคนให้จบ · ถ้าลงผิดกด ↩ แก้/ย้อนคนนี้ได้ → ✓ Complete → คนถัดไป</div>
           <hr class="my-3">
 
           <div class="advance-import-panel">
@@ -2584,7 +2586,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
     </div>
-    <div class="guide-note"><strong>LIS Assistant v2.14:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2ก่อนเปลี่ยนคน · คนไทยใช้เลขบัตร/Donor ID · ต่างชาติใช้ Passport Number/Donor ID · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
+    <div class="guide-note"><strong>LIS Assistant v2.15:</strong> ทำทีละคนให้จบทั้งส่วนที่ 1 และส่วนที่ 2ก่อนเปลี่ยนคน · ถ้าลงผิดกด ↩ แก้/ย้อนเฉพาะคนนี้ได้ · ปิดแล้วเปิด CSV เดิมสามารถ Resume Progress · ผ่านต้องยิง Barcode ถุงให้ตรง Expected Bag · ไม่ผ่าน Auto เฉพาะ 5 ค่า</div>
   </div>
 </section>
 
@@ -3410,7 +3412,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.71 - Alphanumeric DN + FM-CNBBC-063 Donor Reaction");
+    console.log("CNMI Blood Donation v15.6.73 - AI-LIS DN YYMMDD + 4-digit running");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6660,7 +6662,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.71"></script>
+  <script src="js/supabase-history.js?v=15.6.73"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -9340,7 +9342,7 @@ async function saveBagRange(){
 </script>
 
 <script>
-// v15.6.45: LIS Assistant v2.14 is downloaded from the static ZIP on GitHub Pages.
+// v15.6.72: LIS Assistant v2.15 is downloaded from the static ZIP on GitHub Pages.
 async function checkLocalBridgeHealth(url, elementId, label) {
   const el = document.getElementById(elementId);
   if (el) { el.className='tool-status-chip'; el.textContent=label+': กำลังตรวจ...'; }
@@ -9369,8 +9371,8 @@ window.checkDesktopTools=checkDesktopTools;
 
 function downloadLisAssistantBundle() {
   const a = document.createElement('a');
-  a.href = 'CNMI-LIS-Assistant-v2.14-Thai-Passport-One-Person-DIRECT.zip';
-  a.download = 'CNMI-LIS-Assistant-v2.14-Thai-Passport-One-Person-DIRECT.zip';
+  a.href = 'CNMI-LIS-Assistant-v2.15-Safe-Back-Resume-DIRECT.zip';
+  a.download = 'CNMI-LIS-Assistant-v2.15-Safe-Back-Resume-DIRECT.zip';
   document.body.appendChild(a);
   a.click();
   a.remove();
