@@ -1865,7 +1865,7 @@
 .advance-modal-summary{ font-size:.82rem; color:#66778a; margin-top:7px; }
 .advance-date-compact{ max-width:180px; }
 
-/* v15.6.67: pre-match AI-LIS before outreach without treating Excel identity as verified */
+/* v15.6.68: Red Cross advance-history workflow; AI-LIS lookup only after real identity verification */
 .advance-prep-flow{
   display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;
   padding:8px 10px; border:1px solid #dce8f6; border-radius:10px; background:#f8fbff;
@@ -2201,8 +2201,8 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="register-section-title"><span class="register-step-no">2</span><span>ประวัติและรูปผู้บริจาค</span></div>
               <div class="row g-3 align-items-start">
                 <div class="col-lg-4 col-md-6">
-                  <label>Donor ID <span class="text-secondary fw-semibold">(ถ้าไม่มี เว้นว่าง)</span></label>
-                  <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
+                  <label>Donor ID <span class="text-secondary fw-semibold">(AI-LIS CNMI · ถ้าไม่มี เว้นว่าง)</span></label>
+                  <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="Donor ID จาก AI-LIS ของเรา ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
                 </div>
 
                 <div class="col-lg-4 col-md-6">
@@ -2468,7 +2468,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
               <div>
                 <h5 class="fw-bold mb-1" style="color:#8a4b00;">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
-                <div class="small text-muted">นำเข้า Excel แล้วระบบช่วยเตรียมประวัติ AI-LIS ให้ล่วงหน้า · ยังไม่สร้าง DN/Visit และยังไม่ถือว่าเลขจากไฟล์ยืนยันตัวตน</div>
+                <div class="small text-muted">ข้อมูล Donor ID / จำนวนครั้งในไฟล์นี้คือข้อมูลที่ตรวจจากระบบกาชาดก่อนออกหน่วย · AI-LIS ของเราจะค้นอัตโนมัติหลังอ่านบัตรจริงวันงาน</div>
               </div>
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAdvanceRegistrations()">🔄 ดูรายชื่อวันที่นี้</button>
             </div>
@@ -2478,7 +2478,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="col-md-2"><button id="prereg-import-btn" type="button" class="btn btn-warning w-100" onclick="importAdvanceRegistrationFile()">📥 นำเข้ารายชื่อ</button></div>
             </div>
             <div id="prereg-import-status" class="small mt-2 text-muted">สลับ/เพิ่ม/ลดคอลัมน์ได้ ระบบหาแถวหัวตารางและจับคอลัมน์จากชื่อให้อัตโนมัติ</div>
-            <div class="advance-prep-flow"><strong>1 นำเข้า Excel</strong><span class="advance-prep-arrow">→</span><strong>2 ระบบเทียบ AI-LIS ให้</strong><span class="advance-prep-arrow">→</span><strong>3 ดูเฉพาะรายการ ⚠ ต้องตรวจ</strong><span class="text-muted">วันจริงน้องแค่เลือกชื่อแล้วอ่านบัตร</span></div>
+            <div class="advance-prep-flow"><strong>1 นำเข้า Excel</strong><span class="advance-prep-arrow">→</span><strong>2 ระบบจัดกลุ่มข้อมูลกาชาด</strong><span class="advance-prep-arrow">→</span><strong>3 ดูเฉพาะรายการ ⚠ ต้องตรวจ</strong><span class="text-muted">วันจริง: เลือกชื่อ → อ่านบัตร → ระบบค้น AI-LIS เอง</span></div>
             <div id="prereg-summary" class="advance-summary-grid"></div>
             <div id="prereg-list"></div>
           </div>
@@ -2542,7 +2542,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน · หากครั้งแรกไม่ผ่านและกลับมาตรวจใหม่ ให้กด “ตรวจซ้ำ” ระบบจะเก็บผลเดิมไว้</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงเลือกชื่อจากรายชื่อ → อ่านบัตร/สแกนหรือยืนยันเลขจริงก่อน → จึงค้น AI-LIS → ถ้าพบใช้ AI-LIS เป็นหลัก ถ้าไม่พบจึงใช้จำนวนครั้งที่หน่วยแจ้ง → ส่งออก LIS CSV</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงเลือกชื่อจากรายชื่อ → อ่านบัตร/สแกนหรือยืนยันเลขจริง → ระบบค้น AI-LIS อัตโนมัติ → ถ้าพบใช้ AI-LIS เป็นหลัก ถ้าไม่พบจึงใช้จำนวนครั้งที่เช็กจากระบบกาชาด → ส่งออก LIS CSV</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
@@ -3168,7 +3168,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.67 - Advance AI-LIS Pre-Match");
+    console.log("CNMI Blood Donation v15.6.68 - Red Cross Advance History");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4764,7 +4764,7 @@ async function resetPasswordWithOtp() {
       }
       const advanceSelected = window.cnmiPreload?.getActiveAdvanceRegistration?.() || null;
       if (advanceSelected && !window.cnmiPreload?.isAdvanceIdentityVerified?.()) {
-        alert("รายชื่อนี้มาจากรายชื่อแจ้งล่วงหน้า กรุณาอ่านบัตรจริง หรือยืนยันเลขในช่องนี้ก่อนบันทึก เพื่อป้องกันใช้ Donor ID/จำนวนครั้งผิดคน");
+        alert("รายชื่อนี้มาจากรายชื่อแจ้งล่วงหน้า กรุณาอ่านบัตรจริง หรือยืนยันเลขในช่องนี้ก่อนบันทึก เพื่อป้องกันใช้ข้อมูลกาชาด/จำนวนครั้งผิดคน");
         document.getElementById(data.identityType === 'passport' ? "passport_number" : "id_card")?.focus();
         return;
       }
@@ -6333,7 +6333,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.67"></script>
+  <script src="js/supabase-history.js?v=15.6.68"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -8708,114 +8708,64 @@ async function importAdvanceRegistrationFile(){
   try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
     const parsed=parseAdvanceWorkbookMatrix(matrix,file.name),rows=parsed.rows;const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows,replacePlanned:true});
-    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · พบหัวตารางแถว ${parsed.meta.headerRow} · จับคอลัมน์ตามชื่ออัตโนมัติ · ยังไม่สร้าง DN/Visit/เพิ่มครั้ง · กำลังเตรียมเทียบ AI-LIS ล่วงหน้า`;st.title=parsed.meta.detected.join(' | ');}
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · พบหัวตารางแถว ${parsed.meta.headerRow} · จับคอลัมน์ตามชื่ออัตโนมัติ · ยังไม่สร้าง DN/Visit/เพิ่มครั้ง · เก็บข้อมูลกาชาดตามไฟล์แล้ว และยังไม่ค้น AI-LIS จนกว่าจะยืนยันบัตรวันจริง`;st.title=parsed.meta.detected.join(' | ');}
     await loadAdvanceRegistrations();
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='นำเข้าไม่สำเร็จ: '+(err.message||err);}alert('นำเข้ารายชื่อไม่สำเร็จ\n'+(err.message||err));}
   finally{if(btn){btn.disabled=false;btn.textContent='📥 นำเข้ารายชื่อ';}}
 }
 window.importAdvanceRegistrationFile=importAdvanceRegistrationFile;
 function normalizeAdvanceSearch(v){return String(v||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9ก-๙]/g,'');}
-function advanceNormName(v){return String(v||'').toLowerCase().replace(/^(นาย|นางสาว|นาง|น\.ส\.|ดร\.|เด็กชาย|เด็กหญิง)\s*/,'').replace(/[\s.\-_'’`]/g,'').replace(/[^a-z0-9ก-๙]/g,'');}
-function advanceDateKey(v){
-  const raw=String(v||'').trim(); if(!raw)return'';
-  const m=raw.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/); if(!m)return raw.replace(/\D/g,'');
-  let y=Number(m[3]); if(y>2400)y-=543; return `${String(m[1]).padStart(2,'0')}${String(m[2]).padStart(2,'0')}${String(y).padStart(4,'0')}`;
-}
-function advanceProfileMatchesRow(r,p){
-  if(!r||!p)return false;
-  const rf=advanceNormName(r.fname),rl=advanceNormName(r.lname),pf=advanceNormName(p.fname),pl=advanceNormName(p.lname);
-  if(!rf||!rl||!pf||!pl||rf!==pf||rl!==pl)return false;
-  const rb=advanceDateKey(r.birth),pb=advanceDateKey(p.birth); if(rb&&pb&&rb!==pb)return false;
-  return true;
-}
-function advanceCentralSummary(p){
-  if(!p)return {donorId:'',lastDonationNo:null};
-  const hist=Array.isArray(p.donationHistory)?p.donationHistory:[],mobile=Array.isArray(p.mobileVisits)?p.mobileVisits:[];
-  const donorIds=[...(p.donorIdsAll||[]),...(p.donorIds||[]),...hist.map(x=>x?.donorId||''),...mobile.map(x=>x?.donorId||'')].map(x=>String(x||'').trim()).filter(Boolean);
-  const nums=[...hist,...mobile].map(x=>Number(String(x?.donationNo||'').replace(/\.0+$/,''))).filter(n=>Number.isInteger(n)&&n>=0);
-  return {donorId:[...new Set(donorIds)][0]||'',lastDonationNo:nums.length?Math.max(...nums):null};
-}
-async function advanceSearchUniqueProfile(filters,row){
-  try{
-    const result=await window.cnmiSupabaseApi.searchDonorsAdvanced(filters,8);
-    const exact=(result||[]).map(x=>x?.profile||null).filter(p=>p&&advanceProfileMatchesRow(row,p));
-    const uniq=[]; const seen=new Set();
-    for(const p of exact){const k=String(p.identityKey||p.idCard||p.donorIdsAll?.[0]||p.donorIds?.[0]||'');if(!k||seen.has(k))continue;seen.add(k);uniq.push(p);}
-    return uniq.length===1?uniq[0]:null;
-  }catch(e){console.warn('advance pre-match search failed',e);return null;}
+function advanceRedCrossStatus(r){
+  if(!r)return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:''};
+  if(r.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว',message:''};
+  const note=String(r.note||'').trim();
+  const hasDonorId=!!String(r.donorId||'').trim();
+  const hasCount=Number.isInteger(Number(r.lastDonationNo))&&Number(r.lastDonationNo)>=0;
+  const needsReview=/ต้องตรวจ|ไม่ชัด|หลายเลข|หลายคน|ไม่ตรง|ผิด|ซ้ำ|คลุมเครือ|ambiguous|เลขประชาชนในไฟล์/i.test(note);
+  const explicitlyNotFound=/ไม่เจอ|ไม่พบ|ไม่มีประวัติ|not\s*found/i.test(note);
+  if(needsReview)return {key:'review',label:'⚠ ข้อมูลกาชาดต้องตรวจ',message:note||'ข้อมูลจากระบบกาชาดต้องตรวจ'};
+  if(hasDonorId||hasCount)return {key:'redcross',label:'✓ มีกาชาดตรวจประวัติแล้ว',message:note};
+  if(explicitlyNotFound||(!hasDonorId&&!hasCount))return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:note};
+  return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:note};
 }
 async function classifyAdvanceRows(rows){
-  const out=(rows||[]).map(r=>({...r,centralProfile:null,identityVerified:false,preMatchStatus:'pending',preMatchMethod:'',preMatchedDonorId:'',preMatchedLastDonationNo:null,preMatchMessage:''}));
-  const ids=out.filter(r=>r.identityType==='thai'&&/^\d{13}$/.test(String(r.idCard||'').replace(/\D/g,''))).map(r=>String(r.idCard).replace(/\D/g,''));
-  let byId={};
-  try{byId=await window.cnmiPreload?.findMany?.(ids)||{};}catch(e){console.warn('advance batch pre-match failed',e);}
-  const unresolved=[];
-  out.forEach((r,idx)=>{
-    if(r.status==='registered'){r.preMatchStatus='done';return;}
-    if(r.identityType==='passport'){r.preMatchStatus='review';r.preMatchMessage='Passport รอยืนยันวันจริง';return;}
-    const id=String(r.idCard||'').replace(/\D/g,''),p=byId[id]||null;
-    if(p){
-      if(advanceProfileMatchesRow(r,p)){
-        const c=advanceCentralSummary(p);Object.assign(r,{centralProfile:p,preMatchStatus:'matched',preMatchMethod:'เลขบัตร + ชื่อ',preMatchedDonorId:c.donorId,preMatchedLastDonationNo:c.lastDonationNo,preMatchMessage:'จับคู่ AI-LIS ได้จากเลขบัตรและชื่อ'});
-      }else{
-        Object.assign(r,{centralProfile:p,preMatchStatus:'conflict',preMatchMethod:'เลขบัตร',preMatchMessage:'เลขบัตรในไฟล์ไปพบ AI-LIS แต่ชื่อ/วันเกิดไม่ตรง — ต้องตรวจ'});
-      }
-    }else unresolved.push(idx);
+  // v15.6.68: ห้ามนำเลข/Donor ID จากไฟล์กาชาดไปค้น AI-LIS ล่วงหน้า
+  // วันจริงต้องยืนยันตัวตนจากบัตรจริงก่อน แล้ว lookupFromRegister จะค้น AI-LIS ของ CNMI ให้อัตโนมัติ
+  return (rows||[]).map(r=>{
+    const rc=advanceRedCrossStatus(r);
+    return {...r,redCrossStatus:rc.key,redCrossMessage:rc.message,centralProfile:null,identityVerified:false};
   });
-  let cursor=0;
-  async function worker(){
-    while(cursor<unresolved.length){
-      const idx=unresolved[cursor++],r=out[idx]; if(!r||r.preMatchStatus!=='pending')continue;
-      let p=null,method='';
-      const reportedDonor=String(r.donorId||'').trim();
-      if(/^\d{1,16}$/.test(reportedDonor)&&r.fname&&r.lname){p=await advanceSearchUniqueProfile({donorId:reportedDonor,fname:r.fname,lname:r.lname},r);if(p)method='Donor ID + ชื่อ';}
-      if(!p&&r.fname&&r.lname){p=await advanceSearchUniqueProfile({fname:r.fname,lname:r.lname},r);if(p)method='ชื่อ-นามสกุล'+(r.birth?' + วันเกิด':'');}
-      if(p){
-        const c=advanceCentralSummary(p),reportedId=String(r.idCard||'').replace(/\D/g,''),centralId=String(p.idCard||p.identityKey||'').replace(/\D/g,'');
-        const idDiff=reportedId&&centralId&&reportedId!==centralId;
-        Object.assign(r,{centralProfile:p,preMatchStatus:'matched',preMatchMethod:method,preMatchedDonorId:c.donorId,preMatchedLastDonationNo:c.lastDonationNo,preMatchMessage:idDiff?'พบ AI-LIS จากข้อมูลอื่น แต่เลขบัตรที่หน่วยแจ้งไม่ตรง — วันจริงต้องอ่านบัตรยืนยัน':'จับคู่ AI-LIS ล่วงหน้าได้'});
-      }else{
-        const hasEnough=!!(r.fname&&r.lname);
-        r.preMatchStatus=hasEnough?'notfound':'review';
-        r.preMatchMessage=hasEnough?'ยังไม่พบประวัติ AI-LIS จากข้อมูลล่วงหน้า':'ข้อมูลไม่พอสำหรับจับคู่ล่วงหน้า';
-      }
-    }
-  }
-  await Promise.all(Array.from({length:Math.min(5,Math.max(1,unresolved.length))},()=>worker()));
-  return out;
 }
 function advanceRowSource(r){
-  if(r.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว'};
-  if(r.preMatchStatus==='matched')return {key:'match',label:'✓ AI-LIS พร้อม · รอยืนยันบัตร'};
-  if(r.preMatchStatus==='conflict'||r.preMatchStatus==='review')return {key:'review',label:'⚠ ต้องตรวจ'};
-  if(r.preMatchStatus==='notfound')return {key:'nomatch',label:'ไม่พบประวัติ'};
-  return {key:'advance',label:'กำลังตรวจเทียบ'};
+  if(r?.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว'};
+  const rc=advanceRedCrossStatus(r);
+  return rc;
 }
 function setAdvancePrepareFilter(filter){advanceRegistrationUiState.prepareFilter=filter||'all';renderAdvancePrepareList();}
 window.setAdvancePrepareFilter=setAdvancePrepareFilter;
 function renderAdvancePrepareList(){
   const rows=advanceRegistrationUiState.rows,box=document.getElementById('prereg-list'),sum=document.getElementById('prereg-summary');if(!box||!sum)return;
-  const counts={match:0,review:0,nomatch:0,done:0};rows.forEach(r=>{const k=advanceRowSource(r).key;if(k in counts)counts[k]++;});
+  const counts={redcross:0,review:0,nohistory:0,done:0};rows.forEach(r=>{const k=advanceRowSource(r).key;if(k in counts)counts[k]++;});
   const f=advanceRegistrationUiState.prepareFilter||'all';
   const chip=(key,cls,label,count)=>`<button type="button" class="advance-summary-chip ${cls||''} ${f===key?'active':''}" onclick="setAdvancePrepareFilter('${key}')">${label} ${count}</button>`;
-  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('match','match','✓ จับคู่ AI-LIS แล้ว',counts.match)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nomatch','nomatch','ไม่พบประวัติ',counts.nomatch)+chip('done','done','มาจริงแล้ว',counts.done);
+  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('redcross','match','✓ มีกาชาดตรวจแล้ว',counts.redcross)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nohistory','nomatch','— ไม่พบประวัติกาชาด',counts.nohistory)+chip('done','done','มาจริงแล้ว',counts.done);
   if(!rows.length){box.innerHTML='<div class="alert alert-light border mb-0">ยังไม่มีรายชื่อแจ้งล่วงหน้าของวันที่นี้</div>';return;}
   const visible=f==='all'?rows:rows.filter(r=>advanceRowSource(r).key===f);
   if(!visible.length){box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';return;}
-  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ข้อมูลที่หน่วยแจ้ง</th><th>AI-LIS ที่เตรียมไว้</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
-    const s=advanceRowSource(r),reportedLast=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-',centralLast=Number.isInteger(Number(r.preMatchedLastDonationNo))?Number(r.preMatchedLastDonationNo):'-';
+  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ข้อมูลสำหรับยืนยันวันจริง</th><th>ข้อมูลที่เช็กจากกาชาด</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
+    const s=advanceRowSource(r),reportedLast=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
     const reportedId=r.idCard?escapeHtml(String(r.idCard).replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5')):'ไม่มีเลขบัตร';
-    const central=r.preMatchStatus==='matched'?`<strong>Donor ID ${escapeHtml(r.preMatchedDonorId||'-')}</strong><div class="small">ครั้งเดิม ${centralLast}${r.preMatchMethod?' · '+escapeHtml(r.preMatchMethod):''}</div>`:(r.preMatchStatus==='conflict'?`<span class="text-danger fw-bold">ข้อมูลไม่ตรง</span>`:`<span class="text-muted">${escapeHtml(r.preMatchMessage||'ยังไม่พบ')}</span>`);
-    return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</strong><div class="small text-muted">${escapeHtml(r.department||'')}</div>${r.note?`<div class="small text-warning-emphasis">${escapeHtml(r.note)}</div>`:''}</td><td><div>${reportedId}</div><div class="small">Donor ID ที่แจ้ง ${escapeHtml(r.donorId||'-')} · ครั้งเดิม ${reportedLast}</div></td><td>${central}</td><td><span class="advance-source-badge ${s.key}">${s.label}</span>${r.preMatchMessage&&r.preMatchStatus==='matched'&&/ไม่ตรง/.test(r.preMatchMessage)?`<div class="small text-danger mt-1">${escapeHtml(r.preMatchMessage)}</div>`:''}</td></tr>`;
+    const redCross=[r.donorId?`<strong>Donor ID กาชาด ${escapeHtml(r.donorId)}</strong>`:'',Number.isInteger(Number(r.lastDonationNo))?`<div class="small">เคยบริจาค ${reportedLast} ครั้ง${r.lastDonationDate?' · ล่าสุด '+escapeHtml(r.lastDonationDate):''}</div>`:''].filter(Boolean).join('') || '<span class="text-muted">ไม่พบ Donor ID/จำนวนครั้งในไฟล์</span>';
+    return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</strong><div class="small text-muted">${escapeHtml(r.department||'')}</div></td><td><div>${reportedId} <span class="text-warning-emphasis small">· รอยืนยันจากบัตรจริง</span></div>${r.birth?`<div class="small">วันเกิดที่แจ้ง ${escapeHtml(r.birth)}</div>`:''}${r.note?`<div class="small text-warning-emphasis">${escapeHtml(r.note)}</div>`:''}</td><td>${redCross}</td><td><span class="advance-source-badge ${s.key==='redcross'?'match':s.key}">${s.label}</span>${s.message?`<div class="small text-muted mt-1">${escapeHtml(s.message)}</div>`:''}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 async function loadAdvanceRegistrations(){
   const date=document.getElementById('prereg-event-date')?.value||getLocalDateInputValue();const box=document.getElementById('prereg-list');const st=document.getElementById('prereg-import-status');
-  if(box)box.innerHTML='<div class="small text-primary fw-bold">กำลังโหลดรายชื่อและตรวจเทียบ AI-LIS ล่วงหน้า...</div>';
+  if(box)box.innerHTML='<div class="small text-primary fw-bold">กำลังโหลดรายชื่อและจัดกลุ่มข้อมูลกาชาด...</div>';
   try{
     advanceRegistrationUiState.rows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvancePrepareList();
-    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='ตรวจเทียบ AI-LIS ล่วงหน้าแล้ว · วันจริงยังต้องอ่านบัตรเพื่อยืนยันก่อนใช้ประวัติ';}
+    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='จัดกลุ่มข้อมูลกาชาดแล้ว · วันจริงอ่านบัตรก่อน แล้วระบบจึงค้น AI-LIS ของเราอัตโนมัติ';}
     return advanceRegistrationUiState.rows;
   }catch(err){console.error(err);if(box)box.innerHTML=`<div class="alert alert-danger">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml(err.message||err)}</div>`;return[];}
 }
@@ -8823,24 +8773,28 @@ window.loadAdvanceRegistrations=loadAdvanceRegistrations;
 function updateAdvanceRegisterBanner(row){
   const box=document.getElementById('advance-register-banner');if(!box)return;
   if(!row){box.style.display='none';box.innerHTML='';return;}
-  const reportedLast=Number.isInteger(Number(row.lastDonationNo))?`${Number(row.lastDonationNo)} ครั้ง`:'ไม่ระบุ';
+  const redCrossLast=Number.isInteger(Number(row.lastDonationNo))?`${Number(row.lastDonationNo)} ครั้ง`:'ไม่พบจำนวนครั้ง';
   const verified=!!window.cnmiPreload?.isAdvanceIdentityVerified?.();
   const currentId=String(document.getElementById('id_card')?.value||'').replace(/\D/g,''),reportedId=String(row.idCard||'').replace(/\D/g,'');
   const formatted=x=>/^\d{13}$/.test(x)?x.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'):x;
   let identity='';
-  if(row.identityType==='passport')identity=verified?'<span class="text-success fw-bold">✅ ยืนยัน Passport แล้ว</span>':'<span class="text-warning-emphasis fw-bold">⚠ Passport จากรายชื่อยังไม่ยืนยัน</span>';
-  else if(verified){const mismatch=reportedId&&currentId&&reportedId!==currentId;identity=`<span class="text-success fw-bold">✅ ยืนยันเลขบัตรจริงแล้ว ${escapeHtml(formatted(currentId))}</span>${mismatch?` <span class="text-danger fw-bold">· ไม่ตรงกับเลขที่หน่วยแจ้ง ${escapeHtml(formatted(reportedId))}</span>`:''}`;}
-  else identity=`<span class="text-warning-emphasis fw-bold">⚠ เลขที่หน่วยแจ้ง${reportedId?' '+escapeHtml(formatted(reportedId)):''} — รออ่านบัตรจริง</span> <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ยืนยันเลขในช่องนี้</button>`;
-  let source='';
+  if(row.identityType==='passport')identity=verified?'<span class="text-success fw-bold">✅ ยืนยัน Passport จริงแล้ว</span>':'<span class="text-warning-emphasis fw-bold">⚠ Passport ในรายชื่อยังไม่ยืนยัน</span>';
+  else if(verified){const mismatch=reportedId&&currentId&&reportedId!==currentId;identity=`<span class="text-success fw-bold">✅ ยืนยันเลขบัตรจริงแล้ว ${escapeHtml(formatted(currentId))}</span>${mismatch?` <span class="text-danger fw-bold">· ไม่ตรงกับเลขในรายชื่อ ${escapeHtml(formatted(reportedId))}</span>`:''}`;}
+  else identity=`<span class="text-warning-emphasis fw-bold">⚠ เลขในรายชื่อ${reportedId?' '+escapeHtml(formatted(reportedId)):''} — รออ่านบัตรจริง</span> <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ยืนยันเลขในช่องนี้</button>`;
+  const rc=advanceRedCrossStatus(row);
+  const redCrossParts=[];
+  if(row.donorId)redCrossParts.push(`Donor ID กาชาด <strong>${escapeHtml(row.donorId)}</strong>`);
+  if(Number.isInteger(Number(row.lastDonationNo)))redCrossParts.push(`เคยบริจาค <strong>${Number(row.lastDonationNo)} ครั้ง</strong>`);
+  let source=`<span class="${rc.key==='review'?'text-danger':rc.key==='redcross'?'text-success':'text-muted'} fw-bold">${escapeHtml(rc.label)}</span>${redCrossParts.length?' · '+redCrossParts.join(' · '):''}`;
   if(verified){
-    source=row.centralProfile?'<span class="text-success fw-bold">✅ ยืนยันกับ AI-LIS แล้ว — ใช้ประวัติ AI-LIS เป็นหลัก</span>':'<span class="text-muted">ยืนยันตัวตนแล้ว · ระบบค้นประวัติด้วยเลขจริงแล้ว</span>';
-  }else if(row.preMatchStatus==='matched'){
-    const no=Number.isInteger(Number(row.preMatchedLastDonationNo))?Number(row.preMatchedLastDonationNo):'-';
-    source=`<span class="text-success fw-bold">✓ เตรียม AI-LIS ไว้แล้ว: Donor ID ${escapeHtml(row.preMatchedDonorId||'-')} · ครั้งเดิม ${no}</span> <span class="text-muted">· รออ่านบัตรจริงก่อนใช้</span>`;
-  }else if(row.preMatchStatus==='conflict'||row.preMatchStatus==='review')source=`<span class="text-danger fw-bold">⚠ ${escapeHtml(row.preMatchMessage||'ข้อมูลล่วงหน้าต้องตรวจ')}</span>`;
-  else source='<span class="text-muted">ไม่พบ AI-LIS ล่วงหน้า · วันจริงอ่านบัตรแล้วระบบจะค้นซ้ำอัตโนมัติ</span>';
+    const histSource=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
+    if(histSource==='ai-lis')source+=`<div class="small text-success mt-1">✓ พบ AI-LIS ของ CNMI แล้ว → ใช้ Donor ID/จำนวนครั้งจาก AI-LIS เป็นหลัก</div>`;
+    else if(histSource==='blood-mobile')source+=`<div class="small text-success mt-1">✓ พบ Blood Mobile เดิม → ใช้ประวัติของเราเป็นหลัก</div>`;
+    else if(histSource==='advance-list')source+=`<div class="small text-warning-emphasis mt-1">ไม่พบ AI-LIS/Blood Mobile → ใช้จำนวนครั้งที่เช็กจากกาชาดเป็นฐาน</div>`;
+    else source+=`<div class="small text-muted mt-1">ไม่พบประวัติหลักของเรา</div>`;
+  }else source+=`<div class="small text-muted mt-1">ยังไม่ค้น AI-LIS จนกว่าจะยืนยันตัวตนจากบัตรจริง</div>`;
   box.style.display='block';
-  box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${escapeHtml([row.prefix,row.fname,row.lname].filter(Boolean).join(' '))} · ครั้งเดิมที่หน่วยแจ้ง <strong>${reportedLast}</strong></div><div class="mt-1">${identity}</div><div class="small mt-1">${source}</div>`;
+  box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${escapeHtml([row.prefix,row.fname,row.lname].filter(Boolean).join(' '))}</div><div class="mt-1">${identity}</div><div class="small mt-1">${source}</div>`;
 }
 window.updateAdvanceRegisterBanner=updateAdvanceRegisterBanner;
 async function openAdvanceRegistrationModal(){
@@ -8867,7 +8821,7 @@ window.setAdvanceModalFilter=setAdvanceModalFilter;
 async function loadAdvanceModalData(){
   const date=document.getElementById('advance-modal-date')?.value||getLocalDateInputValue();
   const st=document.getElementById('advance-modal-status');
-  if(st)st.textContent='กำลังโหลดรายชื่อและเตรียมเทียบ AI-LIS...';
+  if(st)st.textContent='กำลังโหลดรายชื่อและข้อมูลกาชาด...';
   try{
     advanceRegistrationUiState.modalRows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvanceRegistrationModalList();
@@ -8879,7 +8833,8 @@ window.loadAdvanceModalData=loadAdvanceModalData;
 
 function advanceRowNeedsCheck(r){
   const id=String(r?.idCard||'').replace(/\D/g,'');
-  return !!(r?.preMatchStatus==='conflict'||r?.preMatchStatus==='review'||(r?.identityType!=='passport'&&id&&!isValidThaiNationalId(id)));
+  const rc=advanceRedCrossStatus(r);
+  return !!(rc.key==='review'||(r?.identityType!=='passport'&&id&&!isValidThaiNationalId(id)));
 }
 
 function renderAdvanceRegistrationModalList(){
@@ -8926,16 +8881,18 @@ function renderAdvanceRegistrationModalList(){
       r.phone?escapeHtml(r.phone):'',
       `ครั้งเดิม ${last}`
     ].filter(Boolean);
-    const warn=needsCheck?escapeHtml(r.preMatchMessage||r.note||'ข้อมูลล่วงหน้าต้องตรวจยืนยัน'):'';
-    const pm=r.preMatchStatus==='matched'
-      ? `<div class="advance-prematch-line match">✓ AI-LIS พร้อม: Donor ID ${escapeHtml(r.preMatchedDonorId||'-')} · ครั้งเดิม ${Number.isInteger(Number(r.preMatchedLastDonationNo))?Number(r.preMatchedLastDonationNo):'-'} · รออ่านบัตรจริง</div>`
-      : (r.preMatchStatus==='notfound'?`<div class="advance-prematch-line nomatch">ไม่พบประวัติ AI-LIS ล่วงหน้า · วันจริงอ่านบัตรแล้วค้นซ้ำ</div>`:(needsCheck?`<div class="advance-prematch-line review">⚠ ${warn}</div>`:''));
+    const rc=advanceRedCrossStatus(r);
+    const warn=needsCheck?escapeHtml(rc.message||r.note||'ข้อมูลกาชาดต้องตรวจยืนยัน'):'';
+    const rcDetail=[r.donorId?'Donor ID กาชาด '+escapeHtml(r.donorId):'',Number.isInteger(Number(r.lastDonationNo))?'เคยบริจาค '+Number(r.lastDonationNo)+' ครั้ง':''].filter(Boolean).join(' · ');
+    const pm=rc.key==='redcross'
+      ? `<div class="advance-prematch-line match">✓ กาชาด: ${rcDetail||'มีข้อมูลประวัติ'} · วันจริงอ่านบัตรก่อน แล้วระบบค้น AI-LIS เอง</div>`
+      : (rc.key==='nohistory'?`<div class="advance-prematch-line nomatch">— ไม่พบประวัติกาชาด · วันจริงอ่านบัตรแล้วระบบค้น AI-LIS ตามปกติ</div>`:(needsCheck?`<div class="advance-prematch-line review">⚠ ${warn}</div>`:''));
     return `<div class="advance-person-card ${needsCheck?'needs-check':''} ${isRegistered?'is-registered':''}">
       <div>
         <div class="advance-person-name">${escapeHtml(person)}</div>
         <div class="advance-person-meta">${meta.map(x=>`<span>${x}</span>`).join('')}</div>
         ${pm}
-        ${r.note&&!needsCheck?`<div class="small text-muted mt-1">หมายเหตุจากหน่วย: ${escapeHtml(r.note)}</div>`:''}
+        ${r.note&&!needsCheck?`<div class="small text-muted mt-1">หมายเหตุจากไฟล์: ${escapeHtml(r.note)}</div>`:''}
       </div>
       <div class="advance-person-action">
         <button type="button" class="btn ${isRegistered?'btn-outline-secondary':'btn-primary'} btn-sm"

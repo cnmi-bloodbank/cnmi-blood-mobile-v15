@@ -178,12 +178,12 @@
     const box=document.createElement('div');
     const central=(p?.donationHistory?.length||0)||(p?.mobileVisits?.length||0);
     box.className='preload-alert '+(central?'preload-history':'preload-note');
-    const count=Number.isInteger(Number(a.lastDonationNo))?` · แจ้งว่าเคยบริจาค ${Number(a.lastDonationNo)} ครั้ง`:'';
-    const donor=a.donorId?` · Donor ID ที่แจ้ง ${escapeHtml(String(a.donorId))}`:'';
+    const count=Number.isInteger(Number(a.lastDonationNo))?` · กาชาด: เคยบริจาค ${Number(a.lastDonationNo)} ครั้ง`:'';
+    const donor=a.donorId?` · Donor ID กาชาด ${escapeHtml(String(a.donorId))}`:'';
     const note=a.note?` · ⚠ ${escapeHtml(String(a.note))}`:'';
     box.innerHTML=central
-      ? `<strong>📋 พบในรายชื่อหน่วยแจ้งล่วงหน้า</strong>${count}${donor}${note}<div class="small mt-1">ถ้ามีประวัติ AI-LIS/Blood Mobile ระบบจะใช้ประวัติหลักก่อน และไม่ให้รายชื่อแจ้งล่วงหน้าทับ</div>`
-      : `<strong>📋 แหล่งประวัติ: รายชื่อหน่วยแจ้งล่วงหน้า</strong>${count}${donor}${note}<div class="small mt-1">ยังไม่ถือเป็น Visit จริง · จะ +1 เฉพาะเมื่อมาลงทะเบียนหน้างาน</div>`;
+      ? `<strong>📋 พบในรายชื่อแจ้งล่วงหน้า · ข้อมูลกาชาด</strong>${count}${donor}${note}<div class="small mt-1">AI-LIS/Blood Mobile ของ CNMI เป็นประวัติหลักเสมอ · ข้อมูลกาชาดใช้เป็นฐานเฉพาะเมื่อไม่พบประวัติของเรา</div>`
+      : `<strong>📋 แหล่งจำนวนครั้งสำรอง: ระบบกาชาด (จากรายชื่อแจ้งล่วงหน้า)</strong>${count}${donor}${note}<div class="small mt-1">ยังไม่ถือเป็น Visit จริง · วันจริงต้องยืนยันบัตรก่อน และจะ +1 เฉพาะเมื่อบันทึกการมาบริจาคจริง</div>`;
     return box;
   }
   function renderProfile(p){
@@ -202,7 +202,7 @@
     if(String(p.photoData||'').trim()){const img=document.createElement('img');img.className='preload-photo-thumb';img.src=String(p.photoData||'');img.alt='รูปผู้บริจาค';stack.appendChild(img);}
     const grid=document.createElement('div');grid.className='row g-2 mt-1';
     const advanceNo=Number.isInteger(Number(p.advanceRegistration?.lastDonationNo))?Number(p.advanceRegistration.lastDonationNo):null;
-    const cards=[['ครั้งก่อนมาวันนี้',ordinal?`ครั้งที่ ${ordinal}`:(advanceNo!==null?`${advanceNo} ครั้ง (แจ้งล่วงหน้า)`:'ไม่พบค่า')],['ประวัติ AI-LIS ที่นำเข้า',`${hist.length.toLocaleString()} รายการ`],['ประวัติ Blood Mobile',`${mobile.length.toLocaleString()} Visit`],['หมู่เลือดอ้างอิง',p.bloodGroupHistory||'-']];
+    const cards=[['ครั้งก่อนมาวันนี้',ordinal?`ครั้งที่ ${ordinal}`:(advanceNo!==null?`${advanceNo} ครั้ง (กาชาด)`:'ไม่พบค่า')],['ประวัติ AI-LIS ที่นำเข้า',`${hist.length.toLocaleString()} รายการ`],['ประวัติ Blood Mobile',`${mobile.length.toLocaleString()} Visit`],['หมู่เลือดอ้างอิง',p.bloodGroupHistory||'-']];
     cards.forEach(([k,v])=>{const c=document.createElement('div');c.className='col-6 col-lg-3';c.innerHTML=`<div class="border rounded p-2 h-100"><div class="small text-muted">${k}</div><div class="fw-bold">${v}</div></div>`;grid.appendChild(c);});summaryStack.appendChild(grid);
     if(ids.length){const d=document.createElement('div');d.className='small mt-2';d.innerHTML=`<strong>Donor ID:</strong> ${ids.map(x=>escapeHtml(String(x))).join(', ')}`;summaryStack.appendChild(d);}stack.appendChild(summaryStack);summary.appendChild(stack);panel.appendChild(summary);
     const all=combinedHistory(hist,mobile);if(all.length)panel.appendChild(historyTable(all));
@@ -218,9 +218,9 @@
     const todayMobile=mobile.find(x=>ymdFromItem(x)===today&&(x.donorId||x.donationNo));
     const histDonor=hist.find(x=>String(x?.donorId||'').trim())?.donorId||'';
     const mobileDonor=mobile.find(x=>String(x?.donorId||'').trim())?.donorId||'';
-    const rawAdvanceDonor=String(p?.advanceRegistration?.donorId||'').trim();
-    const advanceDonor=(isAdvanceIdentityVerified()&&/^\d{1,16}$/.test(rawAdvanceDonor))?rawAdvanceDonor:'';
-    const donorId=(todayMobile?.donorId||histDonor||mobileDonor||p?.donorIds?.[0]||p?.donorIdsAll?.[0]||advanceDonor||'');
+    // Donor ID จากไฟล์แจ้งล่วงหน้าเป็น Donor ID ของระบบกาชาด ไม่ใช่ Donor ID ของ AI-LIS CNMI
+    // จึงห้ามนำมาใส่ช่อง donor_id ของระบบเรา
+    const donorId=(todayMobile?.donorId||histDonor||mobileDonor||p?.donorIds?.[0]||p?.donorIdsAll?.[0]||'');
     if(todayMobile?.donationNo){const current=Number(String(todayMobile.donationNo).replace(/\.0+$/,''));return {donorId:String(donorId||''),lastDonationNo:String(Number.isInteger(current)&&current>0?current-1:0),historySource:'blood-mobile'};}
     const histNums=hist.map(x=>Number(String(x?.donationNo||'').replace(/\.0+$/,''))).filter(n=>Number.isInteger(n)&&n>0);
     if(histNums.length)return {donorId:String(donorId||''),lastDonationNo:String(Math.max(...histNums)),historySource:'ai-lis'};
@@ -240,13 +240,15 @@
     set('prefix',a.prefix);set('fname',a.fname);set('lname',a.lname);set('birth_date',a.birth);set('phone',a.phone);
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource;
     const donorEl=$('donor_id'),noEl=$('donation_no');
-    const hasPrepared=a.preMatchStatus==='matched';
-    const preparedDonor=hasPrepared?String(a.preMatchedDonorId||'').trim():'';
-    const preparedNo=hasPrepared&&Number.isInteger(Number(a.preMatchedLastDonationNo))?String(Number(a.preMatchedLastDonationNo)):'';
-    if(donorEl){donorEl.value=preparedDonor;donorEl.dataset.userEdited='0';}
-    if(noEl){noEl.value=preparedNo||sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
+    // ห้ามนำ Donor ID กาชาดลงช่อง Donor ID ของ AI-LIS CNMI
+    if(donorEl){donorEl.value='';donorEl.dataset.userEdited='0';}
+    // จำนวนครั้งกาชาดแสดงเตรียมไว้ได้ แต่ยังเป็นข้อมูลรอยืนยันจนกว่าจะอ่านบัตรจริง
+    if(noEl){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
     renderProfile(p);
-    setText('preload-register-status',hasPrepared?`เตรียม AI-LIS ไว้แล้ว${preparedDonor?' · Donor ID '+preparedDonor:''}${preparedNo!==''?' · ครั้งเดิม '+preparedNo:''} · กรุณาอ่านบัตรจริงเพื่อยืนยันก่อนบันทึก`:'ใช้ข้อมูลจากรายชื่อหน่วยแจ้งล่วงหน้า · กรุณาอ่านบัตรจริง ระบบจะค้น AI-LIS ให้อัตโนมัติ','register-status-line text-warning fw-bold');
+    const redCrossDonor=String(a.donorId||'').trim();
+    const redCrossNo=Number.isInteger(Number(a.lastDonationNo))?Number(a.lastDonationNo):null;
+    const rc=[redCrossDonor?'Donor ID กาชาด '+redCrossDonor:'',redCrossNo!==null?'เคยบริจาค '+redCrossNo+' ครั้ง':''].filter(Boolean).join(' · ');
+    setText('preload-register-status',`เลือกจากรายชื่อแจ้งล่วงหน้า${rc?' · '+rc:''} · กรุณาอ่านบัตรจริง แล้วระบบจะค้น AI-LIS ของ CNMI อัตโนมัติ`,'register-status-line text-warning fw-bold');
     window.updateAdvanceRegisterBanner?.(a);
     return p;
   }
@@ -289,7 +291,7 @@
     renderProfile(p);
     setCentralProfileLock(p,currentRegistrationHistorySource==='ai-lis');
     const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0);
-    const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'รายชื่อหน่วยแจ้งล่วงหน้า':'ข้อมูลที่กรอก';
+    const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'ระบบกาชาด (รายชื่อแจ้งล่วงหน้า)':'ข้อมูลที่กรอก';
     let message=alerts?`พบประวัติ · มีรายการเตือน ${alerts} รายการ · ใช้จำนวนครั้งจาก ${sourceLabel}`:`พบข้อมูลแล้ว · ใช้จำนวนครั้งจาก ${sourceLabel}`;
     if(currentRegistrationHistorySource==='ai-lis')message+=' · ข้อมูลหลักจาก AI-LIS ถูกล็อกไม่ให้แก้ในหน้าออกหน่วย';
     if(activeAdvanceRegistration&&!isAdvanceIdentityVerified())message='รายชื่อแจ้งล่วงหน้ายังไม่ยืนยันตัวตน · ยังไม่ค้น AI-LIS';
