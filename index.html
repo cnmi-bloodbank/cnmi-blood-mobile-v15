@@ -1791,6 +1791,96 @@
     .cnmi-geo-sub { font-size:.78rem; color:#64748b; margin-top:2px; line-height:1.25; }
     .geo-field-hint { font-size:.76rem; color:#64748b; margin-top:4px; line-height:1.25; }
     #subdistrict, #district, #province, #postal_code { background-image:none; }
+
+/* v15.6.66: clean registration workflow + easier advance donor list */
+#page-register > .page-title-card { display:none; }
+#page-register .main-card.register-clean-shell { padding:18px 20px 20px; }
+.register-clean-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+  padding-bottom:12px; margin-bottom:12px; border-bottom:2px solid #2f7ff0;
+}
+.register-clean-head .header-title{ margin:0 0 7px; border:0; padding:0; }
+.register-start-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.register-start-actions .btn{ min-height:42px; font-weight:800; border-radius:10px; }
+.register-location-wrap{ min-width:0; }
+.register-location-wrap #register-event-location{ margin:0!important; padding:6px 10px!important; border-radius:9px; display:inline-block; font-size:.9rem; }
+.register-section-card{
+  border:1px solid #dce6f2; border-radius:14px; background:#fff;
+  padding:14px 16px; margin-top:12px;
+}
+.register-section-title{
+  display:flex; align-items:center; gap:9px; margin-bottom:12px;
+  font-size:1rem; font-weight:800; color:#174f91;
+}
+.register-step-no{
+  width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  background:#eaf3ff; color:#1263c7; font-weight:900; flex:0 0 auto;
+}
+.register-section-title .identity-mode-switch{ margin-left:auto; margin-bottom:0; }
+#page-register .identity-mode-switch{ margin-bottom:10px; }
+#page-register .register-status-line:empty{ display:none; }
+#page-register .register-status-line:not(:empty){ margin-top:5px; }
+#page-register .advance-register-banner{ margin:0 0 10px; }
+#page-register .donor-photo-card{
+  display:grid; grid-template-columns:112px minmax(0,1fr); grid-template-rows:auto auto auto;
+  gap:8px 10px; padding:10px; border-radius:12px; min-height:0;
+}
+#page-register .donor-photo-head{ grid-column:1 / -1; }
+#page-register .donor-photo-preview-box{
+  grid-column:1; grid-row:2 / 4; margin-top:0; min-height:96px; height:96px; border-radius:11px;
+}
+#page-register .donor-photo-preview{ height:96px; }
+#page-register .donor-photo-placeholder{ padding:8px; gap:2px; font-size:.75rem; }
+#page-register .donor-photo-placeholder > div:first-child{ font-size:1.45rem!important; }
+#page-register .donor-photo-actions{ grid-column:2; margin-top:0; align-content:flex-start; }
+#page-register #donor-photo-status{ grid-column:2; margin-top:0!important; font-size:.78rem; }
+#page-register .geo-field-hint{ margin-top:3px; }
+#page-register .register-final-actions{ padding-top:4px; }
+#page-register .registration-error-summary{ margin-top:0; }
+.register-field-note{ font-size:.78rem; color:#64748b; margin-top:4px; }
+
+/* advance list: select the person who actually arrived */
+.advance-modal-toolbar{
+  position:sticky; top:0; z-index:4; background:#fff;
+  padding:2px 0 10px; border-bottom:1px solid #edf1f6; margin-bottom:10px;
+}
+.advance-modal-toolbar .form-control{ min-height:44px; }
+.advance-filter-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.advance-filter-btn{
+  border:1px solid #cbd8ea; background:#fff; color:#36536f; border-radius:999px;
+  padding:5px 11px; font-size:.82rem; font-weight:700;
+}
+.advance-filter-btn.active{ border-color:#2f7ff0; background:#eaf3ff; color:#145fb9; }
+.advance-modal-list-clean{ display:grid; gap:8px; }
+.advance-person-card{
+  border:1px solid #dfe7f0; border-radius:12px; padding:10px 12px; background:#fff;
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center;
+}
+.advance-person-card.needs-check{ border-color:#efc36a; background:#fffaf0; }
+.advance-person-card.is-registered{ opacity:.67; background:#f7f8fa; }
+.advance-person-name{ font-size:1rem; font-weight:850; color:#1c3551; }
+.advance-person-meta{ display:flex; gap:6px 12px; flex-wrap:wrap; margin-top:3px; color:#607287; font-size:.82rem; }
+.advance-person-alert{ margin-top:5px; font-size:.8rem; color:#a04b16; font-weight:700; }
+.advance-person-action .btn{ min-width:98px; min-height:40px; border-radius:9px; font-weight:800; }
+.advance-modal-summary{ font-size:.82rem; color:#66778a; margin-top:7px; }
+.advance-date-compact{ max-width:180px; }
+@media (max-width: 900px){
+  .register-clean-head{ flex-direction:column; }
+  .register-start-actions{ width:100%; justify-content:stretch; }
+  .register-start-actions .btn{ flex:1 1 180px; }
+  .register-section-title{ flex-wrap:wrap; }
+  .register-section-title .identity-mode-switch{ width:100%; margin-left:0; }
+}
+@media (max-width: 700px){
+  #page-register .main-card.register-clean-shell{ padding:12px; }
+  .register-section-card{ padding:12px; }
+  #page-register .donor-photo-card{ grid-template-columns:92px minmax(0,1fr); }
+  #page-register .donor-photo-preview-box,#page-register .donor-photo-preview{ height:86px; min-height:86px; }
+  .advance-person-card{ grid-template-columns:1fr; }
+  .advance-person-action .btn{ width:100%; }
+  .advance-date-compact{ max-width:none; }
+}
+
 </style>
 </head>
 
@@ -2024,197 +2114,195 @@
       </section>
 
       <section class="page-section" id="page-register">
-        <div class="page-title-card">
-          <h1 class="page-title">ลงทะเบียนผู้บริจาค</h1>
-          <p class="page-desc">ลงทะเบียนผู้บริจาค</p>
-        </div>
-
         <div class="container-fluid px-0">
-          <div class="main-card">
-            <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
+          <div class="main-card register-clean-shell">
 
-      <div class="alert alert-info d-flex justify-content-between align-items-center gap-2 flex-wrap py-2 mb-2">
-        <div><strong>ผู้บริจาคเดิม:</strong> ค้นจากประวัติหลักหรือรายชื่อที่หน่วยแจ้งล่วงหน้า</div>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-primary btn-sm" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
-          <button class="btn btn-outline-primary btn-sm" type="button" onclick="openAdvanceRegistrationModal()">📋 รายชื่อแจ้งล่วงหน้า</button>
-        </div>
-      </div>
-      <div id="advance-register-banner" class="advance-register-banner"></div>
-      <div id="register-event-location" class="alert alert-warning py-2 mb-3"><strong>📍 สถานที่ออกหน่วย:</strong> กำลังตรวจสอบ...</div>
-
-      <div class="row g-3">
-        <div class="col-md-12">
-          <div class="identity-mode-switch" role="group" aria-label="ประเภทเอกสารยืนยันตัวตน">
-            <button type="button" id="identity-thai-btn" class="identity-mode-btn active" onclick="setRegisterIdentityType('thai')">🇹🇭 คนไทย</button>
-            <button type="button" id="identity-passport-btn" class="identity-mode-btn" onclick="setRegisterIdentityType('passport')">🌍 ต่างชาติ / Passport</button>
-          </div>
-          <input type="hidden" id="register_identity_type" value="thai">
-
-          <div id="thai-identity-box">
-            <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
-            <div class="register-id-line">
-              <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
-              <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
-              <button id="scan-id-doc-btn" title="ใช้กับบัตรประชาชนหรือใบขับขี่ตัวจริงบน Scanner" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
-              <button id="phone-screen-id-btn" title="เปิด USB Camera เพื่ออ่านบัตรประชาชน ใบขับขี่ หรือภาพบัตรบนหน้าจอโทรศัพท์" type="button" class="btn btn-outline-primary" onclick="openThaiDocumentCamera()">📷 อ่านด้วยกล้อง</button>
+            <div class="register-clean-head">
+              <div class="register-location-wrap">
+                <h2 class="header-title">🩸 ลงทะเบียนผู้บริจาคโลหิต</h2>
+                <div id="register-event-location" class="alert alert-warning"><strong>📍 สถานที่ออกหน่วย:</strong> กำลังตรวจสอบ...</div>
+              </div>
+              <div class="register-start-actions">
+                <button class="btn btn-primary" type="button" onclick="openAdvanceRegistrationModal()">📋 เลือกจากรายชื่อวันนี้</button>
+                <button class="btn btn-outline-primary" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
+              </div>
             </div>
-          </div>
 
-          <div id="passport-identity-box" class="foreign-only">
-            <div class="row g-2 align-items-end">
-              <div class="col-lg-7">
-                <label class="fw-bold">Passport Number <span class="required-mark">*</span></label>
+            <div id="advance-register-banner" class="advance-register-banner"></div>
+
+            <div class="register-section-card">
+              <div class="register-section-title">
+                <span class="register-step-no">1</span>
+                <span>ยืนยันตัวตน</span>
+                <div class="identity-mode-switch" role="group" aria-label="ประเภทเอกสารยืนยันตัวตน">
+                  <button type="button" id="identity-thai-btn" class="identity-mode-btn active" onclick="setRegisterIdentityType('thai')">🇹🇭 คนไทย</button>
+                  <button type="button" id="identity-passport-btn" class="identity-mode-btn" onclick="setRegisterIdentityType('passport')">🌍 ต่างชาติ / Passport</button>
+                </div>
+              </div>
+
+              <input type="hidden" id="register_identity_type" value="thai">
+
+              <div id="thai-identity-box">
+                <label class="fw-bold">เลขบัตรประชาชน <span class="required-mark">*</span></label>
                 <div class="register-id-line">
-                  <input type="text" id="passport_number" class="form-control form-control-lg" autocomplete="off" maxlength="20" placeholder="เช่น AB1234567" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20)">
-                  <button id="scan-passport-btn" type="button" class="btn btn-primary" title="ใช้เครื่องสแกนเอกสารที่ต่อกับ Scan Bridge (ไม่ใช่เครื่องอ่าน Smart Card)" onclick="scanIdDocument()">🖨️ สแกน Passport</button>
-                  <button id="camera-passport-btn" type="button" class="btn btn-outline-primary" onclick="openPassportCamera()">📷 อ่าน Passport ด้วยกล้อง</button>
+                  <input type="text" id="id_card" class="form-control form-control-lg" autofocus inputmode="numeric" autocomplete="off">
+                  <button id="read-thai-id-btn" class="btn btn-outline-primary" type="button" onclick="readThaiIdCard()">💳 อ่านบัตร</button>
+                  <button id="scan-id-doc-btn" title="ใช้กับบัตรประชาชนหรือใบขับขี่ตัวจริงบน Scanner" type="button" class="btn btn-primary" onclick="scanIdDocument()">🖨️ สแกนบัตร/ใบขับขี่</button>
+                  <button id="phone-screen-id-btn" title="เปิด USB Camera เพื่ออ่านบัตรประชาชน ใบขับขี่ หรือภาพบัตรบนหน้าจอโทรศัพท์" type="button" class="btn btn-outline-primary" onclick="openThaiDocumentCamera()">📷 อ่านด้วยกล้อง</button>
                 </div>
               </div>
-              <div class="col-lg-5">
-                <label class="fw-bold">สัญชาติ / Nationality <span class="required-mark">*</span></label>
-                <input type="text" id="nationality" class="form-control form-control-lg" maxlength="60" placeholder="เช่น THA / USA / CHN">
-              </div>
-            </div>
-          </div>
 
-          <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
-          <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
-          <div id="card-reader-status" class="register-status-line text-muted"></div>
-          <div id="doc-ocr-status" class="register-status-line"></div>
-          <div id="passport-mrz-preview" class="passport-mrz-preview foreign-only mt-2" style="display:none"></div>
-          <div id="preload-register-status" class="register-status-line text-muted"></div>
-          <div id="donor-history-panel" hidden></div>
-        </div>
-
-        <div class="col-lg-4 col-md-6">
-          <label>Donor ID <span class="text-secondary fw-semibold">(ถ้าไม่มี เว้นว่าง)</span></label>
-          <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
-          
-        </div>
-
-        <div class="col-lg-4 col-md-6">
-          <label>ครั้งล่าสุดที่เคยบริจาค <span class="text-secondary fw-semibold">(ไม่เคย = 0)</span></label>
-          <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="0" max="9998" value="0" data-user-edited="0" oninput="this.dataset.userEdited='1'; updateDonationNoHint();">
-          <div id="donation-no-hint" class="register-status-line text-muted"></div>
-        </div>
-
-        <div class="col-lg-4 col-md-5">
-          <div class="donor-photo-card">
-            <div class="donor-photo-head">
-              <div>
-                <div class="donor-photo-title">📷 รูปผู้บริจาค <span class="text-muted fw-normal">(ไม่บังคับ)</span></div>
-                
-              </div>
-              
-            </div>
-            <div id="donor-photo-box" class="donor-photo-preview-box" onclick="openCurrentDonorPhotoZoom()" role="button" title="กดเพื่อขยายรูป">
-              <img id="donor-photo-preview" class="donor-photo-preview photo-zoomable" alt="รูปผู้บริจาค">
-              <div class="donor-photo-placeholder">
-                <div style="font-size:2rem; line-height:1;">👤</div>
-                <div><strong>ยังไม่มีรูปผู้บริจาค</strong></div>
-                
-              </div>
-            </div>
-            <div class="donor-photo-actions">
-              <button type="button" class="btn btn-primary btn-sm" onclick="openCameraCapture('donor')">📷 เปิดกล้อง</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerDonorPhotoPicker()">🖼️ เลือกรูป</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้รูปนี้</button>
-              <input type="file" id="donor-photo-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
-            </div>
-            <div id="donor-photo-status" class="register-status-line text-muted"></div>
-          </div>
-        </div>
-
-        <div class="col-md-2">
-          <label>คำนำหน้า <span class="required-mark">*</span></label>
-          <input type="text" id="prefix" class="form-control" required>
-        </div>
-
-        <div class="col-md-5">
-          <label>ชื่อ <span class="required-mark">*</span></label>
-          <input type="text" id="fname" class="form-control" required>
-        </div>
-
-        <div class="col-md-5">
-          <label>นามสกุล <span class="required-mark">*</span></label>
-          <input type="text" id="lname" class="form-control" required>
-        </div>
-
-        <div class="col-md-6">
-          <label>วันเกิด (วว-ดด-ปปปป พ.ศ.) <span class="required-mark">*</span></label>
-          <input type="text" id="birth_date" class="form-control" required placeholder="เช่น 31-12-2530">
-        </div>
-
-        <div class="col-md-6">
-          <label>เพศ <span class="required-mark">*</span></label>
-          <select id="gender" class="form-select" required>
-            <option value="">-- เลือกเพศ --</option>
-            <option value="M">ชาย</option>
-            <option value="F">หญิง</option>
-          </select>
-        </div>
-
-        <div class="col-md-7">
-          <label>อาชีพ <span class="required-mark">*</span></label>
-          <select id="occupation_type" class="form-select" required onchange="toggleOccupationDetail(true)">
-            <option value="">-- เลือกอาชีพ --</option>
-            <option value="student">นักเรียน/นักศึกษา</option>
-            <option value="gov">ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ</option>
-            <option value="employee">พนักงานบริษัท/รับจ้าง</option>
-            <option value="religious">พระภิกษุ/สามเณร/นักบวช</option>
-            <option value="business">ธุรกิจส่วนตัว/ค้าขาย</option>
-            <option value="farmer">เกษตรกร</option>
-            <option value="rama">บุคลากรใน ร.พ.รามาฯ</option>
-            <option value="other">อื่นๆ</option>
-          </select>
-        </div>
-        <div class="col-md-5" id="occupation-detail-box" style="display:none;">
-          <label id="occupation-detail-label">รายละเอียดอาชีพ <span class="required-mark">*</span></label>
-          <input type="text" id="occupation_detail" class="form-control" maxlength="100" oninput="this.dataset.userEdited='1';">
-        </div>
-
-        <div class="col-md-8">
-          <label>ที่อยู่ (เลขที่ / หมู่ / ซอย / ถนน) <span class="required-mark">*</span></label>
-          <input type="text" id="address" class="form-control" required placeholder="เช่น 2005/488 หมู่ที่ 8">
-        </div>
-        <div class="col-md-4">
-          <label>เบอร์โทร <span class="required-mark">*</span></label>
-          <input type="text" id="phone" class="form-control" required inputmode="numeric" maxlength="12" placeholder="เช่น 085-871-7556" oninput="formatPhoneInput(this)">
-        </div>
-        <div class="col-md-3">
-          <label>ตำบล / แขวง <span id="subdistrict-required" class="required-mark">*</span></label>
-          <input type="text" id="subdistrict" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา เช่น บางโฉลง">
-          <div class="geo-field-hint">พิมพ์บางส่วนแล้วเลือกรายการ ระบบเติม อำเภอ/จังหวัด/รหัสไปรษณีย์ให้</div>
-        </div>
-        <div class="col-md-3">
-          <label>อำเภอ / เขต <span id="district-required" class="required-mark">*</span></label>
-          <input type="text" id="district" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา เช่น บางพลี">
-        </div>
-        <div class="col-md-3">
-          <label>จังหวัด <span id="province-required" class="required-mark">*</span></label>
-          <input type="text" id="province" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา เช่น สมุทรปราการ">
-        </div>
-        <div class="col-md-3">
-          <label>รหัสไปรษณีย์ <span id="postal-required" class="required-mark">*</span></label>
-          <input type="text" id="postal_code" class="form-control" required autocomplete="off" inputmode="numeric" maxlength="5" placeholder="เลือกพื้นที่แล้วระบบเติม หรือพิมพ์รหัสเพื่อค้นหา">
-          <div id="postal-auto-status" class="small mt-1 text-muted" style="min-height:1.2em"></div>
-        </div>
-        <div class="col-md-12">
-          
-        </div>
-
-        <div class="col-md-12 mt-2">
-          <div id="registration-error-summary" class="registration-error-summary alert alert-danger py-2 mb-0"></div>
-        </div>
-
-        <div class="col-md-12 mt-3">
-          <div class="register-final-actions">
-            <button id="save-btn" class="btn btn-success register-final-btn" onclick="saveData()">✅ บันทึกและพิมพ์ใบสมัคร A4</button>
-            <button class="btn btn-danger register-final-btn" onclick="clearForm()">🧹 ล้างข้อมูล</button>
-          </div>
-        </div>
+              <div id="passport-identity-box" class="foreign-only">
+                <div class="row g-2 align-items-end">
+                  <div class="col-lg-7">
+                    <label class="fw-bold">Passport Number <span class="required-mark">*</span></label>
+                    <div class="register-id-line">
+                      <input type="text" id="passport_number" class="form-control form-control-lg" autocomplete="off" maxlength="20" placeholder="เช่น AB1234567" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20)">
+                      <button id="scan-passport-btn" type="button" class="btn btn-primary" title="ใช้เครื่องสแกนเอกสารที่ต่อกับ Scan Bridge (ไม่ใช่เครื่องอ่าน Smart Card)" onclick="scanIdDocument()">🖨️ สแกน Passport</button>
+                      <button id="camera-passport-btn" type="button" class="btn btn-outline-primary" onclick="openPassportCamera()">📷 อ่าน Passport ด้วยกล้อง</button>
+                    </div>
+                  </div>
+                  <div class="col-lg-5">
+                    <label class="fw-bold">สัญชาติ / Nationality <span class="required-mark">*</span></label>
+                    <input type="text" id="nationality" class="form-control form-control-lg" maxlength="60" placeholder="เช่น THA / USA / CHN">
+                  </div>
                 </div>
+              </div>
+
+              <input type="file" id="id-doc-gallery-input" accept="image/*" hidden onchange="handleIdDocFile(event)">
+              <input type="file" id="donor-photo-gallery-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
+              <div id="card-reader-status" class="register-status-line text-muted"></div>
+              <div id="doc-ocr-status" class="register-status-line"></div>
+              <div id="passport-mrz-preview" class="passport-mrz-preview foreign-only mt-2" style="display:none"></div>
+              <div id="preload-register-status" class="register-status-line text-muted"></div>
+              <div id="donor-history-panel" hidden></div>
+            </div>
+
+            <div class="register-section-card">
+              <div class="register-section-title"><span class="register-step-no">2</span><span>ประวัติและรูปผู้บริจาค</span></div>
+              <div class="row g-3 align-items-start">
+                <div class="col-lg-4 col-md-6">
+                  <label>Donor ID <span class="text-secondary fw-semibold">(ถ้าไม่มี เว้นว่าง)</span></label>
+                  <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="กรอกตามบัตร Donor / AI-LIS ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                  <label>ครั้งล่าสุดที่เคยบริจาค <span class="text-secondary fw-semibold">(ไม่เคย = 0)</span></label>
+                  <input type="number" id="donation_no" class="form-control" inputmode="numeric" min="0" max="9998" value="0" data-user-edited="0" oninput="this.dataset.userEdited='1'; updateDonationNoHint();">
+                  <div id="donation-no-hint" class="register-status-line text-muted"></div>
+                </div>
+
+                <div class="col-lg-4 col-md-12">
+                  <div class="donor-photo-card">
+                    <div class="donor-photo-head">
+                      <div class="donor-photo-title">📷 รูปผู้บริจาค <span class="text-muted fw-normal">(ไม่บังคับ)</span></div>
+                    </div>
+                    <div id="donor-photo-box" class="donor-photo-preview-box" onclick="openCurrentDonorPhotoZoom()" role="button" title="กดเพื่อขยายรูป">
+                      <img id="donor-photo-preview" class="donor-photo-preview photo-zoomable" alt="รูปผู้บริจาค">
+                      <div class="donor-photo-placeholder">
+                        <div style="font-size:2rem; line-height:1;">👤</div>
+                        <div><strong>ยังไม่มีรูป</strong></div>
+                      </div>
+                    </div>
+                    <div class="donor-photo-actions">
+                      <button type="button" class="btn btn-primary btn-sm" onclick="openCameraCapture('donor')">📷 ถ่ายรูป</button>
+                      <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerDonorPhotoPicker()">🖼️ เลือกรูป</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearDonorPhoto(true)">🗑️ ไม่ใช้</button>
+                      <input type="file" id="donor-photo-input" accept="image/*" hidden onchange="handleDonorPhotoFile(event)">
+                    </div>
+                    <div id="donor-photo-status" class="register-status-line text-muted"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="register-section-card">
+              <div class="register-section-title"><span class="register-step-no">3</span><span>ข้อมูลผู้บริจาค</span></div>
+              <div class="row g-3">
+                <div class="col-md-2">
+                  <label>คำนำหน้า <span class="required-mark">*</span></label>
+                  <input type="text" id="prefix" class="form-control" required>
+                </div>
+                <div class="col-md-5">
+                  <label>ชื่อ <span class="required-mark">*</span></label>
+                  <input type="text" id="fname" class="form-control" required>
+                </div>
+                <div class="col-md-5">
+                  <label>นามสกุล <span class="required-mark">*</span></label>
+                  <input type="text" id="lname" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                  <label>วันเกิด (วว-ดด-ปปปป พ.ศ.) <span class="required-mark">*</span></label>
+                  <input type="text" id="birth_date" class="form-control" required placeholder="เช่น 31-12-2530">
+                </div>
+                <div class="col-md-6">
+                  <label>เพศ <span class="required-mark">*</span></label>
+                  <select id="gender" class="form-select" required>
+                    <option value="">-- เลือกเพศ --</option>
+                    <option value="M">ชาย</option>
+                    <option value="F">หญิง</option>
+                  </select>
+                </div>
+                <div class="col-md-7">
+                  <label>อาชีพ <span class="required-mark">*</span></label>
+                  <select id="occupation_type" class="form-select" required onchange="toggleOccupationDetail(true)">
+                    <option value="">-- เลือกอาชีพ --</option>
+                    <option value="student">นักเรียน/นักศึกษา</option>
+                    <option value="gov">ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ</option>
+                    <option value="employee">พนักงานบริษัท/รับจ้าง</option>
+                    <option value="religious">พระภิกษุ/สามเณร/นักบวช</option>
+                    <option value="business">ธุรกิจส่วนตัว/ค้าขาย</option>
+                    <option value="farmer">เกษตรกร</option>
+                    <option value="rama">บุคลากรใน ร.พ.รามาฯ</option>
+                    <option value="other">อื่นๆ</option>
+                  </select>
+                </div>
+                <div class="col-md-5" id="occupation-detail-box" style="display:none;">
+                  <label id="occupation-detail-label">รายละเอียดอาชีพ <span class="required-mark">*</span></label>
+                  <input type="text" id="occupation_detail" class="form-control" maxlength="100" oninput="this.dataset.userEdited='1';">
+                </div>
+              </div>
+            </div>
+
+            <div class="register-section-card">
+              <div class="register-section-title"><span class="register-step-no">4</span><span>ติดต่อและที่อยู่</span></div>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label>ที่อยู่ (เลขที่ / หมู่ / ซอย / ถนน) <span class="required-mark">*</span></label>
+                  <input type="text" id="address" class="form-control" required placeholder="เช่น 2005/488 หมู่ที่ 8">
+                </div>
+                <div class="col-md-4">
+                  <label>เบอร์โทร <span class="required-mark">*</span></label>
+                  <input type="text" id="phone" class="form-control" required inputmode="numeric" maxlength="12" placeholder="เช่น 085-871-7556" oninput="formatPhoneInput(this)">
+                </div>
+                <div class="col-md-3">
+                  <label>ตำบล / แขวง <span id="subdistrict-required" class="required-mark">*</span></label>
+                  <input type="text" id="subdistrict" class="form-control" required autocomplete="off" placeholder="พิมพ์ค้นหา เช่น บางโฉลง">
+                  <div class="geo-field-hint">เลือกแล้วระบบช่วยเติมพื้นที่ต่อให้</div>
+                </div>
+                <div class="col-md-3">
+                  <label>อำเภอ / เขต <span id="district-required" class="required-mark">*</span></label>
+                  <input type="text" id="district" class="form-control" required autocomplete="off" placeholder="พิมพ์ค้นหา เช่น บางพลี">
+                </div>
+                <div class="col-md-3">
+                  <label>จังหวัด <span id="province-required" class="required-mark">*</span></label>
+                  <input type="text" id="province" class="form-control" required autocomplete="off" placeholder="พิมพ์ค้นหา เช่น สมุทรปราการ">
+                </div>
+                <div class="col-md-3">
+                  <label>รหัสไปรษณีย์ <span id="postal-required" class="required-mark">*</span></label>
+                  <input type="text" id="postal_code" class="form-control" required autocomplete="off" inputmode="numeric" maxlength="5" placeholder="เลือกพื้นที่หรือพิมพ์รหัส">
+                  <div id="postal-auto-status" class="small mt-1 text-muted" style="min-height:1.2em"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="registration-error-summary" class="registration-error-summary alert alert-danger py-2 mt-3 mb-0"></div>
+
+            <div class="register-final-actions mt-3">
+              <button id="save-btn" class="btn btn-success register-final-btn" onclick="saveData()">✅ บันทึกและพิมพ์ใบสมัคร A4</button>
+              <button class="btn btn-danger register-final-btn" onclick="clearForm()">🧹 ล้างข้อมูล</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2828,21 +2916,30 @@
 </div>
 
 <div class="modal fade" id="advanceRegistrationModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
+        <div>
+          <h5 class="modal-title mb-0">📋 เลือกผู้บริจาคจากรายชื่อแจ้งล่วงหน้า</h5>
+          <div class="small text-muted mt-1">แตะ “มาวันนี้” แล้วไปยืนยันตัวตนที่หน้าลงทะเบียน</div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="advance-modal-search">
-          <div class="row g-2 align-items-center">
-            <div class="col-md-8"><input id="advance-modal-query" class="form-control" placeholder="ค้นชื่อ / รหัสพนักงาน / เบอร์โทร / เลขบัตร" oninput="renderAdvanceRegistrationModalList()"></div>
-            <div class="col-md-4"><input id="advance-modal-date" type="date" class="form-control" onchange="loadAdvanceModalData()"></div>
+        <div class="advance-modal-toolbar">
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <input id="advance-modal-query" class="form-control flex-grow-1" placeholder="🔎 พิมพ์ชื่อ / รหัสพนักงาน / เบอร์โทร" oninput="renderAdvanceRegistrationModalList()">
+            <input id="advance-modal-date" type="date" class="form-control advance-date-compact" onchange="loadAdvanceModalData()">
           </div>
+          <div class="advance-filter-row" role="group" aria-label="กรองรายชื่อแจ้งล่วงหน้า">
+            <button type="button" class="advance-filter-btn active" data-advance-filter="waiting" onclick="setAdvanceModalFilter('waiting',this)">รอวันจริง</button>
+            <button type="button" class="advance-filter-btn" data-advance-filter="check" onclick="setAdvanceModalFilter('check',this)">⚠ ต้องตรวจ</button>
+            <button type="button" class="advance-filter-btn" data-advance-filter="all" onclick="setAdvanceModalFilter('all',this)">ทั้งหมด</button>
+            <button type="button" class="advance-filter-btn" data-advance-filter="registered" onclick="setAdvanceModalFilter('registered',this)">ลงทะเบียนแล้ว</button>
+          </div>
+          <div id="advance-modal-status" class="advance-modal-summary"></div>
         </div>
-        <div id="advance-modal-status" class="small text-muted mb-2"></div>
-        <div id="advance-modal-list"></div>
+        <div id="advance-modal-list" class="advance-modal-list-clean"></div>
       </div>
     </div>
   </div>
@@ -3051,7 +3148,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.65 - Safe Re-screen History");
+    console.log("CNMI Blood Donation v15.6.66 - Clean Registration + Advance List");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -8497,7 +8594,7 @@ async function refreshRegisterEventLocation(){
   try{const r=await window.cnmiSupabaseApi.getOutreachEvent(date);if(r?.unitName){box.className='alert alert-success py-2 mb-3';box.innerHTML='<strong>📍 สถานที่ออกหน่วยวันนี้:</strong> '+escapeHtml(r.unitName);}else{box.className='alert alert-danger py-2 mb-3';box.innerHTML='<strong>⚠ ยังไม่ได้ตั้งสถานที่ออกหน่วยวันนี้</strong> — กรุณาให้ Admin ตั้งที่เมนู เตรียมออกหน่วย ก่อนบันทึก DN';}}catch(err){box.className='alert alert-warning py-2 mb-3';box.textContent='ตรวจสถานที่ออกหน่วยไม่สำเร็จ: '+(err.message||err);}
 }
 
-const advanceRegistrationUiState={rows:[],modalRows:[]};
+const advanceRegistrationUiState={rows:[],modalRows:[],modalFilter:'waiting'};
 function normalizeAdvanceHeader(v){return String(v??'').trim().toLowerCase().replace(/[\s_\-./()]+/g,'').replace(/[?:：]/g,'');}
 function advanceCellText(v){if(v===null||v===undefined)return'';if(v instanceof Date&&!Number.isNaN(v.getTime()))return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${v.getFullYear()+543}`;if(typeof v==='number'&&Number.isFinite(v))return String(v).replace(/\.0+$/,'');return String(v).trim();}
 function splitAdvanceThaiName(full=''){
@@ -8631,13 +8728,108 @@ function updateAdvanceRegisterBanner(row){
   box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${escapeHtml([row.prefix,row.fname,row.lname].filter(Boolean).join(' '))} · ครั้งเดิมที่แจ้ง <strong>${last}</strong></div><div class="mt-1">${identity}</div><div class="small mt-1">${source}</div>`;
 }
 window.updateAdvanceRegisterBanner=updateAdvanceRegisterBanner;
-async function openAdvanceRegistrationModal(){const date=document.getElementById('advance-modal-date');if(date)date.value=getLocalDateInputValue();document.getElementById('advance-modal-query')&&(document.getElementById('advance-modal-query').value='');await loadAdvanceModalData();bootstrap.Modal.getOrCreateInstance(document.getElementById('advanceRegistrationModal')).show();}
+async function openAdvanceRegistrationModal(){
+  advanceRegistrationUiState.modalFilter='waiting';
+  document.querySelectorAll('[data-advance-filter]').forEach(b=>b.classList.toggle('active',b.dataset.advanceFilter==='waiting'));
+  const date=document.getElementById('advance-modal-date');
+  if(date)date.value=getLocalDateInputValue();
+  const q=document.getElementById('advance-modal-query');
+  if(q)q.value='';
+  const modalEl=document.getElementById('advanceRegistrationModal');
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  await loadAdvanceModalData();
+  setTimeout(()=>document.getElementById('advance-modal-query')?.focus(),180);
+}
 window.openAdvanceRegistrationModal=openAdvanceRegistrationModal;
-async function loadAdvanceModalData(){const date=document.getElementById('advance-modal-date')?.value||getLocalDateInputValue(),st=document.getElementById('advance-modal-status');if(st)st.textContent='กำลังโหลด...';try{advanceRegistrationUiState.modalRows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));if(st)st.textContent=`${advanceRegistrationUiState.modalRows.length} รายชื่อ · เลือกเฉพาะคนที่มาหน้างานจริง`;renderAdvanceRegistrationModalList();}catch(err){if(st)st.textContent='โหลดไม่สำเร็จ: '+(err.message||err);}}
+
+function setAdvanceModalFilter(filter,btn){
+  advanceRegistrationUiState.modalFilter=filter||'waiting';
+  document.querySelectorAll('[data-advance-filter]').forEach(b=>b.classList.toggle('active',b===btn));
+  renderAdvanceRegistrationModalList();
+}
+window.setAdvanceModalFilter=setAdvanceModalFilter;
+
+async function loadAdvanceModalData(){
+  const date=document.getElementById('advance-modal-date')?.value||getLocalDateInputValue();
+  const st=document.getElementById('advance-modal-status');
+  if(st)st.textContent='กำลังโหลดรายชื่อ...';
+  try{
+    advanceRegistrationUiState.modalRows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
+    renderAdvanceRegistrationModalList();
+  }catch(err){
+    if(st)st.textContent='โหลดไม่สำเร็จ: '+(err.message||err);
+  }
+}
 window.loadAdvanceModalData=loadAdvanceModalData;
-function renderAdvanceRegistrationModalList(){const q=normalizeAdvanceSearch(document.getElementById('advance-modal-query')?.value),box=document.getElementById('advance-modal-list');if(!box)return;const rows=(advanceRegistrationUiState.modalRows||[]).filter(r=>!q||normalizeAdvanceSearch([r.prefix,r.fname,r.lname,r.employeeId,r.phone,r.idCard,r.donorId,r.department].join(' ')).includes(q));if(!rows.length){box.innerHTML='<div class="alert alert-light border">ไม่พบรายชื่อ</div>';return;}box.innerHTML=rows.map(r=>{const s=advanceRowSource(r),last=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';return `<div class="advance-modal-row d-flex justify-content-between align-items-center gap-3 flex-wrap"><div><div class="fw-bold">${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</div><div class="small text-muted">${r.employeeId?'รหัส '+escapeHtml(r.employeeId)+' · ':''}${escapeHtml(r.department||'')}${r.phone?' · '+escapeHtml(r.phone):''}</div><div class="small mt-1">ครั้งเดิม: <strong>${last}</strong>${r.donorId?' · Donor ID ที่แจ้ง '+escapeHtml(r.donorId):''} · <span class="advance-source-badge ${s.key}">${s.label}</span></div>${r.note?`<div class="small text-danger mt-1">⚠ ${escapeHtml(r.note)}</div>`:''}</div><button type="button" class="btn btn-primary btn-sm" onclick="selectAdvanceRegistration('${r.id}')" ${r.status==='registered'?'disabled':''}>${r.status==='registered'?'ลงทะเบียนแล้ว':'เลือกคนนี้'}</button></div>`;}).join('');}
+
+function advanceRowNeedsCheck(r){
+  const id=String(r?.idCard||'').replace(/\D/g,'');
+  return !!(r?.note || (r?.identityType!=='passport' && id && !isValidThaiNationalId(id)));
+}
+
+function renderAdvanceRegistrationModalList(){
+  const q=normalizeAdvanceSearch(document.getElementById('advance-modal-query')?.value);
+  const box=document.getElementById('advance-modal-list');
+  const st=document.getElementById('advance-modal-status');
+  if(!box)return;
+
+  const all=(advanceRegistrationUiState.modalRows||[]);
+  const waiting=all.filter(r=>r.status!=='registered');
+  const registered=all.filter(r=>r.status==='registered');
+  const needCheck=waiting.filter(advanceRowNeedsCheck);
+  const filter=advanceRegistrationUiState.modalFilter||'waiting';
+
+  let rows=all.filter(r=>{
+    if(filter==='waiting' && r.status==='registered')return false;
+    if(filter==='registered' && r.status!=='registered')return false;
+    if(filter==='check' && !advanceRowNeedsCheck(r))return false;
+    if(!q)return true;
+    return normalizeAdvanceSearch([r.prefix,r.fname,r.lname,r.employeeId,r.phone,r.idCard,r.donorId,r.department].join(' ')).includes(q);
+  });
+
+  rows=rows.slice().sort((a,b)=>{
+    if((a.status==='registered')!==(b.status==='registered')) return a.status==='registered'?1:-1;
+    if(advanceRowNeedsCheck(a)!==advanceRowNeedsCheck(b)) return advanceRowNeedsCheck(a)?-1:1;
+    return [a.prefix,a.fname,a.lname].filter(Boolean).join(' ').localeCompare([b.prefix,b.fname,b.lname].filter(Boolean).join(' '),'th');
+  });
+
+  if(st)st.textContent=`ทั้งหมด ${all.length} · รอวันจริง ${waiting.length} · ต้องตรวจ ${needCheck.length} · ลงทะเบียนแล้ว ${registered.length}`;
+
+  if(!rows.length){
+    box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';
+    return;
+  }
+
+  box.innerHTML=rows.map(r=>{
+    const last=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
+    const isRegistered=r.status==='registered';
+    const needsCheck=advanceRowNeedsCheck(r);
+    const person=[r.prefix,r.fname,r.lname].filter(Boolean).join(' ')||'ไม่ระบุชื่อ';
+    const meta=[
+      r.department?escapeHtml(r.department):'',
+      r.employeeId?'รหัส '+escapeHtml(r.employeeId):'',
+      r.phone?escapeHtml(r.phone):'',
+      `ครั้งเดิม ${last}`
+    ].filter(Boolean);
+    const warn=r.note?escapeHtml(r.note):(needsCheck?'เลขบัตรจากรายชื่อควรตรวจยืนยันหน้างาน':'');
+    return `<div class="advance-person-card ${needsCheck?'needs-check':''} ${isRegistered?'is-registered':''}">
+      <div>
+        <div class="advance-person-name">${escapeHtml(person)}</div>
+        <div class="advance-person-meta">${meta.map(x=>`<span>${x}</span>`).join('')}</div>
+        ${warn?`<div class="advance-person-alert">⚠ ${warn}</div>`:''}
+      </div>
+      <div class="advance-person-action">
+        <button type="button" class="btn ${isRegistered?'btn-outline-secondary':'btn-primary'} btn-sm"
+          onclick="selectAdvanceRegistration('${r.id}')" ${isRegistered?'disabled':''}>
+          ${isRegistered?'✓ ลงทะเบียนแล้ว':'✓ มาวันนี้'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
 window.renderAdvanceRegistrationModalList=renderAdvanceRegistrationModalList;
-async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');setDocOcrStatus('รายชื่อแจ้งล่วงหน้ายังไม่ยืนยันตัวตน · อ่านบัตร/สแกนบัตร หรือกดยืนยันเลขก่อนค้น AI-LIS','warn');}
+
+async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');setDocOcrStatus('เลือกจากรายชื่อแล้ว · กรุณายืนยันตัวตนจากบัตรจริงก่อนบันทึก','warn');}
 window.selectAdvanceRegistration=selectAdvanceRegistration;
 
 async function loadOutreachEvent(){
