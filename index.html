@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.73"></script>
+  <script src="js/supabase-backend.js?v=15.6.74"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1858,6 +1858,8 @@
 }
 .advance-person-card.needs-check{ border-color:#efc36a; background:#fffaf0; }
 .advance-person-card.is-registered{ opacity:.67; background:#f7f8fa; }
+.advance-person-card.is-no-show{ opacity:.78; background:#f7f8fa; border-style:dashed; }
+.advance-source-badge.noshow{background:#f1f3f5;color:#5f6b76}.advance-summary-chip.noshow{color:#5f6b76;background:#f7f8fa;border-color:#d7dee7}
 .advance-person-name{ font-size:1rem; font-weight:850; color:#1c3551; }
 .advance-person-meta{ display:flex; gap:6px 12px; flex-wrap:wrap; margin-top:3px; color:#607287; font-size:.82rem; }
 .advance-person-alert{ margin-top:5px; font-size:.8rem; color:#a04b16; font-weight:700; }
@@ -1868,6 +1870,7 @@
 /* v15.6.69: simpler advance-list instructions + Donor Reaction */
 /* v15.6.70: Red Cross history is linked by name + surname + DOB; reported citizen ID is reference only */
 /* v15.6.73: AI-LIS style DN = YYMMDD + 4-digit running */
+/* v15.6.74: auto-link advance list attendance + no-show */
 /* v15.6.72: LIS Assistant v2.15 Safe Back + Resume */
 /* v15.6.71: alphanumeric DN + structured FM-CNBBC-063 donor reaction */
 .register-quick-start{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f7fbff;border:1px solid #cfe2ff;border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:.88rem;color:#35536f}
@@ -3185,7 +3188,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="modal-header">
         <div>
           <h5 class="modal-title mb-0">📋 เลือกผู้บริจาคจากรายชื่อแจ้งล่วงหน้า</h5>
-          <div class="small text-muted mt-1">แตะ “มาวันนี้” แล้วไปยืนยันตัวตนที่หน้าลงทะเบียน</div>
+          <div class="small text-muted mt-1">แตะ “มาวันนี้” แล้วไปยืนยันตัวตน · ถ้าไม่มาให้กด “ไม่มา” เพื่อตัดออกจากคิวรอ</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -3200,6 +3203,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <button type="button" class="advance-filter-btn" data-advance-filter="check" onclick="setAdvanceModalFilter('check',this)">⚠ ต้องตรวจ</button>
             <button type="button" class="advance-filter-btn" data-advance-filter="all" onclick="setAdvanceModalFilter('all',this)">ทั้งหมด</button>
             <button type="button" class="advance-filter-btn" data-advance-filter="registered" onclick="setAdvanceModalFilter('registered',this)">ลงทะเบียนแล้ว</button>
+            <button type="button" class="advance-filter-btn" data-advance-filter="noshow" onclick="setAdvanceModalFilter('noshow',this)">ไม่มา</button>
           </div>
           <div id="advance-modal-status" class="advance-modal-summary"></div>
         </div>
@@ -3412,7 +3416,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.73 - AI-LIS DN YYMMDD + 4-digit running");
+    console.log("CNMI Blood Donation v15.6.74 - Advance attendance auto-link + No-show");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6662,7 +6666,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.73"></script>
+  <script src="js/supabase-history.js?v=15.6.74"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -9071,6 +9075,7 @@ function normalizeAdvanceSearch(v){return String(v||'').toLowerCase().replace(/\
 function advanceRedCrossStatus(r){
   if(!r)return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:''};
   if(r.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว',message:''};
+  if(r.status==='cancelled')return {key:'noshow',label:'ไม่มา',message:''};
   const note=String(r.note||'').trim();
   const hasDonorId=!!String(r.donorId||'').trim();
   const hasCount=Number.isInteger(Number(r.lastDonationNo))&&Number(r.lastDonationNo)>=0;
@@ -9094,6 +9099,7 @@ async function classifyAdvanceRows(rows){
 }
 function advanceRowSource(r){
   if(r?.status==='registered')return {key:'done',label:'✓ มาจริงแล้ว'};
+  if(r?.status==='cancelled')return {key:'noshow',label:'ไม่มา'};
   const rc=advanceRedCrossStatus(r);
   return rc;
 }
@@ -9101,10 +9107,10 @@ function setAdvancePrepareFilter(filter){advanceRegistrationUiState.prepareFilte
 window.setAdvancePrepareFilter=setAdvancePrepareFilter;
 function renderAdvancePrepareList(){
   const rows=advanceRegistrationUiState.rows,box=document.getElementById('prereg-list'),sum=document.getElementById('prereg-summary');if(!box||!sum)return;
-  const counts={redcross:0,review:0,nohistory:0,done:0};rows.forEach(r=>{const k=advanceRowSource(r).key;if(k in counts)counts[k]++;});
+  const counts={redcross:0,review:0,nohistory:0,done:0,noshow:0};rows.forEach(r=>{const k=advanceRowSource(r).key;if(k in counts)counts[k]++;});
   const f=advanceRegistrationUiState.prepareFilter||'all';
   const chip=(key,cls,label,count)=>`<button type="button" class="advance-summary-chip ${cls||''} ${f===key?'active':''}" onclick="setAdvancePrepareFilter('${key}')">${label} ${count}</button>`;
-  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('redcross','match','✓ พร้อมใช้ประวัติกาชาด',counts.redcross)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nohistory','nomatch','— ไม่พบประวัติกาชาด',counts.nohistory)+chip('done','done','มาจริงแล้ว',counts.done);
+  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('redcross','match','✓ พร้อมใช้ประวัติกาชาด',counts.redcross)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nohistory','nomatch','— ไม่พบประวัติกาชาด',counts.nohistory)+chip('done','done','มาจริงแล้ว',counts.done)+chip('noshow','noshow','ไม่มา',counts.noshow);
   if(!rows.length){box.innerHTML='<div class="alert alert-light border mb-0">ยังไม่มีรายชื่อแจ้งล่วงหน้าของวันที่นี้</div>';return;}
   const visible=f==='all'?rows:rows.filter(r=>advanceRowSource(r).key===f);
   if(!visible.length){box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';return;}
@@ -9121,6 +9127,7 @@ async function loadAdvanceRegistrations(){
   const date=document.getElementById('prereg-event-date')?.value||getLocalDateInputValue();const box=document.getElementById('prereg-list');const st=document.getElementById('prereg-import-status');
   if(box)box.innerHTML='<div class="small text-primary fw-bold">กำลังโหลดรายชื่อและจัดกลุ่มข้อมูลกาชาด...</div>';
   try{
+    try{await window.cnmiSupabaseApi.reconcileAdvanceRegistrations?.(date);}catch(e){console.warn('advance reconcile skipped',e);}
     advanceRegistrationUiState.rows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvancePrepareList();
     if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='จัดกลุ่มแล้ว · ประวัติกาชาดผูกด้วยชื่อ+นามสกุล+วันเกิด · เลขประชาชนกาชาดเป็นข้อมูลอ้างอิงเท่านั้น';}
@@ -9190,6 +9197,7 @@ async function loadAdvanceModalData(){
   const st=document.getElementById('advance-modal-status');
   if(st)st.textContent='กำลังโหลดรายชื่อและข้อมูลกาชาด...';
   try{
+    try{await window.cnmiSupabaseApi.reconcileAdvanceRegistrations?.(date);}catch(e){console.warn('advance reconcile skipped',e);}
     advanceRegistrationUiState.modalRows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvanceRegistrationModalList();
   }catch(err){
@@ -9210,26 +9218,29 @@ function renderAdvanceRegistrationModalList(){
   if(!box)return;
 
   const all=(advanceRegistrationUiState.modalRows||[]);
-  const waiting=all.filter(r=>r.status!=='registered');
+  const waiting=all.filter(r=>r.status==='planned');
   const registered=all.filter(r=>r.status==='registered');
+  const noShow=all.filter(r=>r.status==='cancelled');
   const needCheck=waiting.filter(advanceRowNeedsCheck);
   const filter=advanceRegistrationUiState.modalFilter||'waiting';
 
   let rows=all.filter(r=>{
-    if(filter==='waiting' && r.status==='registered')return false;
+    if(filter==='waiting' && r.status!=='planned')return false;
     if(filter==='registered' && r.status!=='registered')return false;
-    if(filter==='check' && !advanceRowNeedsCheck(r))return false;
+    if(filter==='noshow' && r.status!=='cancelled')return false;
+    if(filter==='check' && !(r.status==='planned' && advanceRowNeedsCheck(r)))return false;
     if(!q)return true;
     return normalizeAdvanceSearch([r.prefix,r.fname,r.lname,r.employeeId,r.phone,r.idCard,r.donorId,r.department].join(' ')).includes(q);
   });
 
   rows=rows.slice().sort((a,b)=>{
-    if((a.status==='registered')!==(b.status==='registered')) return a.status==='registered'?1:-1;
+    const rank=x=>x.status==='planned'?0:x.status==='registered'?1:2;
+    if(rank(a)!==rank(b))return rank(a)-rank(b);
     if(advanceRowNeedsCheck(a)!==advanceRowNeedsCheck(b)) return advanceRowNeedsCheck(a)?-1:1;
     return [a.prefix,a.fname,a.lname].filter(Boolean).join(' ').localeCompare([b.prefix,b.fname,b.lname].filter(Boolean).join(' '),'th');
   });
 
-  if(st)st.textContent=`ทั้งหมด ${all.length} · รอวันจริง ${waiting.length} · ต้องตรวจ ${needCheck.length} · ลงทะเบียนแล้ว ${registered.length}`;
+  if(st)st.textContent=`ทั้งหมด ${all.length} · รอวันจริง ${waiting.length} · ต้องตรวจ ${needCheck.length} · ลงทะเบียนแล้ว ${registered.length} · ไม่มา ${noShow.length}`;
 
   if(!rows.length){
     box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';
@@ -9239,7 +9250,8 @@ function renderAdvanceRegistrationModalList(){
   box.innerHTML=rows.map(r=>{
     const last=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
     const isRegistered=r.status==='registered';
-    const needsCheck=advanceRowNeedsCheck(r);
+    const isNoShow=r.status==='cancelled';
+    const needsCheck=!isNoShow&&advanceRowNeedsCheck(r);
     const person=[r.prefix,r.fname,r.lname].filter(Boolean).join(' ')||'ไม่ระบุชื่อ';
     const meta=[
       r.department?escapeHtml(r.department):'',
@@ -9255,18 +9267,17 @@ function renderAdvanceRegistrationModalList(){
     const pm=rc.key==='redcross'
       ? `<div class="advance-prematch-line match">✓ กาชาด: ${rcDetail||'มีข้อมูลประวัติ'} · ผูกด้วยชื่อ+นามสกุล+วันเกิด · วันจริงอ่านบัตรจริง</div>`
       : (rc.key==='nohistory'?`<div class="advance-prematch-line nomatch">— ไม่พบประวัติกาชาด · วันจริงอ่านบัตรแล้วระบบค้น AI-LIS ตามปกติ</div>`:(needsCheck?`<div class="advance-prematch-line review">⚠ ${warn}</div>`:''));
-    return `<div class="advance-person-card ${needsCheck?'needs-check':''} ${isRegistered?'is-registered':''}">
+    return `<div class="advance-person-card ${needsCheck?'needs-check':''} ${isRegistered?'is-registered':''} ${isNoShow?'is-no-show':''}">
       <div>
         <div class="advance-person-name">${escapeHtml(person)}</div>
         <div class="advance-person-meta">${meta.map(x=>`<span>${x}</span>`).join('')}</div>
         ${pm}
         ${r.note&&!needsCheck?`<div class="small text-muted mt-1">หมายเหตุจากไฟล์: ${escapeHtml(r.note)}</div>`:''}
       </div>
-      <div class="advance-person-action">
-        <button type="button" class="btn ${isRegistered?'btn-outline-secondary':'btn-primary'} btn-sm"
-          onclick="selectAdvanceRegistration('${r.id}')" ${isRegistered?'disabled':''}>
-          ${isRegistered?'✓ ลงทะเบียนแล้ว':'✓ มาวันนี้'}
-        </button>
+      <div class="advance-person-action d-flex gap-2 flex-wrap justify-content-end">
+        ${isRegistered?`<button type="button" class="btn btn-outline-secondary btn-sm" disabled>✓ ลงทะเบียนแล้ว</button>`:
+          isNoShow?`<button type="button" class="btn btn-outline-secondary btn-sm" onclick="restoreAdvanceWaiting('${r.id}')">↩ กลับเป็นรอ</button>`:
+          `<button type="button" class="btn btn-primary btn-sm" onclick="selectAdvanceRegistration('${r.id}')">✓ มาวันนี้</button><button type="button" class="btn btn-outline-secondary btn-sm" onclick="markAdvanceNoShow('${r.id}')">ไม่มา</button>`}
       </div>
     </div>`;
   }).join('');
@@ -9275,6 +9286,25 @@ window.renderAdvanceRegistrationModalList=renderAdvanceRegistrationModalList;
 
 async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');setDocOcrStatus('เลือกจากรายชื่อแล้ว · ดูชื่อและวันเกิดบนบัตรว่าตรงกัน แล้วกดอ่านบัตรจริง','warn');}
 window.selectAdvanceRegistration=selectAdvanceRegistration;
+
+async function setAdvanceAttendanceStatus(id,status){
+  try{
+    await window.cnmiSupabaseApi.setAdvanceRegistrationAttendance?.({id,status});
+    await loadAdvanceModalData();
+    const prepDate=document.getElementById('prereg-event-date')?.value;
+    const modalDate=document.getElementById('advance-modal-date')?.value;
+    if(prepDate&&prepDate===modalDate)await loadAdvanceRegistrations();
+  }catch(err){console.error(err);alert('เปลี่ยนสถานะรายชื่อไม่สำเร็จ\n'+(err.message||err));}
+}
+async function markAdvanceNoShow(id){
+  const row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);
+  const name=[row?.prefix,row?.fname,row?.lname].filter(Boolean).join(' ');
+  if(!confirm(`ทำเครื่องหมาย “ไม่มา”${name?'\n'+name:''} ใช่ไหม?\nข้อมูลจะยังอยู่และกดย้อนกลับได้`))return;
+  await setAdvanceAttendanceStatus(id,'cancelled');
+}
+async function restoreAdvanceWaiting(id){await setAdvanceAttendanceStatus(id,'planned');}
+window.markAdvanceNoShow=markAdvanceNoShow;
+window.restoreAdvanceWaiting=restoreAdvanceWaiting;
 
 async function loadOutreachEvent(){
   if(!isRealAdmin() || getAdminViewMode()==='staff')return;
