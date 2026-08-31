@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.57"></script>
+  <script src="js/supabase-backend.js?v=15.6.65"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -2431,7 +2431,7 @@
       <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยใช้ Card Reader, Scanner หรือ “อ่านด้วยกล้อง” สำหรับบัตรประชาชน/ใบขับขี่/ภาพบัตรบนหน้าจอโทรศัพท์ → ระบบช่วยเติมข้อมูลจากบัตรและค่อยค้นประวัติหลังยืนยันตัวตน · ต่างชาติใช้ Scanner หรือ USB Camera อ่าน Passport/MRZ หรือกรอก Passport Number → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
       <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
-      <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน</p></div>
+      <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน · หากครั้งแรกไม่ผ่านและกลับมาตรวจใหม่ ให้กด “ตรวจซ้ำ” ระบบจะเก็บผลเดิมไว้</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
       <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงเลือกชื่อจากรายชื่อ → อ่านบัตร/สแกนหรือยืนยันเลขจริงก่อน → จึงค้น AI-LIS → ถ้าพบใช้ AI-LIS เป็นหลัก ถ้าไม่พบจึงใช้จำนวนครั้งที่หน่วยแจ้ง → ส่งออก LIS CSV</p></div>
@@ -2816,6 +2816,10 @@
             <div class="col-md-4"><div class="detail-label">เวลาบันทึกผลคัดกรอง</div><div id="vd-save-time" class="detail-value"></div></div>
             <div class="col-md-4"><div class="detail-label">แหล่งจำนวนครั้งเดิม</div><div id="vd-history-source" class="detail-value"></div></div>
             <div class="col-md-4"><div class="detail-label">สรุปเหตุผล</div><div id="vd-reason" class="detail-value"></div></div>
+            <div class="col-md-12" id="vd-screening-history-wrap" style="display:none;">
+              <div class="detail-label mt-2">ประวัติการคัดกรอง / ตรวจซ้ำ</div>
+              <div id="vd-screening-history" class="border rounded p-2 bg-light"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -2856,6 +2860,13 @@
         <div class="modal-body">
           <input type="hidden" id="modal-dn">
           <input type="hidden" id="modal-row-json">
+          <input type="hidden" id="modal-rescreen-mode" value="0">
+
+          <div id="rescreen-banner" class="alert alert-warning border-warning mb-3" style="display:none;">
+            <div class="fw-bold">🔄 ตรวจซ้ำ / Re-screen</div>
+            <div id="rescreen-banner-detail" class="small mt-1"></div>
+            <div class="small mt-1">กรอกค่าที่วัดใหม่เท่านั้น · ระบบจะเก็บผลเดิมไว้ในประวัติ ไม่เขียนทับหลักฐานเดิม</div>
+          </div>
 
           <div class="row g-3">
             <div class="col-md-6">
@@ -3040,7 +3051,7 @@
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.64 - Auto Retry Camera OCR");
+    console.log("CNMI Blood Donation v15.6.65 - Safe Re-screen History");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3238,7 +3249,8 @@ function filterByCurrentTableMode(data) {
     }
 
     if (mode === "screening") {
-      return isPending && !hasBag;
+      // v15.6.65: ผู้ที่ไม่ผ่านสามารถกลับมาตรวจซ้ำได้ โดยยังไม่ควรมีเลขถุง
+      return (isPending || status === "ไม่ผ่าน") && !hasBag;
     }
 
     if (mode === "sticker") {
@@ -3281,12 +3293,14 @@ function buildActionButtons(row, rowStr, disableScreen) {
       const safeId = String(row.idCard||'').replace(/'/g,'');
       return `<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); selectHistoryDonor('${safeId}')">🔎 ดูประวัติ / ลงทะเบียน</button>`;
     }
+    const canRescreen = String(row?.status||'').trim() === 'ไม่ผ่าน' && !rowHasBag(row);
     return `
-      <div class="btn-group">
+      <div class="d-flex gap-1 flex-wrap">
         <button class="btn btn-sm action-btn action-btn-edit"
           onclick="event.stopPropagation(); prepareEdit('${rowStr}')">
           ✏️ แก้ไขข้อมูล
         </button>
+        ${canRescreen ? `<button class="btn btn-sm btn-outline-warning fw-bold" onclick="event.stopPropagation(); openScreening('${rowStr}', true)">🔄 ตรวจซ้ำ</button>` : ''}
       </div>
     `;
   }
@@ -3303,11 +3317,13 @@ function buildActionButtons(row, rowStr, disableScreen) {
   }
 
   if (mode === "screening") {
+    const isFailed = String(row?.status||'').trim() === 'ไม่ผ่าน';
+    const disabled = isFailed ? (rowHasBag(row) ? 'disabled' : '') : (disableScreen || '');
     return `
       <div class="btn-group">
-        <button class="btn btn-sm action-btn action-btn-screen"
-          onclick="event.stopPropagation(); openScreening('${rowStr}')" ${disableScreen || ""}>
-          🩺 ลงผลคัดกรอง
+        <button class="btn btn-sm ${isFailed ? 'btn-outline-warning fw-bold' : 'action-btn action-btn-screen'}"
+          onclick="event.stopPropagation(); openScreening('${rowStr}', ${isFailed ? 'true' : 'false'})" ${disabled}>
+          ${isFailed ? '🔄 ตรวจซ้ำ' : '🩺 ลงผลคัดกรอง'}
         </button>
       </div>
     `;
@@ -5162,7 +5178,10 @@ async function adminResetPassword(username, fullName) {
             <td><div class="d-flex justify-content-center">${thumbHtml}</div></td>
             <td>${idLabel}</td>
             <td><strong>${escapeHtml(row.name || "ไม่พบชื่อ")}</strong><br><small class="text-muted">${detailLine}</small></td>
-            <td><span class="badge ${badgeClass}" style="min-width:80px">${statusText}</span></td>
+            <td>
+              <span class="badge ${badgeClass}" style="min-width:80px">${statusText}</span>
+              ${Number(row.screeningAttemptCount||0) > 1 ? `<div class="small text-warning-emphasis mt-1 fw-bold">🔄 ตรวจซ้ำ ${Number(row.screeningAttemptCount||0)-1} ครั้ง</div>` : ''}
+            </td>
             <td>
               <strong class="text-primary">${escapeHtml(row.bag || "-")}</strong>
               ${row.bagLot ? `<div class="small text-muted mt-1">Lot: ${escapeHtml(row.bagLot)}</div>` : ``}
@@ -5281,6 +5300,12 @@ async function adminResetPassword(username, fullName) {
       document.getElementById("reason-box").style.display = "none";
       const bagReminder = document.getElementById("bag-note-reminder");
       if (bagReminder) bagReminder.style.display = "none";
+      const rescreenMode = document.getElementById("modal-rescreen-mode");
+      if (rescreenMode) rescreenMode.value = "0";
+      const rescreenBanner = document.getElementById("rescreen-banner");
+      if (rescreenBanner) rescreenBanner.style.display = "none";
+      const rescreenDetail = document.getElementById("rescreen-banner-detail");
+      if (rescreenDetail) rescreenDetail.textContent = "";
     }
 
     function hasPriorSuccessfulDonation(profile, currentDn = "") {
@@ -5324,16 +5349,39 @@ async function adminResetPassword(username, fullName) {
       typeEl.value = suggested;
     }
 
-    function openScreening(encodedRow) {
+    function openScreening(encodedRow, isRescreen = false) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
       resetScreeningForm();
 
+      const failed = String(row?.status || '').trim() === 'ไม่ผ่าน';
+      const hasBag = rowHasBag(row);
+      if (isRescreen && (!failed || hasBag)) {
+        showSuccessPopup('ตรวจซ้ำไม่ได้', hasBag ? 'Visit นี้มีเลขถุงแล้ว จึงไม่อนุญาตให้ Re-screen' : 'Re-screen ได้เฉพาะผู้บริจาคที่ผลล่าสุดเป็น “ไม่ผ่าน”');
+        return;
+      }
+
       document.getElementById("modal-dn").value = row.dn || "";
       document.getElementById("modal-name").innerText = row.name || "";
       document.getElementById("modal-row-json").value = encodedRow || "";
+      document.getElementById("modal-rescreen-mode").value = isRescreen ? '1' : '0';
 
-      // เลือก New / Recent อัตโนมัติจากประวัติจริง แต่เจ้าหน้าที่ยังแก้ได้
+      if (isRescreen) {
+        const banner = document.getElementById('rescreen-banner');
+        const detail = document.getElementById('rescreen-banner-detail');
+        if (banner) banner.style.display = 'block';
+        if (detail) {
+          const parts = [
+            `ผลเดิม: ไม่ผ่าน`,
+            row.bp ? `BP ${row.bp}` : '',
+            row.pulse ? `Pulse ${row.pulse}` : '',
+            row.reason ? `เหตุผล: ${row.reason}` : ''
+          ].filter(Boolean);
+          detail.textContent = parts.join(' · ');
+        }
+      }
+
+      // เลือก New / Recent อัตโนมัติจากประวัติจริง แต่ค่าตรวจรอบใหม่ไม่ดึงของเดิมมาใส่
       autoSelectDonorType(row);
 
       new bootstrap.Modal(document.getElementById("screeningModal")).show();
@@ -5354,7 +5402,8 @@ async function adminResetPassword(username, fullName) {
         hb: document.getElementById("sc-hb").value,
         bagLot: (document.getElementById("sc-bag-lot")?.value || "").trim(),
         status: document.getElementById("sc-status").value,
-        reason: document.getElementById("sc-reason").value
+        reason: document.getElementById("sc-reason").value,
+        rescreen: document.getElementById("modal-rescreen-mode")?.value === '1'
       };
 
       sData.bp = formatBpValue(sData.bp);
@@ -5420,6 +5469,10 @@ async function adminResetPassword(username, fullName) {
           return;
         }
 
+        if (res.historyWarning) {
+          showSuccessPopup('บันทึกผลแล้ว', 'ผลคัดกรองถูกบันทึกแล้ว แต่ประวัติการตรวจซ้ำมีคำเตือน: ' + res.historyWarning);
+        }
+
         bootstrap.Modal.getInstance(document.getElementById("screeningModal")).hide();
         resetScreeningForm();
 
@@ -5434,7 +5487,8 @@ async function adminResetPassword(username, fullName) {
           c2: res.c2 || "",
           e1: res.e1 || "",
           e2: res.e2 || "",
-          status: sData.status || ""
+          status: sData.status || "",
+          screeningAttemptCount: Number(res.screeningAttemptCount || baseRow.screeningAttemptCount || 0)
         };
 
         if (sData.status === "ผ่าน") {
@@ -5466,6 +5520,33 @@ function getVisitFullAddress(row = {}) {
   return existing || '-';
 }
 
+    async function loadScreeningAttemptHistory(dn) {
+      const wrap = document.getElementById('vd-screening-history-wrap');
+      const box = document.getElementById('vd-screening-history');
+      if (!wrap || !box) return;
+      wrap.style.display = 'none';
+      box.innerHTML = '';
+      if (!dn) return;
+      try {
+        const res = await apiCall('getScreeningAttempts', { dn });
+        const attempts = Array.isArray(res?.attempts) ? res.attempts : [];
+        if (!attempts.length) return;
+        wrap.style.display = 'block';
+        box.innerHTML = attempts.map(a => {
+          const failReason = a.status === 'ไม่ผ่าน' && a.reason ? ` · เหตุผล: ${escapeHtml(a.reason)}` : '';
+          const who = a.fullName || a.username || '-';
+          return `<div class="py-2 ${a.attemptNo>1?'border-top':''}">
+            <strong>ครั้งที่ ${a.attemptNo}: ${escapeHtml(a.status||'-')}</strong>
+            · BP ${escapeHtml(a.bp||'-')} · Pulse ${escapeHtml(a.pulse||'-')} · Temp ${escapeHtml(a.temp||'-')} · Hb ${escapeHtml(a.hb||'-')}
+            ${failReason}
+            <div class="small text-muted mt-1">${escapeHtml(a.screenedAt||a.recordedAt||'-')} · ผู้บันทึก ${escapeHtml(who)}</div>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        console.warn('load screening attempt history failed', err);
+      }
+    }
+
     async function openVisitDetail(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
 
@@ -5488,6 +5569,7 @@ function getVisitFullAddress(row = {}) {
       document.getElementById("vd-address").innerText = getVisitFullAddress(row);
       document.getElementById("vd-save-time").innerText = row.saveTime || "-";
       await loadVisitDetailPhoto(row.identityType==='passport' ? (row.passportNumber||'') : (row.idCard||row.dbIdCard||''), row.identityType||'thai');
+      loadScreeningAttemptHistory(row.dn || '').catch(()=>{});
 
       let reasonEl = document.getElementById("vd-reason");
       let status = (row.status || "").trim();

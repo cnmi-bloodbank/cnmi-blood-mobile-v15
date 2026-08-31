@@ -49,9 +49,9 @@
   }
   async function visitsForDate(date){
     const sb=init();
-    const {data,error}=await sb.from('visits').select('dn,bag_number,bag_lot,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,c1,c2,e1,e2,location,source,donation_history_source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,address_line,subdistrict,district,province,postal_code,phone,occupation,legacy_identity,identity_type,passport_number,nationality,photo_data,photo_updated_at)').eq('visit_date',date).order('created_at',{ascending:false});
+    const {data,error}=await sb.from('visits').select('dn,bag_number,bag_lot,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,screening_attempt_count,c1,c2,e1,e2,location,source,donation_history_source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,address_line,subdistrict,district,province,postal_code,phone,occupation,legacy_identity,identity_type,passport_number,nationality,photo_data,photo_updated_at)').eq('visit_date',date).order('created_at',{ascending:false});
     if(error) throw error;
-    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim(),kind=String(d.identity_type||'').trim()||(String(r.id_card||'').startsWith('LEGACY:')?'legacy':'thai'),isPassport=kind==='passport';return {dn:r.dn,identityKey:r.id_card,idCard:isPassport?'':(kind==='thai'?r.id_card:(d.legacy_identity||r.id_card)),dbIdCard:r.id_card,identityType:kind,passportNumber:isPassport?(d.passport_number||d.legacy_identity||''):'',nationality:isPassport?(d.nationality||''):'',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'-',phone:d.phone||'-',occupation:d.occupation||'',photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||'',bag:r.bag_number||'-',bagLot:r.bag_lot||'',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),historySource:r.donation_history_source||'',donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
+    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim(),kind=String(d.identity_type||'').trim()||(String(r.id_card||'').startsWith('LEGACY:')?'legacy':'thai'),isPassport=kind==='passport';return {dn:r.dn,identityKey:r.id_card,idCard:isPassport?'':(kind==='thai'?r.id_card:(d.legacy_identity||r.id_card)),dbIdCard:r.id_card,identityType:kind,passportNumber:isPassport?(d.passport_number||d.legacy_identity||''):'',nationality:isPassport?(d.nationality||''):'',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'-',phone:d.phone||'-',occupation:d.occupation||'',photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||'',bag:r.bag_number||'-',bagLot:r.bag_lot||'',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),screeningAttemptCount:Number(r.screening_attempt_count||0),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),historySource:r.donation_history_source||'',donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
   }
   async function call(action, params={}){
     const sb=init(); const data=parse(params.data);
@@ -120,13 +120,53 @@
       }
       if(action==='saveScreeningResult'){
         const sc=data && Object.keys(data).length?data:parse(params.data);
+        const dn=String(params.dn||'').trim();
         const bagLot=sc.status==='ผ่าน'?String(sc.bagLot||'').trim():'';
+        const isRescreen=!!sc.rescreen;
         if(sc.status==='ผ่าน' && !bagLot) return {status:'error',message:'กรุณายิง Barcode Bag Lot ก่อนบันทึก'};
-        const {data:lotResult,error:lotError}=await sb.rpc('set_visit_bag_lot',{p_dn:params.dn,p_bag_lot:bagLot,p_user_agent:ua()});
+
+        // v15.6.65 requires the screening history migration before writing new results.
+        // Check first so a missing migration never causes a partial save.
+        const {error:historyReadyError}=await sb.from('screening_attempts').select('id').eq('dn',dn).limit(1);
+        if(historyReadyError) return {status:'error',message:'กรุณารัน SQL V15_6_65_RESCREEN_HISTORY.sql ก่อนใช้งานคัดกรอง/ตรวจซ้ำ'};
+
+        if(isRescreen){
+          const {data:current,error:currentError}=await sb.from('visits').select('screening_status,bag_number').eq('dn',dn).maybeSingle();
+          if(currentError) throw currentError;
+          if(!current) return {status:'error',message:'ไม่พบ Visit ของ DN นี้'};
+          if(String(current.bag_number||'').trim()) return {status:'error',message:'Visit นี้มีเลขถุงแล้ว จึงไม่อนุญาตให้ตรวจซ้ำ'};
+          if(String(current.screening_status||'').trim()!=='ไม่ผ่าน') return {status:'error',message:'ตรวจซ้ำได้เฉพาะผู้บริจาคที่ผลล่าสุดเป็น “ไม่ผ่าน”'};
+
+          // Existing failed visits created before v15.6.65 have no history row yet.
+          // Snapshot the current failed result before replacing the current status.
+          const {data:baseline,error:baselineError}=await sb.rpc('record_screening_attempt_v15665',{p_dn:dn,p_user_agent:ua()});
+          if(baselineError) throw baselineError;
+          if(baseline?.status==='error') return baseline;
+        }
+
+        const {data:lotResult,error:lotError}=await sb.rpc('set_visit_bag_lot',{p_dn:dn,p_bag_lot:bagLot,p_user_agent:ua()});
         if(lotError) throw lotError;
         if(lotResult?.status==='error') return lotResult;
-        const {data:r,error}=await sb.rpc('save_screening_result',{p_dn:params.dn,p_type:sc.type||'',p_group:sc.group||'',p_weight:sc.weight||'',p_bp:sc.bp||'',p_pulse:sc.pulse||'',p_temp:sc.temp||'',p_hb:sc.hb||'',p_status:sc.status||'',p_reason:sc.reason||'',p_user_agent:ua()}); if(error) throw error;
-        return {...(r||{}),bagLot};
+        const {data:r,error}=await sb.rpc('save_screening_result',{p_dn:dn,p_type:sc.type||'',p_group:sc.group||'',p_weight:sc.weight||'',p_bp:sc.bp||'',p_pulse:sc.pulse||'',p_temp:sc.temp||'',p_hb:sc.hb||'',p_status:sc.status||'',p_reason:sc.reason||'',p_user_agent:ua()}); if(error) throw error;
+
+        let attemptInfo=null,historyWarning='';
+        try{
+          const {data:a,error:attemptError}=await sb.rpc('record_screening_attempt_v15665',{p_dn:dn,p_user_agent:ua()});
+          if(attemptError) throw attemptError;
+          attemptInfo=a||null;
+          if(attemptInfo?.status==='error') historyWarning=attemptInfo.message||'บันทึกประวัติการคัดกรองไม่สำเร็จ';
+        }catch(historyErr){
+          console.warn('record screening attempt failed',historyErr);
+          historyWarning=historyErr?.message||String(historyErr);
+        }
+        return {...(r||{}),bagLot,screeningAttemptCount:Number(attemptInfo?.attemptCount||0),historyWarning};
+      }
+      if(action==='getScreeningAttempts'){
+        const dn=String(params.dn||data.dn||'').trim();
+        if(!dn) return {status:'success',attempts:[]};
+        const {data:rows,error}=await sb.from('screening_attempts').select('*').eq('dn',dn).order('attempt_no',{ascending:true});
+        if(error) throw error;
+        return {status:'success',attempts:(rows||[]).map(a=>({attemptNo:Number(a.attempt_no||0),type:a.donor_type||'',group:a.blood_group||'',weight:a.weight||'',bp:a.bp||'',pulse:a.pulse||'',temp:a.temp||'',hb:a.hb||'',status:a.status||'',reason:a.reason||'',bagNumber:a.bag_number||'',bagLot:a.bag_lot||'',screenedAt:thaiTime(a.screened_at),recordedAt:thaiTime(a.recorded_at),username:a.username||'',fullName:a.full_name||'',role:a.role||''}))};
       }
       if(action==='issueCertificateNumber'){
         const {data:r,error}=await sb.rpc('issue_certificate',{p_dn:data.dn,p_name:data.name,p_id_card:data.idCard||'',p_visit_date:data.visitDate,p_remark:data.remark||'',p_user_agent:ua()}); if(error) throw error; return r;
