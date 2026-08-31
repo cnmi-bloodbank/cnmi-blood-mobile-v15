@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.74"></script>
+  <script src="js/supabase-backend.js?v=15.6.75"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1931,6 +1931,14 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   .advance-date-compact{ max-width:none; }
 }
 
+
+/* v15.6.75: cleaner registration text + compact advance banner */
+#page-register .register-quick-start{font-size:.96rem;padding:9px 12px;gap:8px 10px}
+#page-register .advance-register-banner{font-size:.98rem;padding:10px 12px;line-height:1.45}
+#page-register .advance-register-banner .advance-main-line{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center}
+#page-register .advance-register-banner .advance-state-line{margin-top:5px;font-weight:800}
+#page-register .register-status-line{font-size:.9rem}
+#prereg-import-status{font-size:.9rem}
 </style>
 </head>
 
@@ -2179,11 +2187,10 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             </div>
 
             <div class="register-quick-start">
-              <strong>เริ่มลงทะเบียน:</strong>
-              <span>มีชื่อแจ้งล่วงหน้า → <b>เลือกชื่อ</b> → ดูชื่อ+วันเกิดบนบัตร → อ่านบัตร</span>
+              <strong>วิธีใช้:</strong>
+              <span>มีรายชื่อ → <b>เลือกชื่อ → อ่านบัตร</b></span>
               <span class="register-quick-divider">|</span>
-              <span>Walk-in / ไม่มีชื่อ → <b>อ่านบัตรได้เลย</b></span>
-              <span class="text-muted">จากนั้นตรวจข้อมูล → บันทึก</span>
+              <span>Walk-in → <b>อ่านบัตร</b></span>
             </div>
 
             <div id="advance-register-banner" class="advance-register-banner"></div>
@@ -2240,8 +2247,8 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="register-section-title"><span class="register-step-no">2</span><span>ประวัติและรูปผู้บริจาค</span></div>
               <div class="row g-3 align-items-start">
                 <div class="col-lg-4 col-md-6">
-                  <label>Donor ID <span class="text-secondary fw-semibold">(AI-LIS CNMI · ถ้าไม่มี เว้นว่าง)</span></label>
-                  <input type="text" id="donor_id" class="form-control" inputmode="numeric" autocomplete="off" placeholder="Donor ID จาก AI-LIS ของเรา ถ้ามี" oninput="this.dataset.userEdited='1'; this.value=this.value.replace(/[^0-9]/g,'').slice(0,16);">
+                  <label>Donor ID <span class="text-secondary fw-semibold">(ถ้ามี)</span></label>
+                  <input type="text" id="donor_id" class="form-control" autocomplete="off" maxlength="30" placeholder="เช่น 100-61-40554" oninput="this.dataset.userEdited='1'; this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,30);">
                 </div>
 
                 <div class="col-lg-4 col-md-6">
@@ -2507,20 +2514,16 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
               <div>
                 <h5 class="fw-bold mb-1" style="color:#8a4b00;">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
-                <div class="small text-muted">Donor ID / จำนวนครั้งในไฟล์คือข้อมูลที่ตรวจจากระบบกาชาด · ใช้ ชื่อ + นามสกุล + วันเกิด ผูกประวัติกาชาด · เลขประชาชนจากกาชาดเป็นข้อมูลอ้างอิงเท่านั้น</div>
+                <div class="text-muted">นำเข้ารายชื่อที่เตรียมไว้ก่อนออกหน่วย</div>
               </div>
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAdvanceRegistrations()">🔄 ดูรายชื่อวันที่นี้</button>
             </div>
             <div class="row g-2 align-items-end mt-1">
               <div class="col-md-3"><label class="fw-bold">วันที่ออกหน่วย</label><input id="prereg-event-date" type="date" class="form-control" onchange="loadAdvanceRegistrations().catch(()=>{})"></div>
-              <div class="col-md-7"><label class="fw-bold">ไฟล์รายชื่อจากหน่วย</label><input id="prereg-file" type="file" class="form-control" accept=".xlsx,.xls"></div>
+              <div class="col-md-7"><label class="fw-bold">ไฟล์รายชื่อจากหน่วย</label><input id="prereg-file" type="file" class="form-control" accept=".xlsx,.xls,.csv"></div>
               <div class="col-md-2"><button id="prereg-import-btn" type="button" class="btn btn-warning w-100" onclick="importAdvanceRegistrationFile()">📥 นำเข้ารายชื่อ</button></div>
             </div>
-            <div id="prereg-import-status" class="small mt-2 text-muted">สลับ/เพิ่ม/ลดคอลัมน์ได้ ระบบหาแถวหัวตารางและจับคอลัมน์จากชื่อให้อัตโนมัติ</div>
-            <div class="advance-duty-guide">
-              <div class="advance-duty-box"><strong>ก่อนออกหน่วย</strong>1) นำเข้า Excel → 2) ดูเฉพาะ <b>⚠ ต้องตรวจ</b> (ชื่อ/นามสกุล/วันเกิดไม่ครบหรือข้อมูลกาชาดคลุมเครือ) → 3) ที่เหลือไม่ต้องแก้ทีละคน</div>
-              <div class="advance-duty-box"><strong>วันออกหน่วย</strong>มีชื่อในไฟล์: <b>เลือกชื่อ → ดูชื่อ+วันเกิดบนบัตร → อ่านบัตร</b> · เลขบัตรจริงใช้ค้น AI-LIS ของเรา · ไม่มีชื่อ/Walk-in: <b>อ่านบัตรได้เลย</b></div>
-            </div>
+            <div id="prereg-import-status" class="mt-2 text-muted">รองรับ Excel / CSV และหัวตารางไม่จำเป็นต้องอยู่แถวแรก</div>
             <div id="prereg-summary" class="advance-summary-grid"></div>
             <div id="prereg-list"></div>
           </div>
@@ -2539,7 +2542,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
           <div class="mt-4 p-3 rounded border" data-admin-only="true" style="background:#f8fff8;">
             <h5 class="fw-bold text-success mb-2">🗂️ นำเข้างานออกหน่วยเดิมจาก Blood Donation App <span class="badge text-bg-secondary">ทำครั้งเดียว</span></h5>
             <div class="small text-muted mb-2">เลือก Excel เดิมที่มี <strong>Donors + Visits</strong> · Import ซ้ำได้โดยไม่สร้าง Visit ซ้ำ</div>
-            <input id="legacy-workbook-file" type="file" class="form-control" accept=".xlsx,.xls">
+            <input id="legacy-workbook-file" type="file" class="form-control" accept=".xlsx,.xls,.csv">
             <div class="d-flex gap-2 mt-2 flex-wrap">
               <button id="legacy-import-btn" class="btn btn-success" onclick="importLegacyWorkbook()">นำเข้างานออกหน่วยเดิม</button>
             </div>
@@ -2584,7 +2587,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน · หากครั้งแรกไม่ผ่านและกลับมาตรวจใหม่ ให้กด “ตรวจซ้ำ” ระบบจะเก็บผลเดิมไว้</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">ก่อนออกหน่วย: นำเข้า Excel แล้วดูเฉพาะ ⚠ ต้องตรวจ โดยยึดชื่อ+นามสกุล+วันเกิด ไม่ใช้เลขประชาชนจากกาชาดเป็นตัวผูก · วันจริง: เลือกชื่อ → ดูชื่อ/วันเกิดบนบัตร → อ่านบัตรจริง → ระบบค้น AI-LIS ด้วยเลขบัตรจริง → ถ้าไม่พบจึงใช้จำนวนครั้งจากกาชาด</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">ก่อนออกหน่วย: นำเข้ารายชื่อและดูเฉพาะ ⚠ ต้องตรวจ · วันจริง: เลือกชื่อ → อ่านบัตร → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
@@ -3416,7 +3419,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.74 - Advance attendance auto-link + No-show");
+    console.log("CNMI Blood Donation v15.6.75 - Clean advance workflow + Donor ID/Birth fix");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -6666,7 +6669,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.74"></script>
+  <script src="js/supabase-history.js?v=15.6.75"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -8971,13 +8974,25 @@ function splitAdvanceThaiName(full=''){
   const parts=s.split(' ').filter(Boolean);return {prefix,fname:parts.shift()||'',lname:parts.join(' ')};
 }
 function parseAdvanceThaiDate(v){
-  if(v instanceof Date&&!Number.isNaN(v.getTime())){const y=v.getFullYear(),be=y>=2400?y:y+543;return `${String(v.getDate()).padStart(2,'0')}-${String(v.getMonth()+1).padStart(2,'0')}-${be}`;}
-  if(typeof v==='number'&&Number.isFinite(v)){const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000),y=d.getUTCFullYear(),be=y>=2400?y:y+543;return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${be}`;}
+  const fmt=(d,m,y)=>{let yy=Number(y);if(yy>0&&yy<2400)yy+=543;return `${String(Number(d)).padStart(2,'0')}-${String(Number(m)).padStart(2,'0')}-${yy}`;};
+  if(v instanceof Date&&!Number.isNaN(v.getTime())){const y=v.getFullYear(),be=y>=2400?y:y+543;return fmt(v.getDate(),v.getMonth()+1,be);}
+  if(typeof v==='number'&&Number.isFinite(v)){const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000),y=d.getUTCFullYear(),be=y>=2400?y:y+543;return fmt(d.getUTCDate(),d.getUTCMonth()+1,be);}
   const s=String(v||'').trim();if(!s||s==='-')return'';
-  let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${String(Number(m[1])).padStart(2,'0')}-${String(Number(m[2])).padStart(2,'0')}-${m[3]}`;
-  const months={มกราคม:1,กุมภาพันธ์:2,มีนาคม:3,เมษายน:4,พฤษภาคม:5,มิถุนายน:6,กรกฎาคม:7,สิงหาคม:8,กันยายน:9,ตุลาคม:10,พฤศจิกายน:11,ธันวาคม:12};
-  m=s.match(/(\d{1,2})\s+([^\s]+)\s+(\d{4})/);if(m&&months[m[2]])return `${String(Number(m[1])).padStart(2,'0')}-${String(months[m[2]]).padStart(2,'0')}-${m[3]}`;
+  let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m)return fmt(m[1],m[2],m[3]);
+  const months={มกราคม:1,มค:1,'ม.ค.':1,กุมภาพันธ์:2,กพ:2,'ก.พ.':2,มีนาคม:3,มีค:3,'มี.ค.':3,เมษายน:4,เมย:4,'เม.ย.':4,พฤษภาคม:5,พค:5,'พ.ค.':5,มิถุนายน:6,มิย:6,'มิ.ย.':6,กรกฎาคม:7,กค:7,'ก.ค.':7,สิงหาคม:8,สค:8,'ส.ค.':8,กันยายน:9,กย:9,'ก.ย.':9,ตุลาคม:10,ตค:10,'ต.ค.':10,พฤศจิกายน:11,พย:11,'พ.ย.':11,ธันวาคม:12,ธค:12,'ธ.ค.':12,jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
+  m=s.match(/(\d{1,2})\s+([^\s]+)\s+(\d{4})/i);if(m){const mk=String(m[2]).toLowerCase();if(months[mk])return fmt(m[1],months[mk],m[3]);}
   return s;
+}
+function normalizeAdvanceBirthDate(v){
+  const s=parseAdvanceThaiDate(v),m=String(s||'').match(/^(\d{2})-(\d{2})-(\d{4})$/);if(!m)return'';
+  const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]),nowBe=new Date().getFullYear()+543;
+  if(d<1||d>31||mo<1||mo>12||y<nowBe-100||y>nowBe-16)return'';
+  return `${String(d).padStart(2,'0')}-${String(mo).padStart(2,'0')}-${y}`;
+}
+function findAdvanceBirthFallback(row,ix){
+  const anchor=ix.fullName>=0?ix.fullName:(ix.fname>=0?ix.fname:0),c=[];
+  (row||[]).forEach((v,i)=>{const birth=normalizeAdvanceBirthDate(v);if(birth)c.push({i,birth,dist:Math.abs(i-(anchor+1))});});
+  c.sort((a,b)=>a.dist-b.dist||a.i-b.i);return c[0]?.birth||'';
 }
 function advanceHeaderMatchScore(header,aliases=[]){
   const h=normalizeAdvanceHeader(header);if(!h)return 0;let best=0;
@@ -8997,7 +9012,7 @@ const ADVANCE_HEADER_ALIASES={
   count:['จำนวนครั้งกาชาด','จำนวนครั้งที่บริจาค','จำนวนครั้งบริจาค','จำนวนครั้งเดิม','ครั้งที่เคยบริจาค','ครั้งเดิม','ครั้งที่','จำนวนครั้ง','donation count','donationcount'],
   last:['วันที่บริจาคล่าสุด','บริจาคล่าสุดเมื่อ','วันที่บริจาคครั้งล่าสุด','บริจาคล่าสุด','last donation date','lastdonationdate'],
   id:['เลขบัตรประชาชนจากกาชาด','เลขประชาชนจากกาชาด','เลขบัตรประชาชน','เลขประจำตัวประชาชน','เลขประชาชน','บัตรประชาชน','thai id','thaiid','citizen id','citizenid'],
-  birth:['วันเดือนปีเกิด','วัน/เดือน/ปีเกิด','ว/ด/ป เกิด','วดปเกิด','วันเกิด','date of birth','dateofbirth','dob'],
+  birth:['วันเดือนปีเกิด','วัน/เดือน/ปีเกิด','วัน เดือน ปีเกิด','ว/ด/ป เกิด','วดปเกิด','วันเกิด','birthdate','birth date','birthday','date of birth','dateofbirth','datebirth','dob'],
   note:['หมายเหตุ','ข้อมูลเพิ่มเติม','note','notes','remark','remarks'],
   passport:['passport number','passport no','passportnumber','passportno','เลขpassport','เลขพาสปอร์ต','พาสปอร์ต']
 };
@@ -9033,7 +9048,7 @@ function parseAdvanceWorkbookMatrix(matrix,fileName=''){
     const pass=ix.passport>=0?advanceCellText(r[ix.passport]).toUpperCase().replace(/[^A-Z0-9]/g,''):'';
     const countRaw=ix.count>=0?advanceCellText(r[ix.count]):'',count=/^\d+$/.test(countRaw)?Number(countRaw):null;
     const emp=ix.emp>=0?advanceCellText(r[ix.emp]):'',phone=ix.phone>=0?advanceCellText(r[ix.phone]).replace(/\s+/g,''):'';
-    const birth=ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'';
+    let birth=ix.birth>=0?normalizeAdvanceBirthDate(r[ix.birth]):'';if(!birth)birth=findAdvanceBirthFallback(r,ix);
     // v15.6.70: เลขประชาชนจากระบบกาชาดเป็นข้อมูลอ้างอิง ไม่ใช้เป็น key ผูกประวัติกาชาด
     // ใช้รหัสพนักงานก่อน ถ้าไม่มีจึงใช้ ชื่อ+นามสกุล+วันเกิด ซึ่งตรงกับวิธีค้นในระบบกาชาดจริง
     const personKey=`${normalizeAdvanceSearch(nm.fname)}|${normalizeAdvanceSearch(nm.lname)}|${normalizeAdvanceSearch(birth)}`;
@@ -9053,7 +9068,13 @@ async function importAdvanceRegistrationFile(){
   const date=document.getElementById('prereg-event-date')?.value||'',file=document.getElementById('prereg-file')?.files?.[0],st=document.getElementById('prereg-import-status'),btn=document.getElementById('prereg-import-btn');
   if(!date)return alert('กรุณาเลือกวันที่ออกหน่วย');if(!file)return alert('กรุณาเลือกไฟล์รายชื่อจากหน่วย');
   try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
-    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+    let wb;
+    if(/\.csv$/i.test(file.name||'')){
+      const buf=await file.arrayBuffer();let txt=new TextDecoder('utf-8').decode(buf).replace(/^\uFEFF/,'');
+      if(txt.includes('�')){try{txt=new TextDecoder('windows-874').decode(buf).replace(/^\uFEFF/,'');}catch{}}
+      wb=XLSX.read(txt,{type:'string',cellDates:true});
+    }else wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+    const ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
     const parsed=parseAdvanceWorkbookMatrix(matrix,file.name),rows=parsed.rows;
     const stablePersonKey=(x)=>String(x?.employeeId||'').trim()&&String(x.employeeId).trim()!=='-'
       ? `EMP:${normalizeAdvanceSearch(x.employeeId)}`
@@ -9065,7 +9086,7 @@ async function importAdvanceRegistrationFile(){
     }catch{}
     const importRows=rows.filter(x=>{const hit=registeredKeys.has(stablePersonKey(x));if(hit)skippedRegistered++;return !hit;});
     const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows:importRows,replacePlanned:true});
-    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||importRows.length)} รายการ${skippedRegistered?` · ข้ามผู้ที่ลงทะเบียนจริงแล้ว ${skippedRegistered} คน`:''} · พบหัวตารางแถว ${parsed.meta.headerRow} · ผูกข้อมูลกาชาดด้วยชื่อ+นามสกุล+วันเกิด · เลขประชาชนกาชาดเป็นข้อมูลอ้างอิงเท่านั้น · ยังไม่สร้าง DN/Visit/เพิ่มครั้ง`;st.title=parsed.meta.detected.join(' | ');}
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||importRows.length)} รายการ${skippedRegistered?` · ข้ามผู้ที่ลงทะเบียนแล้ว ${skippedRegistered} คน`:''} · พบหัวตารางแถว ${parsed.meta.headerRow}`;st.title=parsed.meta.detected.join(' | ');}
     await loadAdvanceRegistrations();
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='นำเข้าไม่สำเร็จ: '+(err.message||err);}alert('นำเข้ารายชื่อไม่สำเร็จ\n'+(err.message||err));}
   finally{if(btn){btn.disabled=false;btn.textContent='📥 นำเข้ารายชื่อ';}}
@@ -9115,10 +9136,10 @@ function renderAdvancePrepareList(){
   const visible=f==='all'?rows:rows.filter(r=>advanceRowSource(r).key===f);
   if(!visible.length){box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';return;}
   const fmtId=x=>/^\d{13}$/.test(String(x||''))?String(x).replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'):String(x||'');
-  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ตัวผูกประวัติกาชาด</th><th>ข้อมูลที่เช็กจากกาชาด</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
+  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ข้อมูลยืนยัน</th><th>ประวัติที่เตรียมไว้</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
     const st=advanceRowSource(r),reportedLast=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
     const person=[r.prefix,r.fname,r.lname].filter(Boolean).join(' ');
-    const identity=`<strong>${escapeHtml(person||'-')}</strong>${r.birth?`<div class="small">วันเกิด ${escapeHtml(r.birth)}</div>`:'<div class="small text-danger">⚠ ไม่มีวันเกิด</div>'}<div class="small text-muted">ใช้ชื่อ + นามสกุล + วันเกิด ยืนยันวันจริง</div>${r.idCard?`<div class="small text-secondary mt-1">เลขประชาชนในกาชาด ${escapeHtml(fmtId(r.idCard))} · อ้างอิงเท่านั้น</div>`:''}`;
+    const identity=`<strong>${escapeHtml(person||'-')}</strong>${r.birth?`<div class="small">วันเกิด ${escapeHtml(r.birth)}</div>`:'<div class="small text-danger">⚠ ไม่มีวันเกิดในรายการที่นำเข้า</div>'}`;
     const redCross=[r.donorId?`<strong>Donor ID กาชาด ${escapeHtml(r.donorId)}</strong>`:'',Number.isInteger(Number(r.lastDonationNo))?`<div class="small">เคยบริจาค ${reportedLast} ครั้ง${r.lastDonationDate?' · ล่าสุด '+escapeHtml(r.lastDonationDate):''}</div>`:''].filter(Boolean).join('') || '<span class="text-muted">ไม่พบ Donor ID/จำนวนครั้งในไฟล์</span>';
     return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml(person||'-')}</strong><div class="small text-muted">${escapeHtml(r.department||'')}</div></td><td>${identity}${r.note?`<div class="small text-warning-emphasis">${escapeHtml(r.note)}</div>`:''}</td><td>${redCross}</td><td><span class="advance-source-badge ${st.key==='redcross'?'match':st.key}">${st.label}</span>${st.message?`<div class="small text-muted mt-1">${escapeHtml(st.message)}</div>`:''}</td></tr>`;
   }).join('')}</tbody></table></div>`;
@@ -9130,7 +9151,7 @@ async function loadAdvanceRegistrations(){
     try{await window.cnmiSupabaseApi.reconcileAdvanceRegistrations?.(date);}catch(e){console.warn('advance reconcile skipped',e);}
     advanceRegistrationUiState.rows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvancePrepareList();
-    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='จัดกลุ่มแล้ว · ประวัติกาชาดผูกด้วยชื่อ+นามสกุล+วันเกิด · เลขประชาชนกาชาดเป็นข้อมูลอ้างอิงเท่านั้น';}
+    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='พร้อมใช้งาน · เลือกดู ⚠ ต้องตรวจ ได้จากตัวกรองด้านล่าง';}
     return advanceRegistrationUiState.rows;
   }catch(err){console.error(err);if(box)box.innerHTML=`<div class="alert alert-danger">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml(err.message||err)}</div>`;return[];}
 }
@@ -9139,36 +9160,25 @@ function updateAdvanceRegisterBanner(row){
   const box=document.getElementById('advance-register-banner');if(!box)return;
   if(!row){box.style.display='none';box.innerHTML='';return;}
   const check=window.cnmiPreload?.getAdvanceIdentityVerification?.()||{status:'pending',message:'',documentRead:false,canManualConfirm:false};
-  const reportedId=String(row.idCard||'').replace(/\D/g,'');
-  const formatted=x=>/^\d{13}$/.test(x)?x.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'):x;
-  const expectedName=[row.prefix,row.fname,row.lname].filter(Boolean).join(' ');
-  const expected=`<strong>${escapeHtml(expectedName||'-')}</strong>${row.birth?` · วันเกิด <strong>${escapeHtml(row.birth)}</strong>`:''}`;
-  let verifyLine='';
-  if(row.identityType==='passport'){
-    verifyLine=window.cnmiPreload?.isAdvanceIdentityVerified?.()?'<span class="text-success fw-bold">✅ ยืนยัน Passport จริงแล้ว</span>':'<span class="text-warning-emphasis fw-bold">⚠ รออ่าน Passport จริง</span>';
-  }else if(check.status==='verified'){
-    verifyLine=`<span class="text-success fw-bold">✅ ยืนยันชื่อ + นามสกุล + วันเกิดกับบัตรจริงแล้ว</span>${check.message?` <span class="small text-muted">${escapeHtml(check.message)}</span>`:''}`;
-  }else if(check.status==='mismatch'){
-    verifyLine=`<span class="text-danger fw-bold">⚠ ${escapeHtml(check.message||'ข้อมูลจากบัตรจริงไม่ตรงกับรายชื่อที่เลือก')}</span>`;
-    if(check.canManualConfirm)verifyLine+=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ตรวจด้วยตาแล้วตรง</button>`;
-    verifyLine+=` <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="window.cnmiPreload?.continueWithoutAdvanceRegistration?.()">ใช้เป็น Walk-in</button>`;
-  }else if(check.documentRead){
-    verifyLine=`<span class="text-warning-emphasis fw-bold">⚠ อ่านบัตรจริงแล้ว แต่ระบบยังยืนยันชื่อ/วันเกิดอัตโนมัติไม่ครบ</span>`;
-    if(check.canManualConfirm)verifyLine+=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ชื่อ+วันเกิดตรงกับบัตร</button>`;
-  }else{
-    verifyLine='<span class="text-warning-emphasis fw-bold">รออ่านบัตรจริงเพื่อยืนยันชื่อ + นามสกุล + วันเกิด</span>';
-  }
-  const rc=advanceRedCrossStatus(row),redCrossParts=[];
-  if(row.donorId)redCrossParts.push(`Donor ID กาชาด <strong>${escapeHtml(row.donorId)}</strong>`);
-  if(Number.isInteger(Number(row.lastDonationNo)))redCrossParts.push(`เคยบริจาค <strong>${Number(row.lastDonationNo)} ครั้ง</strong>`);
-  let source=`<span class="${rc.key==='review'?'text-danger':rc.key==='redcross'?'text-success':'text-muted'} fw-bold">${escapeHtml(rc.label)}</span>${redCrossParts.length?' · '+redCrossParts.join(' · '):''}`;
+  const name=[row.prefix,row.fname,row.lname].filter(Boolean).join(' ')||'-';
+  const parts=[`<strong>📋 ${escapeHtml(name)}</strong>`];
+  if(row.birth)parts.push(`วันเกิด ${escapeHtml(row.birth)}`);
+  if(row.donorId)parts.push(`Donor ID <strong>${escapeHtml(row.donorId)}</strong>`);
+  if(Number.isInteger(Number(row.lastDonationNo)))parts.push(`เดิม <strong>${Number(row.lastDonationNo)} ครั้ง</strong>`);
+  let state='',actions='';
   const histSource=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
-  if(histSource==='ai-lis')source+=`<div class="small text-success mt-1">✓ พบ AI-LIS ด้วยเลขบัตรจริง → ใช้ Donor ID/จำนวนครั้งจาก AI-LIS เป็นหลัก</div>`;
-  else if(histSource==='blood-mobile')source+=`<div class="small text-success mt-1">✓ พบ Blood Mobile เดิมด้วยเลขบัตรจริง → ใช้ประวัติของเราเป็นหลัก</div>`;
-  else if(window.cnmiPreload?.isAdvanceIdentityVerified?.()&&histSource==='advance-list')source+=`<div class="small text-warning-emphasis mt-1">ไม่พบ AI-LIS/Blood Mobile → ใช้จำนวนครั้งที่เช็กจากกาชาดเป็นฐาน</div>`;
-  else source+=`<div class="small text-muted mt-1">ประวัติกาชาดจะถูกใช้ต่อเมื่อชื่อ + นามสกุล + วันเกิดได้รับการยืนยันกับบัตรจริง</div>`;
+  if(check.status==='mismatch'){
+    state=`⚠ ${escapeHtml(check.message||'ข้อมูลจากบัตรไม่ตรงกับรายชื่อ')}`;
+    if(check.canManualConfirm)actions+=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ตรวจแล้วตรง</button>`;
+    actions+=` <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="window.cnmiPreload?.continueWithoutAdvanceRegistration?.()">ใช้เป็น Walk-in</button>`;
+  }else if(check.status==='verified'){
+    state=histSource==='ai-lis'?'✅ ยืนยันแล้ว · พบประวัติ AI-LIS':histSource==='blood-mobile'?'✅ ยืนยันแล้ว · พบประวัติ Blood Mobile':'✅ ยืนยันแล้ว';
+  }else if(check.documentRead){
+    state='⚠ อ่านบัตรแล้ว แต่ยังยืนยันชื่อ/วันเกิดไม่ครบ';
+    if(check.canManualConfirm)actions=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ตรวจแล้วตรง</button>`;
+  }else state='รออ่านบัตรจริง';
   box.style.display='block';
-  box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${expected}</div>${reportedId?`<div class="small text-secondary mt-1">เลขประชาชนที่บันทึกในกาชาด: ${escapeHtml(formatted(reportedId))} · <strong>อ้างอิงเท่านั้น ไม่ใช้ค้น AI-LIS</strong></div>`:''}<div class="mt-1">${verifyLine}</div><div class="small mt-1">${source}</div>`;
+  box.innerHTML=`<div class="advance-main-line">${parts.map((x,i)=>i?`<span>${x}</span>`:x).join('')}</div><div class="advance-state-line ${check.status==='mismatch'?'text-danger':check.status==='verified'?'text-success':'text-warning-emphasis'}">${state}${actions}</div>`;
 }
 window.updateAdvanceRegisterBanner=updateAdvanceRegisterBanner;
 async function openAdvanceRegistrationModal(){
