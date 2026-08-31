@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- CNMI Blood Mobile v15.6.25: Locked Person LIS workflow + Bag Lot -->
 <!-- CNMI Blood Mobile v15.6.13: required occupation + last donation input -->
 <html lang="th">
@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.65"></script>
+  <script src="js/supabase-backend.js?v=15.6.69"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1865,6 +1865,19 @@
 .advance-modal-summary{ font-size:.82rem; color:#66778a; margin-top:7px; }
 .advance-date-compact{ max-width:180px; }
 
+/* v15.6.69: simpler advance-list instructions + Donor Reaction */
+.register-quick-start{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f7fbff;border:1px solid #cfe2ff;border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:.88rem;color:#35536f}
+.register-quick-start strong{color:#174f91}.register-quick-divider{color:#9babbc;font-weight:900}
+.advance-duty-guide{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.advance-duty-box{border:1px solid #dbe5ef;border-radius:12px;background:#fff;padding:10px 12px;font-size:.86rem;color:#526579}
+.advance-duty-box strong{display:block;color:#174f91;margin-bottom:4px}
+.reaction-history-wrap{border:1px solid #f1c4c0;background:#fff8f7;border-radius:12px;padding:10px 12px}
+.reaction-history-item{padding:9px 0;border-top:1px solid #f0d8d5}.reaction-history-item:first-child{border-top:0;padding-top:0}
+.reaction-severity{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:.75rem;font-weight:800;background:#fff1f0;color:#b42318;border:1px solid #ffccc7}
+.reaction-severity.medium{background:#fff7e6;color:#a15c00;border-color:#ffd591}.reaction-severity.mild{background:#ecfdf5;color:#087f5b;border-color:#a7f3d0}
+.reaction-modal-summary{background:#f8fbff;border:1px solid #d7e6f7;border-radius:10px;padding:9px 11px;font-size:.88rem}
+@media(max-width:767px){.advance-duty-guide{grid-template-columns:1fr}.register-quick-start{align-items:flex-start}}
+
 /* v15.6.68: Red Cross advance-history workflow; AI-LIS lookup only after real identity verification */
 .advance-prep-flow{
   display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;
@@ -2145,6 +2158,14 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <button class="btn btn-primary" type="button" onclick="openAdvanceRegistrationModal()">📋 เลือกจากรายชื่อวันนี้</button>
                 <button class="btn btn-outline-primary" type="button" onclick="showPage('donor-search')">🔎 ค้นประวัติ</button>
               </div>
+            </div>
+
+            <div class="register-quick-start">
+              <strong>เริ่มลงทะเบียน:</strong>
+              <span>มีชื่อแจ้งล่วงหน้า → <b>เลือกจากรายชื่อวันนี้</b> → อ่านบัตร</span>
+              <span class="register-quick-divider">|</span>
+              <span>Walk-in / ไม่มีชื่อ → <b>อ่านบัตรได้เลย</b></span>
+              <span class="text-muted">จากนั้นตรวจข้อมูล → บันทึก</span>
             </div>
 
             <div id="advance-register-banner" class="advance-register-banner"></div>
@@ -2478,7 +2499,10 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="col-md-2"><button id="prereg-import-btn" type="button" class="btn btn-warning w-100" onclick="importAdvanceRegistrationFile()">📥 นำเข้ารายชื่อ</button></div>
             </div>
             <div id="prereg-import-status" class="small mt-2 text-muted">สลับ/เพิ่ม/ลดคอลัมน์ได้ ระบบหาแถวหัวตารางและจับคอลัมน์จากชื่อให้อัตโนมัติ</div>
-            <div class="advance-prep-flow"><strong>1 นำเข้า Excel</strong><span class="advance-prep-arrow">→</span><strong>2 ระบบจัดกลุ่มข้อมูลกาชาด</strong><span class="advance-prep-arrow">→</span><strong>3 ดูเฉพาะรายการ ⚠ ต้องตรวจ</strong><span class="text-muted">วันจริง: เลือกชื่อ → อ่านบัตร → ระบบค้น AI-LIS เอง</span></div>
+            <div class="advance-duty-guide">
+              <div class="advance-duty-box"><strong>ก่อนออกหน่วย</strong>1) นำเข้า Excel → 2) เปิดเฉพาะ <b>⚠ ต้องตรวจ</b> → 3) ถ้าไม่มีรายการผิดปกติ ถือว่าเตรียมเสร็จ ไม่ต้องเปิดแก้ทุกคน</div>
+              <div class="advance-duty-box"><strong>วันออกหน่วย</strong>มีชื่อในไฟล์: <b>เลือกชื่อ → มาวันนี้ → อ่านบัตร</b> · ไม่มีชื่อ/Walk-in: <b>อ่านบัตรได้เลย</b> · ระบบค้น AI-LIS เองหลังยืนยันบัตร</div>
+            </div>
             <div id="prereg-summary" class="advance-summary-grid"></div>
             <div id="prereg-list"></div>
           </div>
@@ -2538,11 +2562,11 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="guide-card"><div class="guide-title">🔎 ค้นหาผู้บริจาค</div><p class="guide-step">ค้นด้วยเลขบัตร, Passport Number, ชื่อ, Donor ID หรือข้อมูลที่มี แล้วตรวจ Note / Defer / Sero-NAT ก่อนรับลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">📝 ลงทะเบียนผู้บริจาค</div><p class="guide-step">เลือก คนไทย หรือ ต่างชาติ/Passport → คนไทยใช้ Card Reader, Scanner หรือ “อ่านด้วยกล้อง” สำหรับบัตรประชาชน/ใบขับขี่/ภาพบัตรบนหน้าจอโทรศัพท์ → ระบบช่วยเติมข้อมูลจากบัตรและค่อยค้นประวัติหลังยืนยันตัวตน · ต่างชาติใช้ Scanner หรือ USB Camera อ่าน Passport/MRZ หรือกรอก Passport Number → ตรวจข้อมูล → บันทึก</p></div>
       <div class="guide-card"><div class="guide-title">📄 พิมพ์ใบสมัคร</div><p class="guide-step">เลือกวันที่ → ค้นผู้บริจาค → กดพิมพ์ใบสมัคร A4</p></div>
-      <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด</p></div>
+      <div class="guide-card"><div class="guide-title">📋 รายชื่อผู้บริจาคตามวันที่</div><p class="guide-step">ดูสถานะ เลขถุง รูปผู้บริจาค และแตะแถวเพื่อดูรายละเอียดทั้งหมด · กด 🩹 Reaction เพื่อบันทึกอาการได้ทั้งวันปัจจุบันและย้อนหลัง</p></div>
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน · หากครั้งแรกไม่ผ่านและกลับมาตรวจใหม่ ให้กด “ตรวจซ้ำ” ระบบจะเก็บผลเดิมไว้</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">อัปเดตฐานกลาง 4 Reports → ถ้ามีรายชื่อจากหน่วยให้นำเข้า “รายชื่อผู้บริจาคแจ้งล่วงหน้า” → ตั้งสถานที่/เลขถุง → วันจริงเลือกชื่อจากรายชื่อ → อ่านบัตร/สแกนหรือยืนยันเลขจริง → ระบบค้น AI-LIS อัตโนมัติ → ถ้าพบใช้ AI-LIS เป็นหลัก ถ้าไม่พบจึงใช้จำนวนครั้งที่เช็กจากระบบกาชาด → ส่งออก LIS CSV</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">ก่อนออกหน่วย: นำเข้า Excel แล้วดูเฉพาะ ⚠ ต้องตรวจ ไม่ต้องแก้ทุกคน · วันจริง: คนที่มีชื่อแจ้งล่วงหน้าให้เลือก “มาวันนี้” ก่อนอ่านบัตร ส่วน Walk-in อ่านบัตรได้เลย → ระบบค้น AI-LIS อัตโนมัติ → ถ้าไม่พบจึงใช้จำนวนครั้งจากระบบกาชาด</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
@@ -2928,8 +2952,95 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="detail-label mt-2">ประวัติการคัดกรอง / ตรวจซ้ำ</div>
               <div id="vd-screening-history" class="border rounded p-2 bg-light"></div>
             </div>
+            <div class="col-md-12" id="vd-reaction-history-wrap" style="display:none;">
+              <div class="detail-label mt-2">⚠ ประวัติ Donor Reaction</div>
+              <div id="vd-reaction-history" class="reaction-history-wrap"></div>
+            </div>
+            <div class="col-md-12 d-flex justify-content-end">
+              <button type="button" class="btn btn-outline-danger fw-bold" onclick="openDonorReactionFromDetail()">🩹 บันทึก Donor Reaction</button>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="donorReactionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <div>
+          <h5 class="modal-title mb-0">🩹 บันทึก Donor Reaction</h5>
+          <div class="small text-muted">บันทึกได้ทั้งวันปัจจุบันและย้อนหลัง โดยไม่เปลี่ยนผลคัดกรองเดิม</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="reaction-row-json">
+        <div id="reaction-donor-summary" class="reaction-modal-summary mb-3"></div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="fw-bold">วันที่บริจาค</label>
+            <input id="reaction-donation-date" type="date" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold">วันที่เกิดอาการ <span class="required-mark">*</span></label>
+            <input id="reaction-date" type="date" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold">เวลาเกิดอาการ</label>
+            <input id="reaction-time" type="time" class="form-control">
+          </div>
+          <div class="col-md-8">
+            <label class="fw-bold">ชนิด Donor Reaction <span class="required-mark">*</span></label>
+            <select id="reaction-type" class="form-select">
+              <option value="">-- เลือกอาการ --</option>
+              <option>หน้ามืด / เวียนศีรษะ</option>
+              <option>เป็นลม (Syncope)</option>
+              <option>คลื่นไส้ / อาเจียน</option>
+              <option>บวมช้ำ / ก้อนเลือด (Hematoma)</option>
+              <option>เลือดออกหลังเจาะ</option>
+              <option>ปวดแขน / ชา / สงสัยเส้นประสาท</option>
+              <option>Citrate reaction</option>
+              <option>อื่นๆ</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="fw-bold">ระดับอาการ</label>
+            <select id="reaction-severity" class="form-select">
+              <option value="เล็กน้อย">เล็กน้อย</option>
+              <option value="ปานกลาง">ปานกลาง</option>
+              <option value="รุนแรง">รุนแรง</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold">รายละเอียดอาการ</label>
+            <textarea id="reaction-symptoms" class="form-control" rows="3" placeholder="เช่น เวียนศีรษะ ซีด เหงื่อออก..."></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold">การดูแล / การช่วยเหลือ</label>
+            <textarea id="reaction-action" class="form-control" rows="3" placeholder="บันทึกสิ่งที่ทำหน้างาน"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold">ผลหลังดูแล</label>
+            <input id="reaction-outcome" class="form-control" placeholder="เช่น อาการดีขึ้น / กลับบ้านได้">
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold">หมายเหตุ</label>
+            <input id="reaction-note" class="form-control" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)">
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input id="reaction-retrospective" class="form-check-input" type="checkbox">
+              <label class="form-check-label" for="reaction-retrospective">บันทึกย้อนหลัง</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button id="reaction-save-btn" type="button" class="btn btn-danger" onclick="saveDonorReaction()">💾 บันทึก Reaction</button>
       </div>
     </div>
   </div>
@@ -3168,7 +3279,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.68 - Red Cross Advance History");
+    console.log("CNMI Blood Donation v15.6.69 - Simple Advance Workflow + Donor Reaction");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3408,7 +3519,10 @@ function buildActionButtons(row, rowStr, disableScreen) {
   if (mode === "today") {
     if (row?.source === 'lis-import') {
       const safeId = String(row.idCard||'').replace(/'/g,'');
-      return `<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); selectHistoryDonor('${safeId}')">🔎 ดูประวัติ / ลงทะเบียน</button>`;
+      return `<div class="d-flex gap-1 flex-wrap">
+        <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); selectHistoryDonor('${safeId}')">🔎 ดูประวัติ / ลงทะเบียน</button>
+        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDonorReaction('${rowStr}')">🩹 Reaction</button>
+      </div>`;
     }
     const canRescreen = String(row?.status||'').trim() === 'ไม่ผ่าน' && !rowHasBag(row);
     return `
@@ -3418,6 +3532,7 @@ function buildActionButtons(row, rowStr, disableScreen) {
           ✏️ แก้ไขข้อมูล
         </button>
         ${canRescreen ? `<button class="btn btn-sm btn-outline-warning fw-bold" onclick="event.stopPropagation(); openScreening('${rowStr}', true)">🔄 ตรวจซ้ำ</button>` : ''}
+        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDonorReaction('${rowStr}')">🩹 Reaction</button>
       </div>
     `;
   }
@@ -5643,6 +5758,104 @@ function getVisitFullAddress(row = {}) {
   return existing || '-';
 }
 
+    let currentVisitDetailRow = null;
+
+    function reactionIdentityKey(row) {
+      return String(row?.identityKey || row?.dbIdCard || row?.idCard || '').trim();
+    }
+
+    function reactionSeverityClass(v) {
+      const x=String(v||'');
+      if(x==='เล็กน้อย') return 'mild';
+      if(x==='ปานกลาง') return 'medium';
+      return '';
+    }
+
+    function renderReactionHistoryRows(rows) {
+      if (!Array.isArray(rows) || !rows.length) return '<div class="text-muted">ยังไม่มีประวัติ Donor Reaction</div>';
+      return rows.map(r => {
+        const meta=[r.donationDate?`วันที่บริจาค ${escapeHtml(r.donationDate)}`:'',r.reactionTime?`เวลา ${escapeHtml(r.reactionTime)}`:'',r.dn?`DN ${escapeHtml(r.dn)}`:'',r.bagNumber?`ถุง ${escapeHtml(r.bagNumber)}`:''].filter(Boolean).join(' · ');
+        const detail=[r.symptoms?`อาการ: ${escapeHtml(r.symptoms)}`:'',r.actionTaken?`ดูแล: ${escapeHtml(r.actionTaken)}`:'',r.outcome?`ผล: ${escapeHtml(r.outcome)}`:'',r.note?`หมายเหตุ: ${escapeHtml(r.note)}`:''].filter(Boolean).join(' · ');
+        const who=r.fullName||r.username||'-';
+        return `<div class="reaction-history-item">
+          <div><strong>⚠ ${escapeHtml(r.reactionType||'-')}</strong> <span class="reaction-severity ${reactionSeverityClass(r.severity)}">${escapeHtml(r.severity||'')}</span>${r.retrospective?' <span class="badge text-bg-secondary ms-1">ย้อนหลัง</span>':''}</div>
+          <div class="small mt-1">เกิดอาการ ${escapeHtml(r.reactionDate||'-')}${meta?' · '+meta:''}</div>
+          ${detail?`<div class="small mt-1 text-muted">${detail}</div>`:''}
+          <div class="small text-muted mt-1">บันทึกโดย ${escapeHtml(who)}${r.recordedAt?' · '+escapeHtml(r.recordedAt):''}</div>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadDonorReactionHistory(row) {
+      const wrap=document.getElementById('vd-reaction-history-wrap');
+      const box=document.getElementById('vd-reaction-history');
+      if(!wrap||!box)return [];
+      wrap.style.display='none';box.innerHTML='';
+      const key=reactionIdentityKey(row),dn=String(row?.dn||'').trim();
+      if(!key&&!dn)return [];
+      try{
+        const res=await apiCall('getDonorReactions',{data:JSON.stringify({identityKey:key,dn,limit:50})});
+        if(res?.status==='error'){
+          box.innerHTML=`<div class="text-danger">${escapeHtml(res.message||'โหลด Donor Reaction ไม่สำเร็จ')}</div>`;
+          wrap.style.display='block';
+          return [];
+        }
+        const rows=Array.isArray(res?.reactions)?res.reactions:[];
+        if(rows.length){wrap.style.display='block';box.innerHTML=renderReactionHistoryRows(rows);}
+        return rows;
+      }catch(err){console.warn('load donor reaction history failed',err);return [];}
+    }
+
+    function openDonorReaction(encodedRow) {
+      const row=typeof encodedRow==='string' ? JSON.parse(decodeURIComponent(encodedRow)) : (encodedRow||{});
+      const key=reactionIdentityKey(row);
+      if(!key&&!row.dn){showSuccessPopup('ยังบันทึก Reaction ไม่ได้','ไม่พบตัวระบุผู้บริจาคของรายการนี้');return;}
+      const dateFromTable=document.getElementById('table-date')?.value||getLocalDateInputValue();
+      const donationDate=(String(row.saveTime||'').match(/^\d{4}-\d{2}-\d{2}/)||[])[0]||dateFromTable;
+      document.getElementById('reaction-row-json').value=encodeURIComponent(JSON.stringify({...row,_reactionIdentityKey:key}));
+      document.getElementById('reaction-donor-summary').innerHTML=`<strong>${escapeHtml(row.name||'-')}</strong>${row.donorId?` · Donor ID ${escapeHtml(row.donorId)}`:''}${row.dn?` · DN ${escapeHtml(row.dn)}`:''}${row.bag&&row.bag!=='-'?` · ถุง ${escapeHtml(row.bag)}`:''}`;
+      document.getElementById('reaction-donation-date').value=donationDate||'';
+      document.getElementById('reaction-date').value=donationDate||getLocalDateInputValue();
+      document.getElementById('reaction-time').value='';
+      document.getElementById('reaction-type').value='';
+      document.getElementById('reaction-severity').value='เล็กน้อย';
+      document.getElementById('reaction-symptoms').value='';
+      document.getElementById('reaction-action').value='';
+      document.getElementById('reaction-outcome').value='';
+      document.getElementById('reaction-note').value='';
+      document.getElementById('reaction-retrospective').checked=!!(donationDate&&donationDate<getLocalDateInputValue());
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('donorReactionModal')).show();
+    }
+
+    function openDonorReactionFromDetail() {
+      if(!currentVisitDetailRow)return;
+      const detail=document.getElementById('visitDetailModal');
+      const m=bootstrap.Modal.getInstance(detail);
+      if(m)m.hide();
+      setTimeout(()=>openDonorReaction(currentVisitDetailRow),180);
+    }
+
+    async function saveDonorReaction() {
+      const raw=document.getElementById('reaction-row-json')?.value||'';
+      let row={};try{row=JSON.parse(decodeURIComponent(raw));}catch{}
+      const reactionType=document.getElementById('reaction-type')?.value||'';
+      const reactionDate=document.getElementById('reaction-date')?.value||'';
+      if(!reactionType){showSuccessPopup('กรุณาเลือกอาการ','เลือกชนิด Donor Reaction ก่อนบันทึก');return;}
+      if(!reactionDate){showSuccessPopup('กรุณาเลือกวันที่','ระบุวันที่เกิดอาการก่อนบันทึก');return;}
+      const payload={
+        identityKey:row._reactionIdentityKey||reactionIdentityKey(row),identityType:row.identityType||'thai',dn:row.dn||'',donationDate:document.getElementById('reaction-donation-date')?.value||null,donorId:row.donorId||'',bagNumber:(row.bag&&row.bag!=='-')?row.bag:'',reactionDate,reactionTime:document.getElementById('reaction-time')?.value||'',reactionType,severity:document.getElementById('reaction-severity')?.value||'เล็กน้อย',symptoms:document.getElementById('reaction-symptoms')?.value||'',actionTaken:document.getElementById('reaction-action')?.value||'',outcome:document.getElementById('reaction-outcome')?.value||'',note:document.getElementById('reaction-note')?.value||'',retrospective:!!document.getElementById('reaction-retrospective')?.checked
+      };
+      try{
+        setButtonBusy('reaction-save-btn',true,'กำลังบันทึก...');
+        const res=await apiCall('saveDonorReaction',{data:JSON.stringify(payload)});
+        if(!res||res.status!=='success'){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',res?.message||'เกิดข้อผิดพลาด');return;}
+        bootstrap.Modal.getInstance(document.getElementById('donorReactionModal'))?.hide();
+        showSuccessPopup('บันทึก Donor Reaction แล้ว',`${row.name||'ผู้บริจาค'} · ${reactionType}${payload.retrospective?' · บันทึกย้อนหลัง':''}`);
+        if(currentVisitDetailRow&&reactionIdentityKey(currentVisitDetailRow)===payload.identityKey)loadDonorReactionHistory(currentVisitDetailRow).catch(()=>{});
+      }catch(err){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',err.message||String(err));}
+      finally{setButtonBusy('reaction-save-btn',false);}
+    }
+
     async function loadScreeningAttemptHistory(dn) {
       const wrap = document.getElementById('vd-screening-history-wrap');
       const box = document.getElementById('vd-screening-history');
@@ -5672,6 +5885,7 @@ function getVisitFullAddress(row = {}) {
 
     async function openVisitDetail(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
+      currentVisitDetailRow = row;
 
       document.getElementById("vd-dn").innerText = row.dn || "-";
       document.getElementById("vd-bag").innerText = row.bag || "-";
@@ -5693,6 +5907,7 @@ function getVisitFullAddress(row = {}) {
       document.getElementById("vd-save-time").innerText = row.saveTime || "-";
       await loadVisitDetailPhoto(row.identityType==='passport' ? (row.passportNumber||'') : (row.idCard||row.dbIdCard||''), row.identityType||'thai');
       loadScreeningAttemptHistory(row.dn || '').catch(()=>{});
+      loadDonorReactionHistory(row).catch(()=>{});
 
       let reasonEl = document.getElementById("vd-reason");
       let status = (row.status || "").trim();
@@ -6333,7 +6548,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.68"></script>
+  <script src="js/supabase-history.js?v=15.6.69"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>

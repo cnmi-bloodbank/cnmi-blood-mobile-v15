@@ -168,6 +168,48 @@
         if(error) throw error;
         return {status:'success',attempts:(rows||[]).map(a=>({attemptNo:Number(a.attempt_no||0),type:a.donor_type||'',group:a.blood_group||'',weight:a.weight||'',bp:a.bp||'',pulse:a.pulse||'',temp:a.temp||'',hb:a.hb||'',status:a.status||'',reason:a.reason||'',bagNumber:a.bag_number||'',bagLot:a.bag_lot||'',screenedAt:thaiTime(a.screened_at),recordedAt:thaiTime(a.recorded_at),username:a.username||'',fullName:a.full_name||'',role:a.role||''}))};
       }
+      if(action==='getDonorReactions'){
+        const identityKey=String(data.identityKey||params.identityKey||'').trim();
+        const dn=String(data.dn||params.dn||'').trim();
+        const limit=Math.max(1,Math.min(Number(data.limit||params.limit)||20,100));
+        let q=sb.from('donor_reactions').select('*').order('reaction_date',{ascending:false}).order('id',{ascending:false}).limit(limit);
+        if(identityKey) q=q.eq('identity_key',identityKey);
+        else if(dn) q=q.eq('dn',dn);
+        else return {status:'success',reactions:[]};
+        const {data:rows,error}=await q;
+        if(error){
+          if(String(error.message||'').toLowerCase().includes('donor_reactions')) return {status:'error',message:'กรุณารัน SQL V15_6_69_DONOR_REACTION.sql ก่อนใช้ Donor Reaction'};
+          throw error;
+        }
+        return {status:'success',reactions:(rows||[]).map(r=>({
+          id:r.id,identityKey:r.identity_key||'',identityType:r.identity_type||'thai',dn:r.dn||'',donationDate:r.donation_date||'',donorId:r.donor_id||'',bagNumber:r.bag_number||'',reactionDate:r.reaction_date||'',reactionTime:r.reaction_time||'',reactionType:r.reaction_type||'',severity:r.severity||'เล็กน้อย',symptoms:r.symptoms||'',actionTaken:r.action_taken||'',outcome:r.outcome||'',note:r.note||'',retrospective:!!r.retrospective,recordedAt:thaiTime(r.recorded_at),username:r.username||'',fullName:r.full_name||'',role:r.role||''
+        }))};
+      }
+      if(action==='saveDonorReaction'){
+        const rx=data && Object.keys(data).length?data:parse(params.data);
+        const {error:readyError}=await sb.from('donor_reactions').select('id').limit(1);
+        if(readyError) return {status:'error',message:'กรุณารัน SQL V15_6_69_DONOR_REACTION.sql ก่อนใช้ Donor Reaction'};
+        const {data:r,error}=await sb.rpc('save_donor_reaction_v15669',{
+          p_identity_key:String(rx.identityKey||''),
+          p_identity_type:String(rx.identityType||'thai'),
+          p_dn:String(rx.dn||''),
+          p_donation_date:rx.donationDate||null,
+          p_donor_id:String(rx.donorId||''),
+          p_bag_number:String(rx.bagNumber||''),
+          p_reaction_date:rx.reactionDate||null,
+          p_reaction_time:String(rx.reactionTime||''),
+          p_reaction_type:String(rx.reactionType||''),
+          p_severity:String(rx.severity||'เล็กน้อย'),
+          p_symptoms:String(rx.symptoms||''),
+          p_action_taken:String(rx.actionTaken||''),
+          p_outcome:String(rx.outcome||''),
+          p_note:String(rx.note||''),
+          p_retrospective:!!rx.retrospective,
+          p_user_agent:ua()
+        });
+        if(error) throw error;
+        return r||{status:'success'};
+      }
       if(action==='issueCertificateNumber'){
         const {data:r,error}=await sb.rpc('issue_certificate',{p_dn:data.dn,p_name:data.name,p_id_card:data.idCard||'',p_visit_date:data.visitDate,p_remark:data.remark||'',p_user_agent:ua()}); if(error) throw error; return r;
       }

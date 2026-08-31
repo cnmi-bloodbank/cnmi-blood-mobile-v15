@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   'use strict';
   const $=id=>document.getElementById(id);
   const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9ก-๙]/g,'');
@@ -186,10 +186,22 @@
       : `<strong>📋 แหล่งจำนวนครั้งสำรอง: ระบบกาชาด (จากรายชื่อแจ้งล่วงหน้า)</strong>${count}${donor}${note}<div class="small mt-1">ยังไม่ถือเป็น Visit จริง · วันจริงต้องยืนยันบัตรก่อน และจะ +1 เฉพาะเมื่อบันทึกการมาบริจาคจริง</div>`;
     return box;
   }
+  function donorReactionBox(p){
+    const rows=Array.isArray(p?.donorReactions)?p.donorReactions:[];
+    if(!rows.length)return null;
+    const box=document.createElement('div');box.className='preload-alert preload-danger';
+    const latest=rows[0]||{};
+    const date=latest.reactionDate?` · ล่าสุด ${escapeHtml(String(latest.reactionDate))}`:'';
+    const type=latest.reactionType?` · ${escapeHtml(String(latest.reactionType))}`:'';
+    const sev=latest.severity?` · ระดับ ${escapeHtml(String(latest.severity))}`:'';
+    box.innerHTML=`<strong>⚠ เคยมี Donor Reaction ${rows.length} ครั้ง</strong>${date}${type}${sev}<div class="small mt-1">กรุณาเปิดดูประวัติ Reaction และตรวจสอบข้อมูลก่อนดำเนินการต่อ</div>`;
+    return box;
+  }
   function renderProfile(p){
     clearPanel();const panel=$('donor-history-panel');if(!panel||!p)return;panel.hidden=false;
     const hist=Array.isArray(p.donationHistory)?p.donationHistory:[],mobile=Array.isArray(p.mobileVisits)?p.mobileVisits:[],a=p.alerts||{},ordinal=donationOrdinal(hist);
     const advanceBox=advanceSourceBox(p);if(advanceBox)panel.appendChild(advanceBox);
+    const reactionBox=donorReactionBox(p);if(reactionBox)panel.appendChild(reactionBox);
     const ids=[...new Set([...(p.donorIdsAll||[]),...(p.donorIds||[]),...mobile.map(x=>x?.donorId||'')].filter(Boolean))];
     // คำเตือนต้องอยู่ก่อนประวัติ เพื่อไม่ให้ถูกกลบด้วยรายการย้อนหลัง
     if((a.defers||[]).length)panel.appendChild(listBox(`ติด Defer ปัจจุบัน (${a.defers.length}) — กรุณาตรวจสอบก่อนดำเนินการ`,a.defers,x=>`${x.reason||'ไม่ระบุเหตุผล'}${x.until?` · ถึง ${x.until}`:''}`,'preload-danger',4));
@@ -277,6 +289,13 @@
     if(p){p={...p,advanceRegistration:advance||null};}
     else if(advance){p=advanceToProfile(advance);}
     if(!p){clearPanel();currentRegistrationHistorySource='manual';if(!window.cnmiDonorPhotoState?.dirty)window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}setText('preload-register-status',kind==='passport'?'ไม่พบประวัติ Passport':'ไม่พบประวัติ AI-LIS/Blood Mobile','register-status-line text-secondary');return null;}
+    p.donorReactions=[];
+    if(!(activeAdvanceRegistration&&!isAdvanceIdentityVerified())){
+      try{
+        const rx=await window.cnmiSupabaseApi.call('getDonorReactions',{data:JSON.stringify({identityKey:p.identityKey||identityValue,limit:20})});
+        if(rx?.status==='success'&&Array.isArray(rx.reactions))p.donorReactions=rx.reactions;
+      }catch(err){console.warn('load donor reactions failed',err);}
+    }
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource||'manual';
     if(fill){
       const map={prefix:p.prefix,fname:p.fname,lname:p.lname,birth_date:p.birth,gender:genderCode(p.gender),address:p.addressLine||p.address,subdistrict:cleanArea(p.subdistrict,'subdistrict'),district:cleanArea(p.district,'district'),province:cleanArea(p.province,'province'),postal_code:p.postalCode,phone:p.phone,nationality:p.nationality};
@@ -290,7 +309,7 @@
     window.setDonorPhotoPreview?.(p.photoData||'',{setOriginal:true,loadedForIdCard:p.identityKey||identityValue,preserveDirty:true});
     renderProfile(p);
     setCentralProfileLock(p,currentRegistrationHistorySource==='ai-lis');
-    const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0);
+    const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0)+(p.donorReactions?.length||0);
     const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'ระบบกาชาด (รายชื่อแจ้งล่วงหน้า)':'ข้อมูลที่กรอก';
     let message=alerts?`พบประวัติ · มีรายการเตือน ${alerts} รายการ · ใช้จำนวนครั้งจาก ${sourceLabel}`:`พบข้อมูลแล้ว · ใช้จำนวนครั้งจาก ${sourceLabel}`;
     if(currentRegistrationHistorySource==='ai-lis')message+=' · ข้อมูลหลักจาก AI-LIS ถูกล็อกไม่ให้แก้ในหน้าออกหน่วย';
