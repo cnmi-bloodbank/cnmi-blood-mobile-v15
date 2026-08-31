@@ -240,10 +240,13 @@
     set('prefix',a.prefix);set('fname',a.fname);set('lname',a.lname);set('birth_date',a.birth);set('phone',a.phone);
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource;
     const donorEl=$('donor_id'),noEl=$('donation_no');
-    if(donorEl){donorEl.value='';donorEl.dataset.userEdited='0';}
-    if(noEl){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
+    const hasPrepared=a.preMatchStatus==='matched';
+    const preparedDonor=hasPrepared?String(a.preMatchedDonorId||'').trim():'';
+    const preparedNo=hasPrepared&&Number.isInteger(Number(a.preMatchedLastDonationNo))?String(Number(a.preMatchedLastDonationNo)):'';
+    if(donorEl){donorEl.value=preparedDonor;donorEl.dataset.userEdited='0';}
+    if(noEl){noEl.value=preparedNo||sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
     renderProfile(p);
-    setText('preload-register-status','ใช้ข้อมูลจากรายชื่อหน่วยแจ้งล่วงหน้า · เลขบัตร/Passport ยังไม่ยืนยัน และยังไม่ค้น AI-LIS','register-status-line text-warning fw-bold');
+    setText('preload-register-status',hasPrepared?`เตรียม AI-LIS ไว้แล้ว${preparedDonor?' · Donor ID '+preparedDonor:''}${preparedNo!==''?' · ครั้งเดิม '+preparedNo:''} · กรุณาอ่านบัตรจริงเพื่อยืนยันก่อนบันทึก`:'ใช้ข้อมูลจากรายชื่อหน่วยแจ้งล่วงหน้า · กรุณาอ่านบัตรจริง ระบบจะค้น AI-LIS ให้อัตโนมัติ','register-status-line text-warning fw-bold');
     window.updateAdvanceRegisterBanner?.(a);
     return p;
   }
