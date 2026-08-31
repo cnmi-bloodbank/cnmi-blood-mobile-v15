@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- CNMI Blood Mobile v15.6.25: Locked Person LIS workflow + Bag Lot -->
 <!-- CNMI Blood Mobile v15.6.13: required occupation + last donation input -->
 <html lang="th">
@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.69"></script>
+  <script src="js/supabase-backend.js?v=15.6.71"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -1866,6 +1866,8 @@
 .advance-date-compact{ max-width:180px; }
 
 /* v15.6.69: simpler advance-list instructions + Donor Reaction */
+/* v15.6.70: Red Cross history is linked by name + surname + DOB; reported citizen ID is reference only */
+/* v15.6.71: alphanumeric DN + structured FM-CNBBC-063 donor reaction */
 .register-quick-start{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f7fbff;border:1px solid #cfe2ff;border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:.88rem;color:#35536f}
 .register-quick-start strong{color:#174f91}.register-quick-divider{color:#9babbc;font-weight:900}
 .advance-duty-guide{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
@@ -1876,6 +1878,17 @@
 .reaction-severity{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:.75rem;font-weight:800;background:#fff1f0;color:#b42318;border:1px solid #ffccc7}
 .reaction-severity.medium{background:#fff7e6;color:#a15c00;border-color:#ffd591}.reaction-severity.mild{background:#ecfdf5;color:#087f5b;border-color:#a7f3d0}
 .reaction-modal-summary{background:#f8fbff;border:1px solid #d7e6f7;border-radius:10px;padding:9px 11px;font-size:.88rem}
+/* v15.6.71: FM-CNBBC-063 style structured Donor Reaction + alphanumeric DN */
+.reaction-form-section{border:1px solid #dfe5ec;border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}
+.reaction-form-section>summary{cursor:pointer;list-style:none;padding:11px 13px;font-weight:850;color:#24415d;background:#f8fafc;display:flex;align-items:center;gap:8px}
+.reaction-form-section>summary::-webkit-details-marker{display:none}.reaction-form-section[open]>summary{border-bottom:1px solid #e5eaf0}
+.reaction-section-body{padding:12px 13px}.reaction-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 14px}
+.reaction-check-item{display:flex;align-items:flex-start;gap:7px;font-size:.88rem;line-height:1.35}.reaction-check-item input{margin-top:3px;flex:0 0 auto}
+.reaction-category-title{font-weight:850;color:#8b1e1e;margin:4px 0 8px}.reaction-subtle{font-size:.79rem;color:#6c7b8b}
+.reaction-vitals-table{width:100%;border-collapse:collapse;font-size:.82rem}.reaction-vitals-table th,.reaction-vitals-table td{border:1px solid #dfe5ec;padding:5px}.reaction-vitals-table input,.reaction-vitals-table select{min-width:80px;font-size:.82rem}
+.reaction-grade-row{display:flex;gap:10px;flex-wrap:wrap}.reaction-grade-chip{border:1px solid #d8dee7;border-radius:9px;padding:7px 10px;background:#fff}
+.reaction-danger-note{border:1px solid #ffd4d0;background:#fff7f6;border-radius:10px;padding:8px 10px;color:#9b2c20;font-size:.82rem}
+@media(max-width:767px){.reaction-check-grid{grid-template-columns:1fr}.reaction-vitals-table{display:block;overflow-x:auto;white-space:nowrap}}
 @media(max-width:767px){.advance-duty-guide{grid-template-columns:1fr}.register-quick-start{align-items:flex-start}}
 
 /* v15.6.68: Red Cross advance-history workflow; AI-LIS lookup only after real identity verification */
@@ -2122,7 +2135,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               </div>
               <div class="col-lg-2 col-md-4">
                 <label class="small fw-bold">DN ออกหน่วย</label>
-                <input id="donor-search-dn" class="form-control" autocomplete="off" placeholder="เช่น 202606260012" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
+                <input id="donor-search-dn" class="form-control" autocomplete="off" placeholder="เช่น 202608310012 / A12345" onkeydown="if(event.key==='Enter'){event.preventDefault();searchDonorHistory();}">
               </div>
               <div class="col-lg-2 col-md-4">
                 <label class="small fw-bold">เลขถุง</label>
@@ -2162,7 +2175,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
 
             <div class="register-quick-start">
               <strong>เริ่มลงทะเบียน:</strong>
-              <span>มีชื่อแจ้งล่วงหน้า → <b>เลือกจากรายชื่อวันนี้</b> → อ่านบัตร</span>
+              <span>มีชื่อแจ้งล่วงหน้า → <b>เลือกชื่อ</b> → ดูชื่อ+วันเกิดบนบัตร → อ่านบัตร</span>
               <span class="register-quick-divider">|</span>
               <span>Walk-in / ไม่มีชื่อ → <b>อ่านบัตรได้เลย</b></span>
               <span class="text-muted">จากนั้นตรวจข้อมูล → บันทึก</span>
@@ -2489,7 +2502,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
               <div>
                 <h5 class="fw-bold mb-1" style="color:#8a4b00;">📋 รายชื่อผู้บริจาคแจ้งล่วงหน้า</h5>
-                <div class="small text-muted">ข้อมูล Donor ID / จำนวนครั้งในไฟล์นี้คือข้อมูลที่ตรวจจากระบบกาชาดก่อนออกหน่วย · AI-LIS ของเราจะค้นอัตโนมัติหลังอ่านบัตรจริงวันงาน</div>
+                <div class="small text-muted">Donor ID / จำนวนครั้งในไฟล์คือข้อมูลที่ตรวจจากระบบกาชาด · ใช้ ชื่อ + นามสกุล + วันเกิด ผูกประวัติกาชาด · เลขประชาชนจากกาชาดเป็นข้อมูลอ้างอิงเท่านั้น</div>
               </div>
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAdvanceRegistrations()">🔄 ดูรายชื่อวันที่นี้</button>
             </div>
@@ -2500,8 +2513,8 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             </div>
             <div id="prereg-import-status" class="small mt-2 text-muted">สลับ/เพิ่ม/ลดคอลัมน์ได้ ระบบหาแถวหัวตารางและจับคอลัมน์จากชื่อให้อัตโนมัติ</div>
             <div class="advance-duty-guide">
-              <div class="advance-duty-box"><strong>ก่อนออกหน่วย</strong>1) นำเข้า Excel → 2) เปิดเฉพาะ <b>⚠ ต้องตรวจ</b> → 3) ถ้าไม่มีรายการผิดปกติ ถือว่าเตรียมเสร็จ ไม่ต้องเปิดแก้ทุกคน</div>
-              <div class="advance-duty-box"><strong>วันออกหน่วย</strong>มีชื่อในไฟล์: <b>เลือกชื่อ → มาวันนี้ → อ่านบัตร</b> · ไม่มีชื่อ/Walk-in: <b>อ่านบัตรได้เลย</b> · ระบบค้น AI-LIS เองหลังยืนยันบัตร</div>
+              <div class="advance-duty-box"><strong>ก่อนออกหน่วย</strong>1) นำเข้า Excel → 2) ดูเฉพาะ <b>⚠ ต้องตรวจ</b> (ชื่อ/นามสกุล/วันเกิดไม่ครบหรือข้อมูลกาชาดคลุมเครือ) → 3) ที่เหลือไม่ต้องแก้ทีละคน</div>
+              <div class="advance-duty-box"><strong>วันออกหน่วย</strong>มีชื่อในไฟล์: <b>เลือกชื่อ → ดูชื่อ+วันเกิดบนบัตร → อ่านบัตร</b> · เลขบัตรจริงใช้ค้น AI-LIS ของเรา · ไม่มีชื่อ/Walk-in: <b>อ่านบัตรได้เลย</b></div>
             </div>
             <div id="prereg-summary" class="advance-summary-grid"></div>
             <div id="prereg-list"></div>
@@ -2566,7 +2579,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <div class="guide-card"><div class="guide-title">🩺 คัดกรองผู้บริจาค</div><p class="guide-step">เลือกผู้บริจาค → ลง Weight / BP / Pulse / Temp / Hb → เลือกผ่านหรือไม่ผ่าน → กรอกข้อมูลถุงเฉพาะผู้ที่ผ่าน · หากครั้งแรกไม่ผ่านและกลับมาตรวจใหม่ ให้กด “ตรวจซ้ำ” ระบบจะเก็บผลเดิมไว้</p></div>
       <div class="guide-card"><div class="guide-title">🏷️ พิมพ์สติ๊กเกอร์</div><p class="guide-step">ใช้กับผู้บริจาคที่ผ่านและมีเลขถุง → ตรวจชื่อและเลขถุง → เลือกชุดสติ๊กเกอร์ → พิมพ์</p></div>
       <div class="guide-card"><div class="guide-title">📜 หนังสือรับรอง</div><p class="guide-step">เลือกผู้บริจาค → ตรวจข้อมูล → ออกเลขและพิมพ์หนังสือรับรอง</p></div>
-      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">ก่อนออกหน่วย: นำเข้า Excel แล้วดูเฉพาะ ⚠ ต้องตรวจ ไม่ต้องแก้ทุกคน · วันจริง: คนที่มีชื่อแจ้งล่วงหน้าให้เลือก “มาวันนี้” ก่อนอ่านบัตร ส่วน Walk-in อ่านบัตรได้เลย → ระบบค้น AI-LIS อัตโนมัติ → ถ้าไม่พบจึงใช้จำนวนครั้งจากระบบกาชาด</p></div>
+      <div class="guide-card"><div class="guide-title">⚡ เตรียมออกหน่วย</div><p class="guide-step">ก่อนออกหน่วย: นำเข้า Excel แล้วดูเฉพาะ ⚠ ต้องตรวจ โดยยึดชื่อ+นามสกุล+วันเกิด ไม่ใช้เลขประชาชนจากกาชาดเป็นตัวผูก · วันจริง: เลือกชื่อ → ดูชื่อ/วันเกิดบนบัตร → อ่านบัตรจริง → ระบบค้น AI-LIS ด้วยเลขบัตรจริง → ถ้าไม่พบจึงใช้จำนวนครั้งจากกาชาด</p></div>
       <div class="guide-card"><div class="guide-title">💳 Card Bridge</div><p class="guide-step">เปิด Start-CNMI-Card-Bridge.cmd ค้างไว้ → เสียบบัตรประชาชน → กด อ่านบัตรประชาชน ที่หน้าลงทะเบียน</p></div>
       <div class="guide-card"><div class="guide-title">🖨️ Scan Bridge</div><p class="guide-step">เปิด Start-CNMI-Scan-Bridge.cmd บนคอมที่ต่อเครื่องสแกนเอกสาร → ใช้สแกนบัตรประชาชน/ใบขับขี่ หรือ Passport (ไม่ใช่เครื่องอ่าน Smart Card) → Passport จะอ่าน MRZ ด้านล่างเพื่อช่วยเติม Passport No. / ชื่อ / วันเกิด / เพศ / สัญชาติ</p></div>
       <div class="guide-card"><div class="guide-title">☰ เมนูด้านซ้าย</div><p class="guide-step">เมนูจะเปิดค้างไว้ตามปกติ ถ้าต้องการพื้นที่หน้าจอเพิ่มให้กด ☰ เพื่อยุบ และกดซ้ำเพื่อขยาย</p></div>
@@ -2967,80 +2980,198 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
 </div>
 
 <div class="modal fade" id="donorReactionModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-light">
         <div>
-          <h5 class="modal-title mb-0">🩹 บันทึก Donor Reaction</h5>
-          <div class="small text-muted">บันทึกได้ทั้งวันปัจจุบันและย้อนหลัง โดยไม่เปลี่ยนผลคัดกรองเดิม</div>
+          <h5 class="modal-title mb-0">🩹 แบบบันทึก Adverse Donor Reaction</h5>
+          <div class="small text-muted">โครงสร้างอ้างอิง FM-CNBBC-063 · บันทึกย้อนหลังได้ · ไม่เปลี่ยนผลคัดกรองเดิม</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="reaction-row-json">
         <div id="reaction-donor-summary" class="reaction-modal-summary mb-3"></div>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="fw-bold">วันที่บริจาค</label>
-            <input id="reaction-donation-date" type="date" class="form-control">
-          </div>
-          <div class="col-md-4">
-            <label class="fw-bold">วันที่เกิดอาการ <span class="required-mark">*</span></label>
-            <input id="reaction-date" type="date" class="form-control">
-          </div>
-          <div class="col-md-4">
-            <label class="fw-bold">เวลาเกิดอาการ</label>
-            <input id="reaction-time" type="time" class="form-control">
-          </div>
-          <div class="col-md-8">
-            <label class="fw-bold">ชนิด Donor Reaction <span class="required-mark">*</span></label>
-            <select id="reaction-type" class="form-select">
-              <option value="">-- เลือกอาการ --</option>
-              <option>หน้ามืด / เวียนศีรษะ</option>
-              <option>เป็นลม (Syncope)</option>
-              <option>คลื่นไส้ / อาเจียน</option>
-              <option>บวมช้ำ / ก้อนเลือด (Hematoma)</option>
-              <option>เลือดออกหลังเจาะ</option>
-              <option>ปวดแขน / ชา / สงสัยเส้นประสาท</option>
-              <option>Citrate reaction</option>
-              <option>อื่นๆ</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="fw-bold">ระดับอาการ</label>
-            <select id="reaction-severity" class="form-select">
-              <option value="เล็กน้อย">เล็กน้อย</option>
-              <option value="ปานกลาง">ปานกลาง</option>
-              <option value="รุนแรง">รุนแรง</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="fw-bold">รายละเอียดอาการ</label>
-            <textarea id="reaction-symptoms" class="form-control" rows="3" placeholder="เช่น เวียนศีรษะ ซีด เหงื่อออก..."></textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="fw-bold">การดูแล / การช่วยเหลือ</label>
-            <textarea id="reaction-action" class="form-control" rows="3" placeholder="บันทึกสิ่งที่ทำหน้างาน"></textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="fw-bold">ผลหลังดูแล</label>
-            <input id="reaction-outcome" class="form-control" placeholder="เช่น อาการดีขึ้น / กลับบ้านได้">
-          </div>
-          <div class="col-md-6">
-            <label class="fw-bold">หมายเหตุ</label>
-            <input id="reaction-note" class="form-control" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)">
-          </div>
-          <div class="col-12">
-            <div class="form-check">
-              <input id="reaction-retrospective" class="form-check-input" type="checkbox">
-              <label class="form-check-label" for="reaction-retrospective">บันทึกย้อนหลัง</label>
+
+        <details class="reaction-form-section" open>
+          <summary>1. ข้อมูลผู้บริจาคและเหตุการณ์</summary>
+          <div class="reaction-section-body">
+            <div class="row g-2">
+              <div class="col-md-3"><label class="fw-bold">วันที่บริจาค</label><input id="reaction-donation-date" type="date" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">วันที่เกิดอาการ <span class="required-mark">*</span></label><input id="reaction-date" type="date" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">เวลาเริ่มมีอาการ</label><input id="reaction-time" type="time" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">เวลาสิ้นสุดอาการ</label><input id="reaction-end-time" type="time" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">เวลาเริ่มเจาะเก็บ</label><input id="reaction-collection-start" type="time" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">เวลาหยุดเจาะเก็บ</label><input id="reaction-collection-end" type="time" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold">BP ก่อนบริจาค</label><input id="reaction-pre-bp" class="form-control" placeholder="เช่น 120/80"></div>
+              <div class="col-md-3"><label class="fw-bold">Pulse ก่อนบริจาค</label><input id="reaction-pre-pulse" class="form-control" placeholder="ครั้ง/นาที"></div>
+              <div class="col-md-6"><label class="fw-bold">ประเภทการบริจาค</label><div class="d-flex gap-3 flex-wrap mt-2"><label><input type="radio" name="reaction-donor-frequency" value="ครั้งแรก"> ครั้งแรก</label><label><input type="radio" name="reaction-donor-frequency" value="ประจำ"> ประจำ</label><label><input type="radio" name="reaction-product" value="Whole blood"> Whole blood</label><label><input type="radio" name="reaction-product" value="Apheresis"> Apheresis</label></div></div>
+              <div class="col-md-3"><label class="fw-bold">Apheresis ระบุ</label><select id="reaction-apheresis-type" class="form-select"><option value="">-</option><option>SDP</option><option>RBC</option><option>อื่นๆ</option></select></div>
+              <div class="col-md-3"><label class="fw-bold">เจาะได้</label><div class="d-flex gap-3 flex-wrap mt-2"><label><input type="radio" name="reaction-collection-complete" value="เต็มถุง"> เต็มถุง</label><label><input type="radio" name="reaction-collection-complete" value="ไม่เต็มถุง"> ไม่เต็มถุง</label></div><input id="reaction-volume" class="form-control form-control-sm mt-1" placeholder="ปริมาตร ml (ถ้ามี)"></div>
+              <div class="col-md-6"><label class="fw-bold">สถานที่เกิดอาการ</label><div class="d-flex gap-3 flex-wrap mt-2"><label><input type="radio" name="reaction-place" value="ห้องบริจาคโลหิต"> ห้องบริจาคโลหิต</label><label><input type="radio" name="reaction-place" value="ภายนอก"> ภายนอก</label></div><input id="reaction-place-other" class="form-control form-control-sm mt-1" placeholder="ระบุสถานที่"></div>
+              <div class="col-md-6"><label class="fw-bold">สถานะตอนกลับ / ส่งต่อ</label><div class="d-flex gap-3 flex-wrap mt-2"><label><input type="radio" name="reaction-return-status" value="กลับเอง"> กลับเอง</label><label><input type="radio" name="reaction-return-status" value="ส่งต่อ ER"> ส่งต่อ ER</label><label><input type="radio" name="reaction-return-status" value="ส่งต่อคัดกรอง"> ส่งต่อคัดกรอง</label></div><input id="reaction-return-note" class="form-control form-control-sm mt-1" placeholder="รายละเอียด/เวลา (ถ้ามี)"></div>
             </div>
           </div>
-        </div>
+        </details>
+
+        <details class="reaction-form-section" open>
+          <summary>2. Type of Reaction / Injury</summary>
+          <div class="reaction-section-body">
+            <div class="reaction-category-title">Vasovagal reaction</div>
+            <div class="reaction-check-grid">
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="เวียนศีรษะ">เวียนศีรษะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="หน้าซีด/ริมฝีปากซีด">หน้าซีด / ริมฝีปากซีด</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="มือเท้าเย็น/เหงื่อออกมาก">มือเท้าเย็น / เหงื่อออกมาก</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="ความดันโลหิตต่ำ">ความดันโลหิตต่ำ (SBP &lt; 90 หรือ DBP &lt; 60)</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="ชีพจรต่ำ">ชีพจรต่ำ (HR &lt; 50 bpm)</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="คลื่นไส้/อาเจียน">คลื่นไส้ / อาเจียน</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="อุจจาระ/ปัสสาวะราด">อุจจาระ / ปัสสาวะราด</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="หายใจเร็ว">หายใจเร็ว</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="หมดสติ <60 วินาที">หมดสติ &lt; 60 วินาที</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="หมดสติ ≥60 วินาที">หมดสติ ≥ 60 วินาที</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="ชักกระตุก/เกร็ง">ชักกระตุก / เกร็ง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="vasovagal" value="ได้รับบาดเจ็บ">ได้รับบาดเจ็บ</label>
+            </div>
+            <hr>
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <div class="reaction-category-title">Allergic reaction / Anaphylaxis</div>
+                <div class="reaction-check-grid">
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="local_allergic" value="คัน/ผื่น/แดงรอบจุดเจาะหรือติดพลาสเตอร์">Local allergic: คัน / ผื่น / แดงรอบจุดเจาะหรือติดพลาสเตอร์</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="คัน/ผื่นลมพิษ/ผื่นแดงทั่วตัว">คัน / ผื่นลมพิษ / ผื่นแดงทั่วตัว</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="บวมที่ลิ้น คอ ตา หรือใบหน้า">บวมที่ลิ้น คอ ตา หรือใบหน้า</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="กลืนลำบาก/จุกแน่นลำคอ/เสียงแหบ">กลืนลำบาก / จุกแน่นลำคอ / เสียงแหบ</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="หายใจมีเสียงวี้ด">หายใจมีเสียงวี้ด (wheezing)</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="หายใจลำบาก/หายใจเร็ว/สั่น">หายใจลำบาก / หายใจเร็ว / สั่น</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="systemic_allergic" value="ใจสั่น">คลื่นไส้ / ใจสั่น / ปวดท้อง</label>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="reaction-category-title">Hypertensive urgency / emergency</div>
+                <div class="reaction-check-grid">
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="BP >180/110">ความดันโลหิตสูง (SBP &gt; 180 หรือ DBP &gt; 110)</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="เหนื่อย/หายใจลำบาก">เหนื่อย / หายใจลำบาก</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="แน่นหน้าอก/นอนราบไม่ได้">แน่นหน้าอก / นอนราบไม่ได้</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="วิงเวียน/เดินเซ/ปวดศีรษะ">วิงเวียนศีรษะ / เดินเซ / ปวดศีรษะ</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="แขนขาอ่อนแรง/ชาครึ่งซีก/หน้าเบี้ยว/พูดไม่ชัด">แขนขาอ่อนแรง / ชาครึ่งซีก / หน้าเบี้ยว / พูดไม่ชัด</label>
+                  <label class="reaction-check-item"><input type="checkbox" data-rx="hypertensive" value="ตาพร่ามัวเฉียบพลัน">ตาพร่ามัวเฉียบพลัน</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section">
+          <summary>3. Local / Minor injury related to needle</summary>
+          <div class="reaction-section-body">
+            <div class="reaction-check-grid">
+              <label class="reaction-check-item"><input type="checkbox" data-rx="nerve" value="ปวดบริเวณที่เจาะทันที">Nerve irritation/injury: ปวดบริเวณที่เจาะทันที</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="nerve" value="ปวดแปลบร้าวไปตามแขน">ปวดแปลบร้าวไปตามแขน</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="nerve" value="ชา/ร้อนบริเวณแขนหรือมือ">ชา / ร้อนบริเวณแขนหรือมือ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="nerve" value="แขนหรือมืออ่อนแรง">แขนหรือมืออ่อนแรง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hematoma" value="Hematoma/Bruise">Hematoma / Bruise</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hematoma" value="เขียวช้ำบริเวณที่เจาะ">เขียวช้ำบริเวณที่เจาะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hematoma" value="ปวด/บวม/กดเจ็บ">ปวด / บวม / กดเจ็บ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="arm_pain" value="Other arm pain">Other arm pain</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="thrombophlebitis" value="Thrombophlebitis">Thrombophlebitis: ปวด / บวม / แดง / ร้อน / กดเจ็บบริเวณที่เจาะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="cellulitis" value="Cellulitis">Cellulitis: ปวด / บวม / แดง / ร้อน / กดเจ็บไปตามหลอดเลือดดำ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="delayed_bleeding" value="Delayed bleeding">Delayed bleeding: มีเลือดออกซ้ำหลังเลือดหยุดแล้ว</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="arterial_puncture" value="Arterial puncture">Arterial puncture</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="arterial_puncture" value="เลือดแดงสีสด">เลือดแดงสีสด (bright red)</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="arterial_puncture" value="เลือดไหลพุ่งตามชีพจร">เลือดไหลพุ่งเป็นจังหวะตามชีพจร</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="arterial_puncture" value="ถุงเต็มเร็ว <4 นาที">เลือดเต็มถุงเร็ว (&lt; 4 นาที)</label>
+            </div>
+            <div class="row g-2 mt-2"><div class="col-md-4"><label class="fw-bold">ตำแหน่ง</label><select id="reaction-arm-side" class="form-select"><option value="">-</option><option>ซ้าย</option><option>ขวา</option></select></div><div class="col-md-4"><label class="fw-bold">จำนวนแทงเข็ม</label><input id="reaction-needle-count" type="number" min="1" class="form-control"></div><div class="col-md-4"><label class="fw-bold">ขนาด Hematoma (กว้าง × ยาว)</label><input id="reaction-hematoma-size" class="form-control" placeholder="เช่น 3×5 cm"></div></div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section">
+          <summary>4. Complications related to apheresis</summary>
+          <div class="reaction-section-body">
+            <div class="reaction-category-title">Citrate reaction</div>
+            <div class="reaction-check-grid">
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="ชารอบปาก นิ้วมือ">ชารอบปาก / นิ้วมือ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="หนาวสั่น">หนาวสั่น</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="วิงเวียนศีรษะ">วิงเวียนศีรษะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="มือจีบเกร็ง">มือจีบเกร็ง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="คลื่นไส้/อาเจียน">คลื่นไส้ / อาเจียน</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="หายใจลำบาก">หายใจลำบาก</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="สับสน/พูดคุยสับสน">มึน / พูดคุยสับสน</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="ชัก/เกร็ง">ชักกระตุก / เกร็ง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="citrate" value="หัวใจเต้นผิดจังหวะ">หัวใจเต้นผิดจังหวะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hemolysis" value="Hemolysis">Hemolysis</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hemolysis" value="ปัสสาวะแดง">ปัสสาวะแดง (hematuria)</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="hemolysis" value="พลาสมาสีแดง">พลาสมาสีแดง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="infiltration" value="Infiltration ปวด">Infiltration: ปวด</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="infiltration" value="Infiltration บวม">Infiltration: บวม</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="air_embolism" value="Air embolism">Air embolism</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="air_embolism" value="แน่นหน้าอก/เหนื่อย/หายใจลำบาก">แน่นหน้าอก / เหนื่อย / หายใจลำบาก</label>
+            </div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section">
+          <summary>5. Other serious complications</summary>
+          <div class="reaction-section-body">
+            <div class="reaction-check-grid">
+              <label class="reaction-check-item"><input type="checkbox" data-rx="serious" value="Acute cardiac symptoms">Acute cardiac symptoms</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="serious" value="Myocardial infarction">Myocardial infarction</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="serious" value="Cardiac arrest">Cardiac arrest</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="serious" value="Transient ischemic attack">Transient ischemic attack</label>
+              <label class="reaction-check-item"><input type="checkbox" data-rx="serious" value="Cerebrovascular accident">Cerebrovascular accident</label>
+            </div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section">
+          <summary>6. การดูแลผู้บริจาค</summary>
+          <div class="reaction-section-body">
+            <div class="reaction-check-grid">
+              <label class="reaction-check-item"><input type="checkbox" data-care value="หยุดการเจาะเก็บ">หยุดการเจาะเก็บ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="กดตำแหน่งเจาะ">กดตำแหน่งเจาะ / กดห้ามเลือด</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="พัน elastic bandage">พัน elastic bandage</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="จัดท่านั่ง">จัดท่านั่ง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="จัดท่านอนราบ">จัดท่านอนราบ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="ยกเท้าสูง">ยกเท้าสูง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="ให้น้ำ/อาหาร/เครื่องดื่ม">ให้น้ำ / อาหาร / เครื่องดื่ม</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="กดแผลอย่างน้อย 10 นาที">กดแผลให้แน่นด้วยมืออย่างน้อย 10 นาที</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="ตรวจชีพจร radial">คลำชีพจรบริเวณข้อมือหลังการเจาะ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="แนะนำเฝ้าดูแขนอย่างน้อย 5 ชั่วโมง">แนะนำเฝ้าดูแขนข้างที่เจาะอย่างน้อย 5 ชั่วโมง</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="โทรติดตามวันที่ 1 3 7">โทรติดตามอาการวันที่ 1, 3 และ 7</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="โทรติดตามอาการ">โทรติดตามอาการ</label>
+              <label class="reaction-check-item"><input type="checkbox" data-care value="รายงานแพทย์">รายงานแพทย์</label>
+            </div>
+            <div class="row g-2 mt-2"><div class="col-md-6"><label class="fw-bold">การดูแลเพิ่มเติม</label><textarea id="reaction-action" class="form-control" rows="2"></textarea></div><div class="col-md-6"><label class="fw-bold">ผลหลังดูแล</label><textarea id="reaction-outcome" class="form-control" rows="2" placeholder="เช่น อาการดีขึ้น / กลับบ้านได้"></textarea></div></div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section">
+          <summary>7. บันทึกสัญญาณชีพ (ประมาณทุก 10 นาทีจนปกติ)</summary>
+          <div class="reaction-section-body">
+            <div class="table-responsive">
+              <table class="reaction-vitals-table"><thead><tr><th>ครั้ง</th><th>เวลา</th><th>BP</th><th>Pulse</th><th>ท่าทาง</th></tr></thead><tbody id="reaction-vitals-body"></tbody></table>
+            </div>
+          </div>
+        </details>
+
+        <details class="reaction-form-section" open>
+          <summary>8. สรุป Diagnosis / Severity / แพทย์</summary>
+          <div class="reaction-section-body">
+            <div class="row g-2">
+              <div class="col-md-8"><label class="fw-bold">สรุป Diagnosis / อาการอื่นเพิ่มเติม <span class="required-mark">*</span></label><textarea id="reaction-diagnosis" class="form-control" rows="2" placeholder="สรุปอาการหรือ diagnosis"></textarea></div>
+              <div class="col-md-4"><label class="fw-bold">Severity Grade <span class="required-mark">*</span></label><div class="reaction-grade-row mt-2"><label class="reaction-grade-chip"><input type="radio" name="reaction-grade" value="1"> Grade 1</label><label class="reaction-grade-chip"><input type="radio" name="reaction-grade" value="2"> Grade 2</label><label class="reaction-grade-chip"><input type="radio" name="reaction-grade" value="3"> Grade 3</label><label class="reaction-grade-chip"><input type="radio" name="reaction-grade" value="4"> Grade 4</label><label class="reaction-grade-chip"><input type="radio" name="reaction-grade" value="5"> Grade 5</label></div></div>
+              <div class="col-md-4"><label class="fw-bold">แพทย์รับทราบ / ผู้รายงานแพทย์</label><input id="reaction-physician-name" class="form-control"></div>
+              <div class="col-md-4"><label class="fw-bold">วันที่/เวลาแพทย์รับทราบ</label><div class="input-group"><input id="reaction-physician-date" type="date" class="form-control"><input id="reaction-physician-time" type="time" class="form-control"></div></div>
+              <div class="col-md-4"><label class="fw-bold">Comment</label><input id="reaction-note" class="form-control"></div>
+              <div class="col-md-12"><div class="form-check"><input id="reaction-retrospective" class="form-check-input" type="checkbox"><label class="form-check-label fw-bold" for="reaction-retrospective">บันทึกย้อนหลัง</label></div></div>
+            </div>
+            <div class="reaction-danger-note mt-2">กรณีอาการรุนแรง/มีเกณฑ์ต้องประเมินโดยแพทย์ ให้ดำเนินการตามแนวทางหน่วยงานและบันทึกผู้รับทราบ</div>
+          </div>
+        </details>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button id="reaction-save-btn" type="button" class="btn btn-danger" onclick="saveDonorReaction()">💾 บันทึก Reaction</button>
+        <button id="reaction-save-btn" type="button" class="btn btn-danger" onclick="saveDonorReaction()">💾 บันทึก Donor Reaction</button>
       </div>
     </div>
   </div>
@@ -3279,7 +3410,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.69 - Simple Advance Workflow + Donor Reaction");
+    console.log("CNMI Blood Donation v15.6.71 - Alphanumeric DN + FM-CNBBC-063 Donor Reaction");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4879,7 +5010,10 @@ async function resetPasswordWithOtp() {
       }
       const advanceSelected = window.cnmiPreload?.getActiveAdvanceRegistration?.() || null;
       if (advanceSelected && !window.cnmiPreload?.isAdvanceIdentityVerified?.()) {
-        alert("รายชื่อนี้มาจากรายชื่อแจ้งล่วงหน้า กรุณาอ่านบัตรจริง หรือยืนยันเลขในช่องนี้ก่อนบันทึก เพื่อป้องกันใช้ข้อมูลกาชาด/จำนวนครั้งผิดคน");
+        const chk=window.cnmiPreload?.getAdvanceIdentityVerification?.()||{};
+        alert(chk.status==='mismatch'
+          ? "ชื่อ/นามสกุล/วันเกิดจากบัตรจริงไม่ตรงกับรายชื่อที่เลือก จึงยังไม่สามารถใช้ประวัติกาชาดของรายการนี้ได้ กรุณาเลือกชื่อให้ถูก หรือกด 'ตรวจด้วยตาแล้วตรง' หลังตรวจบัตรจริง"
+          : "รายชื่อนี้มีประวัติกาชาดเตรียมไว้ กรุณาอ่านบัตรจริงและยืนยัน ชื่อ + นามสกุล + วันเกิด ก่อนบันทึก เพื่อป้องกันนำจำนวนครั้งของกาชาดไปใช้ผิดคน");
         document.getElementById(data.identityType === 'passport' ? "passport_number" : "id_card")?.focus();
         return;
       }
@@ -5766,94 +5900,72 @@ function getVisitFullAddress(row = {}) {
 
     function reactionSeverityClass(v) {
       const x=String(v||'');
-      if(x==='เล็กน้อย') return 'mild';
-      if(x==='ปานกลาง') return 'medium';
+      if(x==='Grade 1'||x==='เล็กน้อย') return 'mild';
+      if(x==='Grade 2'||x==='Grade 3'||x==='ปานกลาง') return 'medium';
       return '';
+    }
+
+    const REACTION_CATEGORY_LABELS={vasovagal:'Vasovagal reaction',local_allergic:'Local allergic reaction',systemic_allergic:'Systemic allergic / Anaphylaxis',hypertensive:'Hypertensive urgency/emergency',nerve:'Nerve irritation/injury',hematoma:'Hematoma/Bruise',arm_pain:'Other arm pain',thrombophlebitis:'Thrombophlebitis',cellulitis:'Cellulitis',delayed_bleeding:'Delayed bleeding',arterial_puncture:'Arterial puncture',citrate:'Citrate reaction',hemolysis:'Hemolysis',infiltration:'Infiltration',air_embolism:'Air embolism',serious:'Other serious complications'};
+
+    function selectedRadio(name){return document.querySelector(`input[name="${name}"]:checked`)?.value||'';}
+    function checkedValues(selector){return [...document.querySelectorAll(selector)].filter(x=>x.checked).map(x=>x.value);}
+    function buildReactionVitalsRows(){
+      const body=document.getElementById('reaction-vitals-body');if(!body)return;
+      const labels=['เริ่มมีอาการ','วัดครั้งที่ 2','วัดครั้งที่ 3','วัดครั้งที่ 4','วัดครั้งที่ 5','วัดครั้งที่ 6','เมื่ออาการหาย'];
+      body.innerHTML=labels.map((label,i)=>`<tr data-vital-row="${i}"><td>${label}</td><td><input type="time" class="form-control form-control-sm rx-vital-time"></td><td><input class="form-control form-control-sm rx-vital-bp" placeholder="120/80"></td><td><input class="form-control form-control-sm rx-vital-pulse" inputmode="numeric"></td><td><select class="form-select form-select-sm rx-vital-position"><option value="">-</option><option>นั่ง</option><option>นอนราบ</option><option>ยกเท้าสูง</option></select></td></tr>`).join('');
+    }
+    function resetReactionStructuredForm(){
+      document.querySelectorAll('#donorReactionModal input[type="checkbox"]').forEach(x=>x.checked=false);
+      document.querySelectorAll('#donorReactionModal input[type="radio"]').forEach(x=>x.checked=false);
+      ['reaction-end-time','reaction-collection-start','reaction-collection-end','reaction-pre-bp','reaction-pre-pulse','reaction-volume','reaction-place-other','reaction-return-note','reaction-arm-side','reaction-needle-count','reaction-hematoma-size','reaction-action','reaction-outcome','reaction-diagnosis','reaction-physician-name','reaction-physician-date','reaction-physician-time','reaction-note'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+      const aph=document.getElementById('reaction-apheresis-type');if(aph)aph.value='';
+      buildReactionVitalsRows();
+    }
+    function collectReactionFormData(){
+      const categories={};document.querySelectorAll('#donorReactionModal input[data-rx]').forEach(x=>{if(!x.checked)return;const k=x.dataset.rx||'other';(categories[k]||(categories[k]=[])).push(x.value);});
+      const vitals=[...document.querySelectorAll('#reaction-vitals-body tr')].map((tr,i)=>({attempt:i+1,label:tr.cells?.[0]?.textContent?.trim()||'',time:tr.querySelector('.rx-vital-time')?.value||'',bp:tr.querySelector('.rx-vital-bp')?.value||'',pulse:tr.querySelector('.rx-vital-pulse')?.value||'',position:tr.querySelector('.rx-vital-position')?.value||''})).filter(v=>v.time||v.bp||v.pulse||v.position);
+      return {donorFrequency:selectedRadio('reaction-donor-frequency'),product:selectedRadio('reaction-product'),apheresisType:document.getElementById('reaction-apheresis-type')?.value||'',collectionStart:document.getElementById('reaction-collection-start')?.value||'',collectionEnd:document.getElementById('reaction-collection-end')?.value||'',symptomEndTime:document.getElementById('reaction-end-time')?.value||'',preBp:document.getElementById('reaction-pre-bp')?.value||'',prePulse:document.getElementById('reaction-pre-pulse')?.value||'',collectionComplete:selectedRadio('reaction-collection-complete'),volume:document.getElementById('reaction-volume')?.value||'',place:selectedRadio('reaction-place'),placeOther:document.getElementById('reaction-place-other')?.value||'',returnStatus:selectedRadio('reaction-return-status'),returnNote:document.getElementById('reaction-return-note')?.value||'',armSide:document.getElementById('reaction-arm-side')?.value||'',needleCount:document.getElementById('reaction-needle-count')?.value||'',hematomaSize:document.getElementById('reaction-hematoma-size')?.value||'',categories,care:checkedValues('#donorReactionModal input[data-care]'),physicianTime:document.getElementById('reaction-physician-time')?.value||'',vitals};
+    }
+    function reactionCategorySummary(formData){
+      const cats=formData?.categories||{};return Object.keys(cats).filter(k=>Array.isArray(cats[k])&&cats[k].length).map(k=>REACTION_CATEGORY_LABELS[k]||k);
     }
 
     function renderReactionHistoryRows(rows) {
       if (!Array.isArray(rows) || !rows.length) return '<div class="text-muted">ยังไม่มีประวัติ Donor Reaction</div>';
       return rows.map(r => {
+        const grade=r.severityGrade?`Grade ${r.severityGrade}`:(r.severity||'');
+        const cats=reactionCategorySummary(r.formData||{});
+        const headline=cats.length?cats.join(' + '):(r.reactionType||'-');
         const meta=[r.donationDate?`วันที่บริจาค ${escapeHtml(r.donationDate)}`:'',r.reactionTime?`เวลา ${escapeHtml(r.reactionTime)}`:'',r.dn?`DN ${escapeHtml(r.dn)}`:'',r.bagNumber?`ถุง ${escapeHtml(r.bagNumber)}`:''].filter(Boolean).join(' · ');
-        const detail=[r.symptoms?`อาการ: ${escapeHtml(r.symptoms)}`:'',r.actionTaken?`ดูแล: ${escapeHtml(r.actionTaken)}`:'',r.outcome?`ผล: ${escapeHtml(r.outcome)}`:'',r.note?`หมายเหตุ: ${escapeHtml(r.note)}`:''].filter(Boolean).join(' · ');
+        const detail=[r.diagnosis?`Diagnosis: ${escapeHtml(r.diagnosis)}`:'',r.symptoms?`อาการ: ${escapeHtml(r.symptoms)}`:'',r.actionTaken?`ดูแล: ${escapeHtml(r.actionTaken)}`:'',r.outcome?`ผล: ${escapeHtml(r.outcome)}`:'',r.note?`หมายเหตุ: ${escapeHtml(r.note)}`:''].filter(Boolean).join(' · ');
         const who=r.fullName||r.username||'-';
-        return `<div class="reaction-history-item">
-          <div><strong>⚠ ${escapeHtml(r.reactionType||'-')}</strong> <span class="reaction-severity ${reactionSeverityClass(r.severity)}">${escapeHtml(r.severity||'')}</span>${r.retrospective?' <span class="badge text-bg-secondary ms-1">ย้อนหลัง</span>':''}</div>
-          <div class="small mt-1">เกิดอาการ ${escapeHtml(r.reactionDate||'-')}${meta?' · '+meta:''}</div>
-          ${detail?`<div class="small mt-1 text-muted">${detail}</div>`:''}
-          <div class="small text-muted mt-1">บันทึกโดย ${escapeHtml(who)}${r.recordedAt?' · '+escapeHtml(r.recordedAt):''}</div>
-        </div>`;
+        return `<div class="reaction-history-item"><div><strong>⚠ ${escapeHtml(headline)}</strong> ${grade?`<span class="reaction-severity ${reactionSeverityClass(grade)}">${escapeHtml(grade)}</span>`:''}${r.retrospective?' <span class="badge text-bg-secondary ms-1">ย้อนหลัง</span>':''}</div><div class="small mt-1">เกิดอาการ ${escapeHtml(r.reactionDate||'-')}${meta?' · '+meta:''}</div>${detail?`<div class="small mt-1 text-muted">${detail}</div>`:''}<div class="small text-muted mt-1">บันทึกโดย ${escapeHtml(who)}${r.recordedAt?' · '+escapeHtml(r.recordedAt):''}</div></div>`;
       }).join('');
     }
 
     async function loadDonorReactionHistory(row) {
-      const wrap=document.getElementById('vd-reaction-history-wrap');
-      const box=document.getElementById('vd-reaction-history');
-      if(!wrap||!box)return [];
-      wrap.style.display='none';box.innerHTML='';
-      const key=reactionIdentityKey(row),dn=String(row?.dn||'').trim();
-      if(!key&&!dn)return [];
-      try{
-        const res=await apiCall('getDonorReactions',{data:JSON.stringify({identityKey:key,dn,limit:50})});
-        if(res?.status==='error'){
-          box.innerHTML=`<div class="text-danger">${escapeHtml(res.message||'โหลด Donor Reaction ไม่สำเร็จ')}</div>`;
-          wrap.style.display='block';
-          return [];
-        }
-        const rows=Array.isArray(res?.reactions)?res.reactions:[];
-        if(rows.length){wrap.style.display='block';box.innerHTML=renderReactionHistoryRows(rows);}
-        return rows;
-      }catch(err){console.warn('load donor reaction history failed',err);return [];}
+      const wrap=document.getElementById('vd-reaction-history-wrap'),box=document.getElementById('vd-reaction-history');if(!wrap||!box)return [];
+      wrap.style.display='none';box.innerHTML='';const key=reactionIdentityKey(row),dn=String(row?.dn||'').trim();if(!key&&!dn)return [];
+      try{const res=await apiCall('getDonorReactions',{data:JSON.stringify({identityKey:key,dn,limit:50})});if(res?.status==='error'){box.innerHTML=`<div class="text-danger">${escapeHtml(res.message||'โหลด Donor Reaction ไม่สำเร็จ')}</div>`;wrap.style.display='block';return [];}const rows=Array.isArray(res?.reactions)?res.reactions:[];if(rows.length){wrap.style.display='block';box.innerHTML=renderReactionHistoryRows(rows);}return rows;}catch(err){console.warn('load donor reaction history failed',err);return [];}
     }
 
     function openDonorReaction(encodedRow) {
-      const row=typeof encodedRow==='string' ? JSON.parse(decodeURIComponent(encodedRow)) : (encodedRow||{});
-      const key=reactionIdentityKey(row);
-      if(!key&&!row.dn){showSuccessPopup('ยังบันทึก Reaction ไม่ได้','ไม่พบตัวระบุผู้บริจาคของรายการนี้');return;}
-      const dateFromTable=document.getElementById('table-date')?.value||getLocalDateInputValue();
-      const donationDate=(String(row.saveTime||'').match(/^\d{4}-\d{2}-\d{2}/)||[])[0]||dateFromTable;
+      const row=typeof encodedRow==='string'?JSON.parse(decodeURIComponent(encodedRow)):(encodedRow||{});const key=reactionIdentityKey(row);if(!key&&!row.dn){showSuccessPopup('ยังบันทึก Reaction ไม่ได้','ไม่พบตัวระบุผู้บริจาคของรายการนี้');return;}
+      const dateFromTable=document.getElementById('table-date')?.value||getLocalDateInputValue();const donationDate=(String(row.saveTime||'').match(/^\d{4}-\d{2}-\d{2}/)||[])[0]||dateFromTable;
       document.getElementById('reaction-row-json').value=encodeURIComponent(JSON.stringify({...row,_reactionIdentityKey:key}));
-      document.getElementById('reaction-donor-summary').innerHTML=`<strong>${escapeHtml(row.name||'-')}</strong>${row.donorId?` · Donor ID ${escapeHtml(row.donorId)}`:''}${row.dn?` · DN ${escapeHtml(row.dn)}`:''}${row.bag&&row.bag!=='-'?` · ถุง ${escapeHtml(row.bag)}`:''}`;
-      document.getElementById('reaction-donation-date').value=donationDate||'';
-      document.getElementById('reaction-date').value=donationDate||getLocalDateInputValue();
-      document.getElementById('reaction-time').value='';
-      document.getElementById('reaction-type').value='';
-      document.getElementById('reaction-severity').value='เล็กน้อย';
-      document.getElementById('reaction-symptoms').value='';
-      document.getElementById('reaction-action').value='';
-      document.getElementById('reaction-outcome').value='';
-      document.getElementById('reaction-note').value='';
-      document.getElementById('reaction-retrospective').checked=!!(donationDate&&donationDate<getLocalDateInputValue());
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('donorReactionModal')).show();
+      document.getElementById('reaction-donor-summary').innerHTML=`<strong>${escapeHtml(row.name||'-')}</strong>${row.donorId?` · Donor ID ${escapeHtml(row.donorId)}`:''}${row.dn?` · DN <span class="font-monospace">${escapeHtml(String(row.dn))}</span>`:''}${row.bag&&row.bag!=='-'?` · Unit ${escapeHtml(row.bag)}`:''}`;
+      document.getElementById('reaction-donation-date').value=donationDate||'';document.getElementById('reaction-date').value=donationDate||getLocalDateInputValue();document.getElementById('reaction-time').value='';resetReactionStructuredForm();if(row.bp)document.getElementById('reaction-pre-bp').value=String(row.bp);if(row.pulse)document.getElementById('reaction-pre-pulse').value=String(row.pulse);document.getElementById('reaction-retrospective').checked=!!(donationDate&&donationDate<getLocalDateInputValue());bootstrap.Modal.getOrCreateInstance(document.getElementById('donorReactionModal')).show();
     }
 
-    function openDonorReactionFromDetail() {
-      if(!currentVisitDetailRow)return;
-      const detail=document.getElementById('visitDetailModal');
-      const m=bootstrap.Modal.getInstance(detail);
-      if(m)m.hide();
-      setTimeout(()=>openDonorReaction(currentVisitDetailRow),180);
-    }
+    function openDonorReactionFromDetail(){if(!currentVisitDetailRow)return;const detail=document.getElementById('visitDetailModal'),m=bootstrap.Modal.getInstance(detail);if(m)m.hide();setTimeout(()=>openDonorReaction(currentVisitDetailRow),180);}
 
     async function saveDonorReaction() {
-      const raw=document.getElementById('reaction-row-json')?.value||'';
-      let row={};try{row=JSON.parse(decodeURIComponent(raw));}catch{}
-      const reactionType=document.getElementById('reaction-type')?.value||'';
-      const reactionDate=document.getElementById('reaction-date')?.value||'';
-      if(!reactionType){showSuccessPopup('กรุณาเลือกอาการ','เลือกชนิด Donor Reaction ก่อนบันทึก');return;}
-      if(!reactionDate){showSuccessPopup('กรุณาเลือกวันที่','ระบุวันที่เกิดอาการก่อนบันทึก');return;}
-      const payload={
-        identityKey:row._reactionIdentityKey||reactionIdentityKey(row),identityType:row.identityType||'thai',dn:row.dn||'',donationDate:document.getElementById('reaction-donation-date')?.value||null,donorId:row.donorId||'',bagNumber:(row.bag&&row.bag!=='-')?row.bag:'',reactionDate,reactionTime:document.getElementById('reaction-time')?.value||'',reactionType,severity:document.getElementById('reaction-severity')?.value||'เล็กน้อย',symptoms:document.getElementById('reaction-symptoms')?.value||'',actionTaken:document.getElementById('reaction-action')?.value||'',outcome:document.getElementById('reaction-outcome')?.value||'',note:document.getElementById('reaction-note')?.value||'',retrospective:!!document.getElementById('reaction-retrospective')?.checked
-      };
-      try{
-        setButtonBusy('reaction-save-btn',true,'กำลังบันทึก...');
-        const res=await apiCall('saveDonorReaction',{data:JSON.stringify(payload)});
-        if(!res||res.status!=='success'){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',res?.message||'เกิดข้อผิดพลาด');return;}
-        bootstrap.Modal.getInstance(document.getElementById('donorReactionModal'))?.hide();
-        showSuccessPopup('บันทึก Donor Reaction แล้ว',`${row.name||'ผู้บริจาค'} · ${reactionType}${payload.retrospective?' · บันทึกย้อนหลัง':''}`);
-        if(currentVisitDetailRow&&reactionIdentityKey(currentVisitDetailRow)===payload.identityKey)loadDonorReactionHistory(currentVisitDetailRow).catch(()=>{});
-      }catch(err){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',err.message||String(err));}
-      finally{setButtonBusy('reaction-save-btn',false);}
+      const raw=document.getElementById('reaction-row-json')?.value||'';let row={};try{row=JSON.parse(decodeURIComponent(raw));}catch{}
+      const reactionDate=document.getElementById('reaction-date')?.value||'',diagnosis=document.getElementById('reaction-diagnosis')?.value?.trim()||'',grade=Number(selectedRadio('reaction-grade')||0),formData=collectReactionFormData();
+      const cats=reactionCategorySummary(formData);if(!cats.length&&!diagnosis){showSuccessPopup('กรุณาระบุ Donor Reaction','เลือกชนิดอาการอย่างน้อย 1 รายการ หรือกรอก Diagnosis');return;}if(!reactionDate){showSuccessPopup('กรุณาเลือกวันที่','ระบุวันที่เกิดอาการก่อนบันทึก');return;}if(!(grade>=1&&grade<=5)){showSuccessPopup('กรุณาเลือก Severity','เลือก Grade 1–5 ตามแบบฟอร์ม');return;}
+      const symptoms=Object.values(formData.categories||{}).flat().join(' · '),care=[...(formData.care||[]),document.getElementById('reaction-action')?.value?.trim()||''].filter(Boolean).join(' · ');
+      const payload={identityKey:row._reactionIdentityKey||reactionIdentityKey(row),identityType:row.identityType||'thai',dn:String(row.dn||''),donationDate:document.getElementById('reaction-donation-date')?.value||null,donorId:String(row.donorId||''),bagNumber:(row.bag&&row.bag!=='-')?String(row.bag):'',reactionDate,reactionTime:document.getElementById('reaction-time')?.value||'',reactionType:cats.join(' + ')||diagnosis,severity:grade<=1?'เล็กน้อย':grade<=3?'ปานกลาง':'รุนแรง',severityGrade:grade,diagnosis,symptoms,actionTaken:care,outcome:document.getElementById('reaction-outcome')?.value||'',note:document.getElementById('reaction-note')?.value||'',physicianName:document.getElementById('reaction-physician-name')?.value||'',physicianDate:document.getElementById('reaction-physician-date')?.value||null,formData,retrospective:!!document.getElementById('reaction-retrospective')?.checked};
+      try{setButtonBusy('reaction-save-btn',true,'กำลังบันทึก...');const res=await apiCall('saveDonorReaction',{data:JSON.stringify(payload)});if(!res||res.status!=='success'){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',res?.message||'เกิดข้อผิดพลาด');return;}bootstrap.Modal.getInstance(document.getElementById('donorReactionModal'))?.hide();showSuccessPopup('บันทึก Donor Reaction แล้ว',`${row.name||'ผู้บริจาค'} · ${cats.join(' + ')||diagnosis} · Grade ${grade}${payload.retrospective?' · บันทึกย้อนหลัง':''}`);if(currentVisitDetailRow&&reactionIdentityKey(currentVisitDetailRow)===payload.identityKey)loadDonorReactionHistory(currentVisitDetailRow).catch(()=>{});}catch(err){showSuccessPopup('บันทึก Reaction ไม่สำเร็จ',err.message||String(err));}finally{setButtonBusy('reaction-save-btn',false);}
     }
 
     async function loadScreeningAttemptHistory(dn) {
@@ -6548,7 +6660,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.69"></script>
+  <script src="js/supabase-history.js?v=15.6.71"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
@@ -8438,28 +8550,36 @@ async function enrichThaiIdFieldsFromImage(dataUrl,{overwrite=false,preserveIden
 }
 window.enrichThaiIdFieldsFromImage=enrichThaiIdFieldsFromImage;
 async function verifyThaiIdentityAndLookup({detailImage='',docTypeHint='',method='document',statusText='ยืนยันตัวตนแล้ว'}={}){
-  // เลขจากเอกสารจริงยืนยันตัวตนก่อน แล้วให้ AI-LIS ชนะเสมอถ้ามีประวัติ
-  window.cnmiPreload?.markAdvanceIdentityVerified?.({method});
-  setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังค้น AI-LIS/Blood Mobile และตรวจว่าต้องอ่านรายละเอียดจากเอกสารต่อหรือไม่');
-  setDocOcrStatus(`${statusText} · กำลังค้นประวัติเดิม`,'ok');
+  // v15.6.70: ถ้าเลือกจากรายชื่อแจ้งล่วงหน้า ต้องยืนยัน ชื่อ+นามสกุล+วันเกิด ก่อนใช้จำนวนครั้งกาชาด
+  const advance=window.cnmiPreload?.getActiveAdvanceRegistration?.()||null;
+  let details=null;
+  if(advance&&detailImage){
+    setOcrProgress(4,'4/5 ยืนยันชื่อและวันเกิด','กำลังอ่านชื่อ + นามสกุล + วันเกิดจากบัตรจริงเพื่อเทียบกับรายชื่อที่เลือก');
+    setDocOcrStatus('กำลังอ่านชื่อและวันเกิดจากบัตรจริงเพื่อยืนยันรายชื่อแจ้งล่วงหน้า...','busy');
+    try{details=await recognizeThaiIdDocumentDetails(detailImage,docTypeHint);}catch(err){console.warn('advance demographic OCR skipped',err);}
+  }
+  window.cnmiPreload?.markAdvanceIdentityVerified?.({method,actualProfile:details||null});
+  setOcrProgress(4,'4/5 ตรวจประวัติและรายละเอียด','กำลังค้น AI-LIS/Blood Mobile ด้วยเลขบัตรจริง');
+  setDocOcrStatus(`${statusText} · กำลังค้นประวัติเดิมด้วยเลขบัตรจริง`,'ok');
   await window.cnmiPreload?.lookupFromRegister?.({fill:true});
   const source=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
-  let details=null;
   if(detailImage && source!=='ai-lis'){
     try{
-      // เอกสารจริงต้องแทนข้อมูลแจ้งล่วงหน้า/ข้อมูลเดิมในฟอร์มได้ แต่ไม่ทับ AI-LIS
-      details=await enrichThaiIdFieldsFromImage(detailImage,{overwrite:true,preserveIdentity:true,docTypeHint});
+      if(details){details.idCard='';applyOcrParsedFields(details,{overwrite:true});}
+      else details=await enrichThaiIdFieldsFromImage(detailImage,{overwrite:true,preserveIdentity:true,docTypeHint});
     }catch(err){console.warn('detail OCR skipped',err);}
   }
   setOcrProgress(5,'5/5 เติมข้อมูลลงฟอร์ม',source==='ai-lis'?'พบ AI-LIS กำลังใช้ข้อมูลหลักจาก AI-LIS':'กำลังเติมเฉพาะข้อมูลจากเอกสารที่อ่านได้อย่างมั่นใจ');
+  const advanceCheck=window.cnmiPreload?.getAdvanceIdentityVerification?.()||{};
   if(source==='ai-lis'){
-    setDocOcrStatus(`${statusText} · พบ AI-LIS ใช้ข้อมูลหลักจาก AI-LIS`,'ok');
+    setDocOcrStatus(`${statusText} · พบ AI-LIS ใช้ข้อมูลหลักจาก AI-LIS${advance&&advanceCheck.status!=='verified'?' · ประวัติกาชาดยังรอยืนยันชื่อ/วันเกิด':''}`,'ok');
   }else if(details){
     const got=[];
     if(details.prefix&&details.fname&&details.lname)got.push('ชื่อ');
     if(details.birthDate)got.push('วันเกิด');
     if(details.addressParts)got.push('ที่อยู่');
-    setDocOcrStatus(got.length?`${statusText} · เติม ${got.join(' / ')} จากเอกสารแล้ว · กรุณาตรวจเทียบ`:`${statusText} · เลขบัตรยืนยันแล้ว แต่รายละเอียด OCR ยังไม่มั่นใจ — ใช้ช่องค้นหาที่อยู่/กรอกต่อได้` ,got.length?'ok':'warn');
+    const extra=advance&&advanceCheck.status!=='verified'?' · ประวัติกาชาดยังไม่ถูกนำมาใช้จนกว่าจะยืนยันชื่อ+วันเกิด':'';
+    setDocOcrStatus(got.length?`${statusText} · เติม ${got.join(' / ')} จากเอกสารแล้ว${extra} · กรุณาตรวจเทียบ`:`${statusText} · เลขบัตรยืนยันแล้ว แต่รายละเอียด OCR ยังไม่มั่นใจ${extra}` ,got.length?'ok':'warn');
   }
 }
 window.verifyThaiIdentityAndLookup=verifyThaiIdentityAndLookup;
@@ -8821,7 +8941,7 @@ async function readThaiIdCard(){
     const parsedAddress=window.cnmiParseThaiAddressText?.(payload.address)||{addressLine:payload.address||''};
     window.cnmiFillStructuredAddress?.(parsedAddress,{overwrite:true});
     if(st){st.className='small fw-bold text-success mt-1';st.textContent=`อ่านบัตรสำเร็จ${payload.reader?' · '+payload.reader:''}`;}
-    window.cnmiPreload?.markAdvanceIdentityVerified?.({method:'card-reader'});
+    window.cnmiPreload?.markAdvanceIdentityVerified?.({method:'card-reader',actualProfile:{prefix:payload.prefix,fname:payload.firstName,lname:payload.lastName,birthDate:payload.birthDate}});
     await window.cnmiPreload?.lookupFromRegister?.({fill:true});
   }catch(err){
     console.error('Thai ID card read failed',err);
@@ -8903,13 +9023,19 @@ function parseAdvanceWorkbookMatrix(matrix,fileName=''){
     if(!full&&ix.fname>=0)full=[advanceCellText(r[ix.fname]),ix.lname>=0?advanceCellText(r[ix.lname]):''].filter(Boolean).join(' ').trim();
     if(!full||full==='.'||full==='-')continue;
     let nm=splitAdvanceThaiName(full);if(ix.fullName<0&&ix.fname>=0){const f=splitAdvanceThaiName(advanceCellText(r[ix.fname]));nm={prefix:f.prefix,fname:f.fname||advanceCellText(r[ix.fname]),lname:ix.lname>=0?advanceCellText(r[ix.lname]):f.lname};}
-    const rawId=ix.id>=0?advanceCellText(r[ix.id]):'',id=rawId.replace(/\D/g,''),validId=/^\d{13}$/.test(id)&&(typeof isValidThaiNationalId!=='function'||isValidThaiNationalId(id));
+    const rawId=ix.id>=0?advanceCellText(r[ix.id]):'',idDigits=rawId.replace(/\D/g,''),reportedId=/^\d{13}$/.test(idDigits)?idDigits:'';
     const pass=ix.passport>=0?advanceCellText(r[ix.passport]).toUpperCase().replace(/[^A-Z0-9]/g,''):'';
     const countRaw=ix.count>=0?advanceCellText(r[ix.count]):'',count=/^\d+$/.test(countRaw)?Number(countRaw):null;
     const emp=ix.emp>=0?advanceCellText(r[ix.emp]):'',phone=ix.phone>=0?advanceCellText(r[ix.phone]).replace(/\s+/g,''):'';
-    const sourceKey=(validId?`THAI:${id}`:(pass?`PASS:${pass}`:(emp&&emp!=='-'?`EMP:${emp}`:`NAME:${full}|TEL:${phone}`))).slice(0,220);
-    let note=ix.note>=0?advanceCellText(r[ix.note]):'';if(rawId&&rawId!=='-'&&!validId)note=[note,'เลขประชาชนในไฟล์ต้องตรวจสอบ'].filter(Boolean).join(' · ');if(countRaw&&countRaw!=='-'&&count===null)note=[note,'จำนวนครั้งเดิมไม่ชัดเจน'].filter(Boolean).join(' · ');
-    out.push({sourceKey,sourceRow:ri+1,identityType:validId?'thai':(pass?'passport':'unknown'),idCard:validId?id:'',passportNumber:pass,prefix:nm.prefix,fname:nm.fname,lname:nm.lname,employeeId:emp,department:ix.dept>=0?advanceCellText(r[ix.dept]):'',phone,bloodGroup:ix.group>=0?advanceCellText(r[ix.group]):'',donorId:ix.donor>=0?advanceCellText(r[ix.donor]).replace(/^[-\s]+$/,''):'',lastDonationNo:count,lastDonationDate:ix.last>=0?parseAdvanceThaiDate(r[ix.last]):'',birth:ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'',note});
+    const birth=ix.birth>=0?parseAdvanceThaiDate(r[ix.birth]):'';
+    // v15.6.70: เลขประชาชนจากระบบกาชาดเป็นข้อมูลอ้างอิง ไม่ใช้เป็น key ผูกประวัติกาชาด
+    // ใช้รหัสพนักงานก่อน ถ้าไม่มีจึงใช้ ชื่อ+นามสกุล+วันเกิด ซึ่งตรงกับวิธีค้นในระบบกาชาดจริง
+    const personKey=`${normalizeAdvanceSearch(nm.fname)}|${normalizeAdvanceSearch(nm.lname)}|${normalizeAdvanceSearch(birth)}`;
+    const sourceKey=(pass?`PASS:${pass}`:(emp&&emp!=='-'?`EMP:${normalizeAdvanceSearch(emp)}`:`PERSON:${personKey}|TEL:${normalizeAdvanceSearch(phone)}`)).slice(0,220);
+    let note=ix.note>=0?advanceCellText(r[ix.note]):'';
+    if(rawId&&rawId!=='-'&&!reportedId)note=[note,'เลขประชาชนจากกาชาดรูปแบบไม่ครบ 13 หลัก (อ้างอิงเท่านั้น)'].filter(Boolean).join(' · ');
+    if(countRaw&&countRaw!=='-'&&count===null)note=[note,'จำนวนครั้งเดิมไม่ชัดเจน'].filter(Boolean).join(' · ');
+    out.push({sourceKey,sourceRow:ri+1,identityType:pass?'passport':'thai',idCard:reportedId,passportNumber:pass,prefix:nm.prefix,fname:nm.fname,lname:nm.lname,employeeId:emp,department:ix.dept>=0?advanceCellText(r[ix.dept]):'',phone,bloodGroup:ix.group>=0?advanceCellText(r[ix.group]):'',donorId:ix.donor>=0?advanceCellText(r[ix.donor]).replace(/^[-\s]+$/,''):'',lastDonationNo:count,lastDonationDate:ix.last>=0?parseAdvanceThaiDate(r[ix.last]):'',birth,note});
   }
   if(!out.length)throw new Error('ไม่พบรายชื่อผู้บริจาคในไฟล์');
   const labels={fullName:'ชื่อ-นามสกุล',fname:'ชื่อ',lname:'นามสกุล',id:'เลขประชาชน',passport:'Passport',donor:'Donor ID',count:'จำนวนครั้ง',last:'บริจาคล่าสุด',birth:'วันเกิด',phone:'เบอร์โทร',emp:'รหัสพนักงาน',dept:'แผนก',group:'หมู่เลือด',note:'หมายเหตุ'};
@@ -8922,8 +9048,18 @@ async function importAdvanceRegistrationFile(){
   if(!date)return alert('กรุณาเลือกวันที่ออกหน่วย');if(!file)return alert('กรุณาเลือกไฟล์รายชื่อจากหน่วย');
   try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน...';}if(st){st.className='small mt-2 text-primary fw-bold';st.textContent='กำลังอ่าน Excel และตรวจรายชื่อ...';}
     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-    const parsed=parseAdvanceWorkbookMatrix(matrix,file.name),rows=parsed.rows;const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows,replacePlanned:true});
-    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||rows.length)} รายการ · พบหัวตารางแถว ${parsed.meta.headerRow} · จับคอลัมน์ตามชื่ออัตโนมัติ · ยังไม่สร้าง DN/Visit/เพิ่มครั้ง · เก็บข้อมูลกาชาดตามไฟล์แล้ว และยังไม่ค้น AI-LIS จนกว่าจะยืนยันบัตรวันจริง`;st.title=parsed.meta.detected.join(' | ');}
+    const parsed=parseAdvanceWorkbookMatrix(matrix,file.name),rows=parsed.rows;
+    const stablePersonKey=(x)=>String(x?.employeeId||'').trim()&&String(x.employeeId).trim()!=='-'
+      ? `EMP:${normalizeAdvanceSearch(x.employeeId)}`
+      : `PERSON:${normalizeAdvanceSearch(x?.fname)}|${normalizeAdvanceSearch(x?.lname)}|${normalizeAdvanceSearch(x?.birth)}`;
+    let registeredKeys=new Set(),skippedRegistered=0;
+    try{
+      const existing=await window.cnmiSupabaseApi.getAdvanceRegistrations(date);
+      registeredKeys=new Set((existing||[]).filter(x=>x.status==='registered').map(stablePersonKey));
+    }catch{}
+    const importRows=rows.filter(x=>{const hit=registeredKeys.has(stablePersonKey(x));if(hit)skippedRegistered++;return !hit;});
+    const r=await window.cnmiSupabaseApi.importAdvanceRegistrations({eventDate:date,sourceFile:file.name,rows:importRows,replacePlanned:true});
+    if(st){st.className='small mt-2 text-success fw-bold';st.textContent=`นำเข้าสำเร็จ ${Number(r.processed||importRows.length)} รายการ${skippedRegistered?` · ข้ามผู้ที่ลงทะเบียนจริงแล้ว ${skippedRegistered} คน`:''} · พบหัวตารางแถว ${parsed.meta.headerRow} · ผูกข้อมูลกาชาดด้วยชื่อ+นามสกุล+วันเกิด · เลขประชาชนกาชาดเป็นข้อมูลอ้างอิงเท่านั้น · ยังไม่สร้าง DN/Visit/เพิ่มครั้ง`;st.title=parsed.meta.detected.join(' | ');}
     await loadAdvanceRegistrations();
   }catch(err){console.error(err);if(st){st.className='small mt-2 text-danger fw-bold';st.textContent='นำเข้าไม่สำเร็จ: '+(err.message||err);}alert('นำเข้ารายชื่อไม่สำเร็จ\n'+(err.message||err));}
   finally{if(btn){btn.disabled=false;btn.textContent='📥 นำเข้ารายชื่อ';}}
@@ -8936,16 +9072,19 @@ function advanceRedCrossStatus(r){
   const note=String(r.note||'').trim();
   const hasDonorId=!!String(r.donorId||'').trim();
   const hasCount=Number.isInteger(Number(r.lastDonationNo))&&Number(r.lastDonationNo)>=0;
-  const needsReview=/ต้องตรวจ|ไม่ชัด|หลายเลข|หลายคน|ไม่ตรง|ผิด|ซ้ำ|คลุมเครือ|ambiguous|เลขประชาชนในไฟล์/i.test(note);
+  const hasCoreIdentity=!!(String(r.fname||'').trim()&&String(r.lname||'').trim()&&String(r.birth||'').trim());
+  // เลขประชาชนจากกาชาดไม่ใช่เงื่อนไขผ่าน/ไม่ผ่าน เพราะข้อมูลเดิมอาจไม่ตรงกับบัตรจริง
+  const ambiguous=/ต้องตรวจ|หลายเลข|หลายคน|ชื่อ[^·]*ไม่ตรง|วันเกิด[^·]*ไม่ตรง|ข้อมูล[^·]*ไม่ตรง|ซ้ำ|คลุมเครือ|ambiguous/i.test(note);
   const explicitlyNotFound=/ไม่เจอ|ไม่พบ|ไม่มีประวัติ|not\s*found/i.test(note);
-  if(needsReview)return {key:'review',label:'⚠ ข้อมูลกาชาดต้องตรวจ',message:note||'ข้อมูลจากระบบกาชาดต้องตรวจ'};
-  if(hasDonorId||hasCount)return {key:'redcross',label:'✓ มีกาชาดตรวจประวัติแล้ว',message:note};
+  if(ambiguous)return {key:'review',label:'⚠ ข้อมูลกาชาดต้องตรวจ',message:note||'ข้อมูลจากระบบกาชาดต้องตรวจ'};
+  if((hasDonorId||hasCount)&&!hasCoreIdentity)return {key:'review',label:'⚠ ขาดข้อมูลยืนยัน',message:'ต้องมีชื่อ + นามสกุล + วันเกิด ก่อนใช้ประวัติกาชาดวันจริง'};
+  if(hasDonorId||hasCount)return {key:'redcross',label:'✓ พร้อมใช้ประวัติกาชาด',message:note};
   if(explicitlyNotFound||(!hasDonorId&&!hasCount))return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:note};
   return {key:'nohistory',label:'— ไม่พบประวัติกาชาด',message:note};
 }
 async function classifyAdvanceRows(rows){
-  // v15.6.68: ห้ามนำเลข/Donor ID จากไฟล์กาชาดไปค้น AI-LIS ล่วงหน้า
-  // วันจริงต้องยืนยันตัวตนจากบัตรจริงก่อน แล้ว lookupFromRegister จะค้น AI-LIS ของ CNMI ให้อัตโนมัติ
+  // v15.6.70: ประวัติกาชาดผูกด้วย ชื่อ + นามสกุล + วันเกิด เท่านั้น
+  // เลขประชาชนจากกาชาดเก็บไว้เป็นข้อมูลอ้างอิง และห้ามใช้ค้น/จับคู่ AI-LIS
   return (rows||[]).map(r=>{
     const rc=advanceRedCrossStatus(r);
     return {...r,redCrossStatus:rc.key,redCrossMessage:rc.message,centralProfile:null,identityVerified:false};
@@ -8963,15 +9102,17 @@ function renderAdvancePrepareList(){
   const counts={redcross:0,review:0,nohistory:0,done:0};rows.forEach(r=>{const k=advanceRowSource(r).key;if(k in counts)counts[k]++;});
   const f=advanceRegistrationUiState.prepareFilter||'all';
   const chip=(key,cls,label,count)=>`<button type="button" class="advance-summary-chip ${cls||''} ${f===key?'active':''}" onclick="setAdvancePrepareFilter('${key}')">${label} ${count}</button>`;
-  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('redcross','match','✓ มีกาชาดตรวจแล้ว',counts.redcross)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nohistory','nomatch','— ไม่พบประวัติกาชาด',counts.nohistory)+chip('done','done','มาจริงแล้ว',counts.done);
+  sum.innerHTML=chip('all','','ทั้งหมด',rows.length)+chip('redcross','match','✓ พร้อมใช้ประวัติกาชาด',counts.redcross)+chip('review','review','⚠ ต้องตรวจ',counts.review)+chip('nohistory','nomatch','— ไม่พบประวัติกาชาด',counts.nohistory)+chip('done','done','มาจริงแล้ว',counts.done);
   if(!rows.length){box.innerHTML='<div class="alert alert-light border mb-0">ยังไม่มีรายชื่อแจ้งล่วงหน้าของวันที่นี้</div>';return;}
   const visible=f==='all'?rows:rows.filter(r=>advanceRowSource(r).key===f);
   if(!visible.length){box.innerHTML='<div class="alert alert-light border mb-0">ไม่พบรายชื่อในกลุ่มนี้</div>';return;}
-  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ข้อมูลสำหรับยืนยันวันจริง</th><th>ข้อมูลที่เช็กจากกาชาด</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
-    const s=advanceRowSource(r),reportedLast=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
-    const reportedId=r.idCard?escapeHtml(String(r.idCard).replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5')):'ไม่มีเลขบัตร';
+  const fmtId=x=>/^\d{13}$/.test(String(x||''))?String(x).replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'):String(x||'');
+  box.innerHTML=`<div class="advance-list-wrap"><table class="table table-sm table-hover advance-list-table"><thead><tr><th>#</th><th>ผู้บริจาค</th><th>ตัวผูกประวัติกาชาด</th><th>ข้อมูลที่เช็กจากกาชาด</th><th>สถานะ</th></tr></thead><tbody>${visible.map((r,i)=>{
+    const st=advanceRowSource(r),reportedLast=Number.isInteger(Number(r.lastDonationNo))?Number(r.lastDonationNo):'-';
+    const person=[r.prefix,r.fname,r.lname].filter(Boolean).join(' ');
+    const identity=`<strong>${escapeHtml(person||'-')}</strong>${r.birth?`<div class="small">วันเกิด ${escapeHtml(r.birth)}</div>`:'<div class="small text-danger">⚠ ไม่มีวันเกิด</div>'}<div class="small text-muted">ใช้ชื่อ + นามสกุล + วันเกิด ยืนยันวันจริง</div>${r.idCard?`<div class="small text-secondary mt-1">เลขประชาชนในกาชาด ${escapeHtml(fmtId(r.idCard))} · อ้างอิงเท่านั้น</div>`:''}`;
     const redCross=[r.donorId?`<strong>Donor ID กาชาด ${escapeHtml(r.donorId)}</strong>`:'',Number.isInteger(Number(r.lastDonationNo))?`<div class="small">เคยบริจาค ${reportedLast} ครั้ง${r.lastDonationDate?' · ล่าสุด '+escapeHtml(r.lastDonationDate):''}</div>`:''].filter(Boolean).join('') || '<span class="text-muted">ไม่พบ Donor ID/จำนวนครั้งในไฟล์</span>';
-    return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml([r.prefix,r.fname,r.lname].filter(Boolean).join(' '))}</strong><div class="small text-muted">${escapeHtml(r.department||'')}</div></td><td><div>${reportedId} <span class="text-warning-emphasis small">· รอยืนยันจากบัตรจริง</span></div>${r.birth?`<div class="small">วันเกิดที่แจ้ง ${escapeHtml(r.birth)}</div>`:''}${r.note?`<div class="small text-warning-emphasis">${escapeHtml(r.note)}</div>`:''}</td><td>${redCross}</td><td><span class="advance-source-badge ${s.key==='redcross'?'match':s.key}">${s.label}</span>${s.message?`<div class="small text-muted mt-1">${escapeHtml(s.message)}</div>`:''}</td></tr>`;
+    return `<tr><td>${r.sourceRow||i+1}</td><td><strong>${escapeHtml(person||'-')}</strong><div class="small text-muted">${escapeHtml(r.department||'')}</div></td><td>${identity}${r.note?`<div class="small text-warning-emphasis">${escapeHtml(r.note)}</div>`:''}</td><td>${redCross}</td><td><span class="advance-source-badge ${st.key==='redcross'?'match':st.key}">${st.label}</span>${st.message?`<div class="small text-muted mt-1">${escapeHtml(st.message)}</div>`:''}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 async function loadAdvanceRegistrations(){
@@ -8980,7 +9121,7 @@ async function loadAdvanceRegistrations(){
   try{
     advanceRegistrationUiState.rows=await classifyAdvanceRows(await window.cnmiSupabaseApi.getAdvanceRegistrations(date));
     renderAdvancePrepareList();
-    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='จัดกลุ่มข้อมูลกาชาดแล้ว · วันจริงอ่านบัตรก่อน แล้วระบบจึงค้น AI-LIS ของเราอัตโนมัติ';}
+    if(st&&!/นำเข้าสำเร็จ/.test(st.textContent||'')){st.className='small mt-2 text-success';st.textContent='จัดกลุ่มแล้ว · ประวัติกาชาดผูกด้วยชื่อ+นามสกุล+วันเกิด · เลขประชาชนกาชาดเป็นข้อมูลอ้างอิงเท่านั้น';}
     return advanceRegistrationUiState.rows;
   }catch(err){console.error(err);if(box)box.innerHTML=`<div class="alert alert-danger">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml(err.message||err)}</div>`;return[];}
 }
@@ -8988,28 +9129,37 @@ window.loadAdvanceRegistrations=loadAdvanceRegistrations;
 function updateAdvanceRegisterBanner(row){
   const box=document.getElementById('advance-register-banner');if(!box)return;
   if(!row){box.style.display='none';box.innerHTML='';return;}
-  const redCrossLast=Number.isInteger(Number(row.lastDonationNo))?`${Number(row.lastDonationNo)} ครั้ง`:'ไม่พบจำนวนครั้ง';
-  const verified=!!window.cnmiPreload?.isAdvanceIdentityVerified?.();
-  const currentId=String(document.getElementById('id_card')?.value||'').replace(/\D/g,''),reportedId=String(row.idCard||'').replace(/\D/g,'');
+  const check=window.cnmiPreload?.getAdvanceIdentityVerification?.()||{status:'pending',message:'',documentRead:false,canManualConfirm:false};
+  const reportedId=String(row.idCard||'').replace(/\D/g,'');
   const formatted=x=>/^\d{13}$/.test(x)?x.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'):x;
-  let identity='';
-  if(row.identityType==='passport')identity=verified?'<span class="text-success fw-bold">✅ ยืนยัน Passport จริงแล้ว</span>':'<span class="text-warning-emphasis fw-bold">⚠ Passport ในรายชื่อยังไม่ยืนยัน</span>';
-  else if(verified){const mismatch=reportedId&&currentId&&reportedId!==currentId;identity=`<span class="text-success fw-bold">✅ ยืนยันเลขบัตรจริงแล้ว ${escapeHtml(formatted(currentId))}</span>${mismatch?` <span class="text-danger fw-bold">· ไม่ตรงกับเลขในรายชื่อ ${escapeHtml(formatted(reportedId))}</span>`:''}`;}
-  else identity=`<span class="text-warning-emphasis fw-bold">⚠ เลขในรายชื่อ${reportedId?' '+escapeHtml(formatted(reportedId)):''} — รออ่านบัตรจริง</span> <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ยืนยันเลขในช่องนี้</button>`;
-  const rc=advanceRedCrossStatus(row);
-  const redCrossParts=[];
+  const expectedName=[row.prefix,row.fname,row.lname].filter(Boolean).join(' ');
+  const expected=`<strong>${escapeHtml(expectedName||'-')}</strong>${row.birth?` · วันเกิด <strong>${escapeHtml(row.birth)}</strong>`:''}`;
+  let verifyLine='';
+  if(row.identityType==='passport'){
+    verifyLine=window.cnmiPreload?.isAdvanceIdentityVerified?.()?'<span class="text-success fw-bold">✅ ยืนยัน Passport จริงแล้ว</span>':'<span class="text-warning-emphasis fw-bold">⚠ รออ่าน Passport จริง</span>';
+  }else if(check.status==='verified'){
+    verifyLine=`<span class="text-success fw-bold">✅ ยืนยันชื่อ + นามสกุล + วันเกิดกับบัตรจริงแล้ว</span>${check.message?` <span class="small text-muted">${escapeHtml(check.message)}</span>`:''}`;
+  }else if(check.status==='mismatch'){
+    verifyLine=`<span class="text-danger fw-bold">⚠ ${escapeHtml(check.message||'ข้อมูลจากบัตรจริงไม่ตรงกับรายชื่อที่เลือก')}</span>`;
+    if(check.canManualConfirm)verifyLine+=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ตรวจด้วยตาแล้วตรง</button>`;
+    verifyLine+=` <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="window.cnmiPreload?.continueWithoutAdvanceRegistration?.()">ใช้เป็น Walk-in</button>`;
+  }else if(check.documentRead){
+    verifyLine=`<span class="text-warning-emphasis fw-bold">⚠ อ่านบัตรจริงแล้ว แต่ระบบยังยืนยันชื่อ/วันเกิดอัตโนมัติไม่ครบ</span>`;
+    if(check.canManualConfirm)verifyLine+=` <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="window.cnmiPreload?.confirmAdvanceIdentityForLookup?.()">✓ ชื่อ+วันเกิดตรงกับบัตร</button>`;
+  }else{
+    verifyLine='<span class="text-warning-emphasis fw-bold">รออ่านบัตรจริงเพื่อยืนยันชื่อ + นามสกุล + วันเกิด</span>';
+  }
+  const rc=advanceRedCrossStatus(row),redCrossParts=[];
   if(row.donorId)redCrossParts.push(`Donor ID กาชาด <strong>${escapeHtml(row.donorId)}</strong>`);
   if(Number.isInteger(Number(row.lastDonationNo)))redCrossParts.push(`เคยบริจาค <strong>${Number(row.lastDonationNo)} ครั้ง</strong>`);
   let source=`<span class="${rc.key==='review'?'text-danger':rc.key==='redcross'?'text-success':'text-muted'} fw-bold">${escapeHtml(rc.label)}</span>${redCrossParts.length?' · '+redCrossParts.join(' · '):''}`;
-  if(verified){
-    const histSource=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
-    if(histSource==='ai-lis')source+=`<div class="small text-success mt-1">✓ พบ AI-LIS ของ CNMI แล้ว → ใช้ Donor ID/จำนวนครั้งจาก AI-LIS เป็นหลัก</div>`;
-    else if(histSource==='blood-mobile')source+=`<div class="small text-success mt-1">✓ พบ Blood Mobile เดิม → ใช้ประวัติของเราเป็นหลัก</div>`;
-    else if(histSource==='advance-list')source+=`<div class="small text-warning-emphasis mt-1">ไม่พบ AI-LIS/Blood Mobile → ใช้จำนวนครั้งที่เช็กจากกาชาดเป็นฐาน</div>`;
-    else source+=`<div class="small text-muted mt-1">ไม่พบประวัติหลักของเรา</div>`;
-  }else source+=`<div class="small text-muted mt-1">ยังไม่ค้น AI-LIS จนกว่าจะยืนยันตัวตนจากบัตรจริง</div>`;
+  const histSource=window.cnmiPreload?.getRegistrationHistorySource?.()||'manual';
+  if(histSource==='ai-lis')source+=`<div class="small text-success mt-1">✓ พบ AI-LIS ด้วยเลขบัตรจริง → ใช้ Donor ID/จำนวนครั้งจาก AI-LIS เป็นหลัก</div>`;
+  else if(histSource==='blood-mobile')source+=`<div class="small text-success mt-1">✓ พบ Blood Mobile เดิมด้วยเลขบัตรจริง → ใช้ประวัติของเราเป็นหลัก</div>`;
+  else if(window.cnmiPreload?.isAdvanceIdentityVerified?.()&&histSource==='advance-list')source+=`<div class="small text-warning-emphasis mt-1">ไม่พบ AI-LIS/Blood Mobile → ใช้จำนวนครั้งที่เช็กจากกาชาดเป็นฐาน</div>`;
+  else source+=`<div class="small text-muted mt-1">ประวัติกาชาดจะถูกใช้ต่อเมื่อชื่อ + นามสกุล + วันเกิดได้รับการยืนยันกับบัตรจริง</div>`;
   box.style.display='block';
-  box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${escapeHtml([row.prefix,row.fname,row.lname].filter(Boolean).join(' '))}</div><div class="mt-1">${identity}</div><div class="small mt-1">${source}</div>`;
+  box.innerHTML=`<div><strong>📋 รายชื่อแจ้งล่วงหน้า:</strong> ${expected}</div>${reportedId?`<div class="small text-secondary mt-1">เลขประชาชนที่บันทึกในกาชาด: ${escapeHtml(formatted(reportedId))} · <strong>อ้างอิงเท่านั้น ไม่ใช้ค้น AI-LIS</strong></div>`:''}<div class="mt-1">${verifyLine}</div><div class="small mt-1">${source}</div>`;
 }
 window.updateAdvanceRegisterBanner=updateAdvanceRegisterBanner;
 async function openAdvanceRegistrationModal(){
@@ -9047,9 +9197,8 @@ async function loadAdvanceModalData(){
 window.loadAdvanceModalData=loadAdvanceModalData;
 
 function advanceRowNeedsCheck(r){
-  const id=String(r?.idCard||'').replace(/\D/g,'');
   const rc=advanceRedCrossStatus(r);
-  return !!(rc.key==='review'||(r?.identityType!=='passport'&&id&&!isValidThaiNationalId(id)));
+  return rc.key==='review';
 }
 
 function renderAdvanceRegistrationModalList(){
@@ -9094,13 +9243,15 @@ function renderAdvanceRegistrationModalList(){
       r.department?escapeHtml(r.department):'',
       r.employeeId?'รหัส '+escapeHtml(r.employeeId):'',
       r.phone?escapeHtml(r.phone):'',
+      r.birth?'วันเกิด '+escapeHtml(r.birth):'⚠ ไม่มีวันเกิด',
+      r.idCard?'เลขกาชาด '+escapeHtml(String(r.idCard).replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5'))+' (อ้างอิง)':'',
       `ครั้งเดิม ${last}`
     ].filter(Boolean);
     const rc=advanceRedCrossStatus(r);
     const warn=needsCheck?escapeHtml(rc.message||r.note||'ข้อมูลกาชาดต้องตรวจยืนยัน'):'';
     const rcDetail=[r.donorId?'Donor ID กาชาด '+escapeHtml(r.donorId):'',Number.isInteger(Number(r.lastDonationNo))?'เคยบริจาค '+Number(r.lastDonationNo)+' ครั้ง':''].filter(Boolean).join(' · ');
     const pm=rc.key==='redcross'
-      ? `<div class="advance-prematch-line match">✓ กาชาด: ${rcDetail||'มีข้อมูลประวัติ'} · วันจริงอ่านบัตรก่อน แล้วระบบค้น AI-LIS เอง</div>`
+      ? `<div class="advance-prematch-line match">✓ กาชาด: ${rcDetail||'มีข้อมูลประวัติ'} · ผูกด้วยชื่อ+นามสกุล+วันเกิด · วันจริงอ่านบัตรจริง</div>`
       : (rc.key==='nohistory'?`<div class="advance-prematch-line nomatch">— ไม่พบประวัติกาชาด · วันจริงอ่านบัตรแล้วระบบค้น AI-LIS ตามปกติ</div>`:(needsCheck?`<div class="advance-prematch-line review">⚠ ${warn}</div>`:''));
     return `<div class="advance-person-card ${needsCheck?'needs-check':''} ${isRegistered?'is-registered':''}">
       <div>
@@ -9120,7 +9271,7 @@ function renderAdvanceRegistrationModalList(){
 }
 window.renderAdvanceRegistrationModalList=renderAdvanceRegistrationModalList;
 
-async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');setDocOcrStatus('เลือกจากรายชื่อแล้ว · กรุณายืนยันตัวตนจากบัตรจริงก่อนบันทึก','warn');}
+async function selectAdvanceRegistration(id){let row=(advanceRegistrationUiState.modalRows||[]).find(x=>x.id===id);if(!row)return;window.cnmiPreload?.applyAdvanceRegistration?.(row,{force:true});updateAdvanceRegisterBanner(row);bootstrap.Modal.getInstance(document.getElementById('advanceRegistrationModal'))?.hide();showPage('register');setDocOcrStatus('เลือกจากรายชื่อแล้ว · ดูชื่อและวันเกิดบนบัตรว่าตรงกัน แล้วกดอ่านบัตรจริง','warn');}
 window.selectAdvanceRegistration=selectAdvanceRegistration;
 
 async function loadOutreachEvent(){

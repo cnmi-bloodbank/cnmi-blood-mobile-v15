@@ -178,36 +178,21 @@
         else return {status:'success',reactions:[]};
         const {data:rows,error}=await q;
         if(error){
-          if(String(error.message||'').toLowerCase().includes('donor_reactions')) return {status:'error',message:'กรุณารัน SQL V15_6_69_DONOR_REACTION.sql ก่อนใช้ Donor Reaction'};
+          if(String(error.message||'').toLowerCase().includes('donor_reactions')) return {status:'error',message:'กรุณารัน SQL V15_6_71_DONOR_REACTION_FORM_DN_TEXT.sql ก่อนใช้แบบ Donor Reaction ใหม่'};
           throw error;
         }
         return {status:'success',reactions:(rows||[]).map(r=>({
-          id:r.id,identityKey:r.identity_key||'',identityType:r.identity_type||'thai',dn:r.dn||'',donationDate:r.donation_date||'',donorId:r.donor_id||'',bagNumber:r.bag_number||'',reactionDate:r.reaction_date||'',reactionTime:r.reaction_time||'',reactionType:r.reaction_type||'',severity:r.severity||'เล็กน้อย',symptoms:r.symptoms||'',actionTaken:r.action_taken||'',outcome:r.outcome||'',note:r.note||'',retrospective:!!r.retrospective,recordedAt:thaiTime(r.recorded_at),username:r.username||'',fullName:r.full_name||'',role:r.role||''
+          id:r.id,identityKey:r.identity_key||'',identityType:r.identity_type||'thai',dn:r.dn||'',donationDate:r.donation_date||'',donorId:r.donor_id||'',bagNumber:r.bag_number||'',reactionDate:r.reaction_date||'',reactionTime:r.reaction_time||'',reactionType:r.reaction_type||'',severity:r.severity||'เล็กน้อย',severityGrade:Number(r.severity_grade||0),diagnosis:r.diagnosis||'',physicianName:r.physician_name||'',physicianDate:r.physician_date||'',formData:r.form_data&&typeof r.form_data==='object'?r.form_data:{},symptoms:r.symptoms||'',actionTaken:r.action_taken||'',outcome:r.outcome||'',note:r.note||'',retrospective:!!r.retrospective,recordedAt:thaiTime(r.recorded_at),username:r.username||'',fullName:r.full_name||'',role:r.role||''
         }))};
       }
       if(action==='saveDonorReaction'){
         const rx=data && Object.keys(data).length?data:parse(params.data);
         const {error:readyError}=await sb.from('donor_reactions').select('id').limit(1);
-        if(readyError) return {status:'error',message:'กรุณารัน SQL V15_6_69_DONOR_REACTION.sql ก่อนใช้ Donor Reaction'};
-        const {data:r,error}=await sb.rpc('save_donor_reaction_v15669',{
-          p_identity_key:String(rx.identityKey||''),
-          p_identity_type:String(rx.identityType||'thai'),
-          p_dn:String(rx.dn||''),
-          p_donation_date:rx.donationDate||null,
-          p_donor_id:String(rx.donorId||''),
-          p_bag_number:String(rx.bagNumber||''),
-          p_reaction_date:rx.reactionDate||null,
-          p_reaction_time:String(rx.reactionTime||''),
-          p_reaction_type:String(rx.reactionType||''),
-          p_severity:String(rx.severity||'เล็กน้อย'),
-          p_symptoms:String(rx.symptoms||''),
-          p_action_taken:String(rx.actionTaken||''),
-          p_outcome:String(rx.outcome||''),
-          p_note:String(rx.note||''),
-          p_retrospective:!!rx.retrospective,
-          p_user_agent:ua()
+        if(readyError) return {status:'error',message:'กรุณารัน SQL V15_6_71_DONOR_REACTION_FORM_DN_TEXT.sql ก่อนใช้แบบ Donor Reaction ใหม่'};
+        const {data:r,error}=await sb.rpc('save_donor_reaction_v15671',{
+          p_identity_key:String(rx.identityKey||''),p_identity_type:String(rx.identityType||'thai'),p_dn:String(rx.dn||''),p_donation_date:rx.donationDate||null,p_donor_id:String(rx.donorId||''),p_bag_number:String(rx.bagNumber||''),p_reaction_date:rx.reactionDate||null,p_reaction_time:String(rx.reactionTime||''),p_reaction_type:String(rx.reactionType||''),p_severity:String(rx.severity||'เล็กน้อย'),p_severity_grade:Number(rx.severityGrade||0)||null,p_diagnosis:String(rx.diagnosis||''),p_physician_name:String(rx.physicianName||''),p_physician_date:rx.physicianDate||null,p_form_data:rx.formData&&typeof rx.formData==='object'?rx.formData:{},p_symptoms:String(rx.symptoms||''),p_action_taken:String(rx.actionTaken||''),p_outcome:String(rx.outcome||''),p_note:String(rx.note||''),p_retrospective:!!rx.retrospective,p_user_agent:ua()
         });
-        if(error) throw error;
+        if(error){const m=String(error.message||'');if(m.includes('save_donor_reaction_v15671')||m.toLowerCase().includes('function'))return {status:'error',message:'กรุณารัน SQL V15_6_71_DONOR_REACTION_FORM_DN_TEXT.sql ก่อนใช้แบบ Donor Reaction ใหม่'};throw error;}
         return r||{status:'success'};
       }
       if(action==='issueCertificateNumber'){

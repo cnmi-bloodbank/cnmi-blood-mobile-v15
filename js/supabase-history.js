@@ -6,6 +6,9 @@
   let activeAdvanceRegistration=null;
   let advanceIdentityVerified=false;
   let verifiedAdvanceIdentityKey='';
+  let advanceDocumentRead=false;
+  let advanceDocumentIdentityKey='';
+  let advanceIdentityCheck={status:'pending',message:'',method:'',documentRead:false,canManualConfirm:false};
   let currentRegistrationHistorySource='manual';
   const pick=(raw,names)=>{const n={};Object.keys(raw||{}).forEach(k=>n[norm(k)]=raw[k]);for(const name of names){const direct=raw?.[name];if(direct!==undefined&&direct!==null&&String(direct).trim()!=='')return direct;const v=n[norm(name)];if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;}return '';};
   const donorIdText=v=>String(v??'').trim().replace(/\.0+$/,'');
@@ -98,21 +101,52 @@
     const kind=window.getRegisterIdentityType?.()||'thai';
     return kind==='passport'?String($('passport_number')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''):String($('id_card')?.value||'').replace(/\D/g,'');
   }
+  const compactPersonName=v=>String(v||'').trim().toLowerCase().replace(/^(?:นางสาว|น\.ส\.?|นาย|นาง|ด\.ช\.?|ด\.ญ\.?|เด็กชาย|เด็กหญิง)\s*/,'').replace(/[^a-z0-9ก-๙]/g,'');
+  function resetAdvanceIdentityCheck(){advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';advanceDocumentRead=false;advanceDocumentIdentityKey='';advanceIdentityCheck={status:'pending',message:'',method:'',documentRead:false,canManualConfirm:false};}
   function isAdvanceIdentityVerified(){return !!activeAdvanceRegistration&&advanceIdentityVerified&&!!verifiedAdvanceIdentityKey&&currentAdvanceIdentityKey()===verifiedAdvanceIdentityKey;}
+  function getAdvanceIdentityVerification(){return {...advanceIdentityCheck,verified:isAdvanceIdentityVerified()};}
   function invalidateAdvanceIdentityVerification(){
     if(!activeAdvanceRegistration)return;
-    advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';
+    resetAdvanceIdentityCheck();
     window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);
   }
-  function markAdvanceIdentityVerified({method='manual'}={}){
+  function compareAdvanceDemographics(actualProfile){
+    const a=activeAdvanceRegistration;if(!a)return {ok:true,message:''};
+    if((a.identityType||'thai')==='passport')return {ok:true,message:'Passport จริงยืนยันแล้ว'};
+    const ef=compactPersonName(a.fname),el=compactPersonName(a.lname),eb=valueToYmd(a.birth);
+    if(!ef||!el||!eb)return {ok:false,pending:true,message:'รายชื่อแจ้งล่วงหน้าขาดชื่อ/นามสกุล/วันเกิด จึงยังใช้ประวัติกาชาดไม่ได้'};
+    const af=compactPersonName(actualProfile?.fname||actualProfile?.firstName),al=compactPersonName(actualProfile?.lname||actualProfile?.lastName),ab=valueToYmd(actualProfile?.birthDate||actualProfile?.birth);
+    if(!af||!al||!ab)return {ok:false,pending:true,message:'อ่านบัตรจริงแล้ว แต่ยังอ่านชื่อ/นามสกุล/วันเกิดอัตโนมัติไม่ครบ'};
+    const dif=[];if(ef!==af)dif.push('ชื่อ');if(el!==al)dif.push('นามสกุล');if(eb!==ab)dif.push('วันเกิด');
+    if(dif.length)return {ok:false,mismatch:true,message:`${dif.join(' / ')} จากบัตรจริงไม่ตรงกับรายชื่อที่เลือก`};
+    return {ok:true,message:'ชื่อ + นามสกุล + วันเกิดตรงกับรายชื่อที่เลือก'};
+  }
+  function markAdvanceIdentityVerified({method='manual',actualProfile=null}={}){
     if(!activeAdvanceRegistration)return true;
     const kind=window.getRegisterIdentityType?.()||'thai',key=currentAdvanceIdentityKey();
     if(kind==='thai'&&!/^\d{13}$/.test(key))return false;
     if(kind==='passport'&&key.length<5)return false;
-    advanceIdentityVerified=true;verifiedAdvanceIdentityKey=key;
-    activeAdvanceRegistration={...activeAdvanceRegistration,identityVerified:true,verifiedIdentityKey:key,verifyMethod:method};
+    if(method==='staff-confirm'){
+      if(!advanceDocumentRead||!advanceDocumentIdentityKey||advanceDocumentIdentityKey!==key){
+        advanceIdentityCheck={status:'pending',message:'กรุณาอ่านบัตรจริงก่อนยืนยันด้วยตา',method,documentRead:false,canManualConfirm:false};
+        window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);return false;
+      }
+      advanceIdentityVerified=true;verifiedAdvanceIdentityKey=key;
+      advanceIdentityCheck={status:'verified',message:'เจ้าหน้าที่ตรวจชื่อ + นามสกุล + วันเกิดกับบัตรจริงแล้ว',method,documentRead:true,canManualConfirm:false};
+    }else{
+      advanceDocumentRead=true;advanceDocumentIdentityKey=key;
+      const cmp=compareAdvanceDemographics(actualProfile);
+      if(cmp.ok){
+        advanceIdentityVerified=true;verifiedAdvanceIdentityKey=key;
+        advanceIdentityCheck={status:'verified',message:cmp.message||'',method,documentRead:true,canManualConfirm:false};
+      }else{
+        advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';
+        advanceIdentityCheck={status:cmp.mismatch?'mismatch':'pending',message:cmp.message||'',method,documentRead:true,canManualConfirm:true};
+      }
+    }
+    activeAdvanceRegistration={...activeAdvanceRegistration,identityVerified:isAdvanceIdentityVerified(),verifiedIdentityKey:isAdvanceIdentityVerified()?key:'',verifyMethod:method,identityCheckStatus:advanceIdentityCheck.status};
     window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);
-    return true;
+    return isAdvanceIdentityVerified();
   }
 
   const line=(text,cls='')=>{const d=document.createElement('div');d.className=cls;d.textContent=text;return d;};
@@ -168,10 +202,11 @@
   }
   function advanceToProfile(a){
     if(!a)return null;
-    const reportedDonorId=String(a.donorId||'').trim();
-    const donorId=/^\d{1,16}$/.test(reportedDonorId)?reportedDonorId:'';
     const last=Number.isInteger(Number(a.lastDonationNo))?Number(a.lastDonationNo):null;
-    return {identityType:a.identityType||'thai',identityKey:a.idCard||a.passportNumber||'',idCard:a.idCard||'',passportNumber:a.passportNumber||'',nationality:'',prefix:a.prefix||'',fname:a.fname||'',lname:a.lname||'',birth:a.birth||'',gender:'',address:'',addressLine:'',subdistrict:'',district:'',province:'',postalCode:'',phone:a.phone||'',occupation:'',photoData:'',photoUpdatedAt:'',bloodGroupHistory:a.bloodGroup||'',donorIds:[],donorIdsAll:[],donationHistory:[],mobileVisits:[],alerts:{notes:[],defers:[],seroNat:[]},advanceRegistration:a,advanceLastDonationNo:last,historySource:'advance-list'};
+    // เลขประชาชนในไฟล์กาชาดเป็น reference only; profile ที่ใช้จริงต้องอิงเลขจากบัตรจริงหลังยืนยัน
+    const realKey=isAdvanceIdentityVerified()?currentAdvanceIdentityKey():'';
+    const isPass=(a.identityType||'thai')==='passport';
+    return {identityType:isPass?'passport':'thai',identityKey:realKey,idCard:isPass?'':realKey,passportNumber:isPass?realKey:'',nationality:'',prefix:a.prefix||'',fname:a.fname||'',lname:a.lname||'',birth:a.birth||'',gender:'',address:'',addressLine:'',subdistrict:'',district:'',province:'',postalCode:'',phone:a.phone||'',occupation:'',photoData:'',photoUpdatedAt:'',bloodGroupHistory:a.bloodGroup||'',donorIds:[],donorIdsAll:[],donationHistory:[],mobileVisits:[],alerts:{notes:[],defers:[],seroNat:[]},advanceRegistration:a,advanceLastDonationNo:last,historySource:'advance-list'};
   }
   function advanceSourceBox(p){
     const a=p?.advanceRegistration;if(!a)return null;
@@ -245,7 +280,7 @@
   function applyAdvanceRegistration(a,{force=false}={}){
     if(!a)return null;
     setCentralProfileLock(null,false);
-    activeAdvanceRegistration=a;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';
+    activeAdvanceRegistration=a;resetAdvanceIdentityCheck();
     const p=advanceToProfile(a);
     const set=(id,v)=>{const el=$(id);if(!el||v===undefined||v===null||String(v).trim()==='')return;if(force||!String(el.value||'').trim())el.value=String(v).trim();};
     if(a.identityType==='passport'){window.setRegisterIdentityType?.('passport',{clear:false});set('passport_number',a.passportNumber);}else{window.setRegisterIdentityType?.('thai',{clear:false});set('id_card',a.idCard);}
@@ -260,7 +295,7 @@
     const redCrossDonor=String(a.donorId||'').trim();
     const redCrossNo=Number.isInteger(Number(a.lastDonationNo))?Number(a.lastDonationNo):null;
     const rc=[redCrossDonor?'Donor ID กาชาด '+redCrossDonor:'',redCrossNo!==null?'เคยบริจาค '+redCrossNo+' ครั้ง':''].filter(Boolean).join(' · ');
-    setText('preload-register-status',`เลือกจากรายชื่อแจ้งล่วงหน้า${rc?' · '+rc:''} · กรุณาอ่านบัตรจริง แล้วระบบจะค้น AI-LIS ของ CNMI อัตโนมัติ`,'register-status-line text-warning fw-bold');
+    setText('preload-register-status',`เลือกจากรายชื่อแจ้งล่วงหน้า${rc?' · '+rc:''} · ดูชื่อ + นามสกุล + วันเกิดบนบัตร แล้วอ่านบัตรจริง · เลขประชาชนจากกาชาดเป็นข้อมูลอ้างอิงเท่านั้น`,'register-status-line text-warning fw-bold');
     window.updateAdvanceRegisterBanner?.(a);
     return p;
   }
@@ -269,32 +304,32 @@
     const kind=window.getRegisterIdentityType?.()||'thai';
     let p=null,identityValue='',advance=null;
     const selectedBefore=activeAdvanceRegistration;
-    const eventDate=currentLocalYmd();
     const selectedIsVerified=!selectedBefore||isAdvanceIdentityVerified();
     if(kind==='passport'){
       identityValue=String($('passport_number')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-      if(identityValue.length<5){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรอยืนยัน Passport':'','register-status-line text-muted');return null;}
-      if(selectedBefore&&!selectedIsVerified){advance=selectedBefore;}
-      else [p,advance]=await Promise.all([findDonorPassport(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'passport',passportNumber:identityValue}).catch(()=>null)]);
+      if(identityValue.length<5){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;resetAdvanceIdentityCheck();currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรอยืนยัน Passport จริง':'','register-status-line text-muted');return null;}
+      p=await findDonorPassport(identityValue);
+      advance=selectedBefore||null;
     }else{
       identityValue=String($('id_card')?.value||'').replace(/\D/g,'');
-      if(!/^\d{13}$/.test(identityValue)){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรอยืนยันเลขบัตร':'','register-status-line text-muted');return null;}
-      if(selectedBefore&&!selectedIsVerified){advance=selectedBefore;}
-      else [p,advance]=await Promise.all([findDonor(identityValue),window.cnmiSupabaseApi.findAdvanceRegistration({eventDate,identityType:'thai',idCard:identityValue}).catch(()=>null)]);
+      if(!/^\d{13}$/.test(identityValue)){clearPanel();if(!selectedBefore){activeAdvanceRegistration=null;resetAdvanceIdentityCheck();currentRegistrationHistorySource='manual';window.updateAdvanceRegisterBanner?.(null);}window.resetDonorPhotoForIdentityChange?.();setText('preload-register-status',selectedBefore?'รายชื่อแจ้งล่วงหน้ายังรออ่านบัตรจริง':'','register-status-line text-muted');return null;}
+      // v15.6.70: ค้น AI-LIS/Blood Mobile ด้วยเลขจากบัตรจริงเสมอ และไม่ auto-link รายชื่อด้วยเลขประชาชนจากกาชาด
+      p=await findDonor(identityValue);
+      advance=selectedBefore||null;
     }
     const hadCentral=!!p;
-    if(!advance&&selectedBefore&&selectedBefore.status!=='registered')advance=selectedBefore;
     activeAdvanceRegistration=advance||null;
-    window.updateAdvanceRegisterBanner?.(advance?{...advance,centralProfile:hadCentral?{}:null}:null);
     if(p){p={...p,advanceRegistration:advance||null};}
-    else if(advance){p=advanceToProfile(advance);}
-    if(!p){clearPanel();currentRegistrationHistorySource='manual';if(!window.cnmiDonorPhotoState?.dirty)window.resetDonorPhotoForIdentityChange?.();const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}setText('preload-register-status',kind==='passport'?'ไม่พบประวัติ Passport':'ไม่พบประวัติ AI-LIS/Blood Mobile','register-status-line text-secondary');return null;}
+    else if(advance&&selectedIsVerified){p=advanceToProfile(advance);}
+    if(!p){
+      clearPanel();currentRegistrationHistorySource='manual';if(!window.cnmiDonorPhotoState?.dirty)window.resetDonorPhotoForIdentityChange?.();
+      const donorEl=$('donor_id'),noEl=$('donation_no');if(donorEl&&donorEl.dataset.userEdited!=='1')donorEl.value='';if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value='0';window.updateDonationNoHint?.();}
+      const msg=advance&&!selectedIsVerified?'ไม่พบ AI-LIS/Blood Mobile ด้วยเลขบัตรจริง · ประวัติกาชาดยังไม่ถูกใช้จนกว่าจะยืนยันชื่อ+นามสกุล+วันเกิด':(kind==='passport'?'ไม่พบประวัติ Passport':'ไม่พบประวัติ AI-LIS/Blood Mobile');
+      setText('preload-register-status',msg,'register-status-line text-secondary');window.updateAdvanceRegisterBanner?.(advance);return null;
+    }
     p.donorReactions=[];
-    if(!(activeAdvanceRegistration&&!isAdvanceIdentityVerified())){
-      try{
-        const rx=await window.cnmiSupabaseApi.call('getDonorReactions',{data:JSON.stringify({identityKey:p.identityKey||identityValue,limit:20})});
-        if(rx?.status==='success'&&Array.isArray(rx.reactions))p.donorReactions=rx.reactions;
-      }catch(err){console.warn('load donor reactions failed',err);}
+    if(hadCentral||!activeAdvanceRegistration||isAdvanceIdentityVerified()){
+      try{const rx=await window.cnmiSupabaseApi.call('getDonorReactions',{data:JSON.stringify({identityKey:p.identityKey||identityValue,limit:20})});if(rx?.status==='success'&&Array.isArray(rx.reactions))p.donorReactions=rx.reactions;}catch(err){console.warn('load donor reactions failed',err);}
     }
     const sug=registrationSuggestion(p);currentRegistrationHistorySource=sug.historySource||'manual';
     if(fill){
@@ -307,19 +342,19 @@
       if(noEl&&noEl.dataset.userEdited!=='1'){noEl.value=sug.lastDonationNo||'0';noEl.dataset.userEdited='0';window.updateDonationNoHint?.();}
     }
     window.setDonorPhotoPreview?.(p.photoData||'',{setOriginal:true,loadedForIdCard:p.identityKey||identityValue,preserveDirty:true});
-    renderProfile(p);
-    setCentralProfileLock(p,currentRegistrationHistorySource==='ai-lis');
+    renderProfile(p);setCentralProfileLock(p,currentRegistrationHistorySource==='ai-lis');
     const alerts=(p.alerts?.notes?.length||0)+(p.alerts?.defers?.length||0)+(p.alerts?.seroNat?.length||0)+(p.donorReactions?.length||0);
     const sourceLabel=currentRegistrationHistorySource==='ai-lis'?'AI-LIS':currentRegistrationHistorySource==='blood-mobile'?'Blood Mobile':currentRegistrationHistorySource==='advance-list'?'ระบบกาชาด (รายชื่อแจ้งล่วงหน้า)':'ข้อมูลที่กรอก';
     let message=alerts?`พบประวัติ · มีรายการเตือน ${alerts} รายการ · ใช้จำนวนครั้งจาก ${sourceLabel}`:`พบข้อมูลแล้ว · ใช้จำนวนครั้งจาก ${sourceLabel}`;
     if(currentRegistrationHistorySource==='ai-lis')message+=' · ข้อมูลหลักจาก AI-LIS ถูกล็อกไม่ให้แก้ในหน้าออกหน่วย';
-    if(activeAdvanceRegistration&&!isAdvanceIdentityVerified())message='รายชื่อแจ้งล่วงหน้ายังไม่ยืนยันตัวตน · ยังไม่ค้น AI-LIS';
+    if(activeAdvanceRegistration&&!isAdvanceIdentityVerified())message+=` · ประวัติกาชาดยังรอยืนยันชื่อ+นามสกุล+วันเกิด`;
     setText('preload-register-status',message,alerts?'register-status-line text-danger fw-bold':(currentRegistrationHistorySource==='advance-list'?'register-status-line text-warning fw-bold':'register-status-line text-success fw-bold'));
+    window.updateAdvanceRegisterBanner?.(activeAdvanceRegistration);
     return p;
   }
 
   async function refreshSummary(){const s=await window.cnmiSupabaseApi.getHistorySummary();const box=$('preload-summary'),coverage=$('preload-coverage');if(!box)return s;if(!s){box.textContent='ยังไม่มีฐานประวัติ 4 Reports ใน Supabase';box.className='fw-bold text-danger';if(coverage)coverage.textContent='';return null;}const x=s.summary||{};box.textContent=`ฐานกลางอัปเดต ${s.completed_at?new Date(s.completed_at).toLocaleString('th-TH'):''} · ผู้บริจาค ${Number(x.donorProfiles||0).toLocaleString()} คน · Note ${Number(x.donorWithNote||0).toLocaleString()} · Defer ${Number(x.donorWithDefer||0).toLocaleString()} · Sero/NAT ${Number(x.donorWithSeroNat||0).toLocaleString()}`;box.className='fw-bold text-success';if(coverage){if(x.sourceThroughDate){const from=x.sourceFromDateThai||thaiDateFromYmd(x.sourceFromDate),to=x.sourceThroughDateThai||thaiDateFromYmd(x.sourceThroughDate);coverage.innerHTML=`<strong>ข้อมูลรายชื่อผู้บริจาครอบล่าสุด:</strong> ${from&&from!==to?escapeHtml(from)+' – ':''}${escapeHtml(to)} <span class="text-muted">(อ้างอิงวันที่บริจาคล่าสุดในไฟล์รายชื่อ)</span><br><strong>รอบถัดไป:</strong> แนะนำ Export รายงานทั้ง 4 ไฟล์โดยเริ่มซ้ำจากวันที่ <strong>${escapeHtml(to)}</strong> เพื่อกันข้อมูลตกหล่น ระบบจะรวมรายการเดิมให้โดยไม่เพิ่มซ้ำ`;coverage.className='alert alert-info py-2 px-3 mb-3';}else{coverage.textContent='ยังอ่านวันที่ล่าสุดจากไฟล์รายชื่อผู้บริจาคไม่ได้ กรุณาตรวจช่วงวันที่ใน AI-LIS ก่อน Export รอบถัดไป';coverage.className='alert alert-warning py-2 px-3 mb-3';}}return s;}
-  window.cnmiPreload={findDonor,findDonorPassport,findMany,upsertBasic,getSummary:refreshSummary,hasData:async()=>!!(await window.cnmiSupabaseApi.getHistorySummary()),refreshSummary,lookupFromRegister,renderProfile,clearPanel,applyAdvanceRegistration,getActiveAdvanceRegistration:()=>activeAdvanceRegistration,getRegistrationHistorySource:()=>currentRegistrationHistorySource,isAdvanceIdentityVerified,markAdvanceIdentityVerified,invalidateAdvanceIdentityVerification,confirmAdvanceIdentityForLookup:async()=>{if(!markAdvanceIdentityVerified({method:'staff-confirm'}))return alert('กรุณาตรวจเลขบัตร/Passport ในช่องให้ถูกต้องก่อนยืนยัน');await lookupFromRegister({fill:true});},clearAdvanceRegistration:()=>{activeAdvanceRegistration=null;advanceIdentityVerified=false;verifiedAdvanceIdentityKey='';currentRegistrationHistorySource='manual';setCentralProfileLock(null,false);window.updateAdvanceRegisterBanner?.(null);}};
+  window.cnmiPreload={findDonor,findDonorPassport,findMany,upsertBasic,getSummary:refreshSummary,hasData:async()=>!!(await window.cnmiSupabaseApi.getHistorySummary()),refreshSummary,lookupFromRegister,renderProfile,clearPanel,applyAdvanceRegistration,getActiveAdvanceRegistration:()=>activeAdvanceRegistration,getRegistrationHistorySource:()=>currentRegistrationHistorySource,isAdvanceIdentityVerified,getAdvanceIdentityVerification,markAdvanceIdentityVerified,invalidateAdvanceIdentityVerification,confirmAdvanceIdentityForLookup:async()=>{if(!markAdvanceIdentityVerified({method:'staff-confirm'}))return alert('กรุณาอ่านบัตรจริงก่อน แล้วตรวจชื่อ + นามสกุล + วันเกิดบนบัตรให้ตรงกับรายชื่อที่เลือก');await lookupFromRegister({fill:true});},continueWithoutAdvanceRegistration:async()=>{const a=activeAdvanceRegistration;const same=(x,y)=>String(x||'').trim()===String(y||'').trim();if(a){[['prefix',a.prefix],['fname',a.fname],['lname',a.lname],['birth_date',a.birth],['phone',a.phone]].forEach(([id,v])=>{const el=$(id);if(el&&same(el.value,v))el.value='';});}activeAdvanceRegistration=null;resetAdvanceIdentityCheck();currentRegistrationHistorySource='manual';setCentralProfileLock(null,false);window.updateAdvanceRegisterBanner?.(null);await lookupFromRegister({fill:true});},clearAdvanceRegistration:()=>{activeAdvanceRegistration=null;resetAdvanceIdentityCheck();currentRegistrationHistorySource='manual';setCentralProfileLock(null,false);window.updateAdvanceRegisterBanner?.(null);}};
   window.importOnlinePreload=async()=>{const files=[...($('preload-report-files')?.files||[])];if(files.length!==4)return alert('กรุณาเลือกไฟล์รายงาน 4 ไฟล์พร้อมกัน');const btn=$('preload-import-btn');try{if(btn){btn.disabled=true;btn.textContent='กำลังอ่าน Excel...';}setText('preload-import-status','กำลังอ่านและรวมรายงาน 4 ชุด...','small fw-bold text-primary mt-2');const built=await buildProfiles(files);setText('preload-import-status',`เตรียม ${built.profiles.length.toLocaleString()} คนแล้ว · กำลังส่งขึ้น Supabase...`,'small fw-bold text-primary mt-2');await window.cnmiSupabaseApi.importSnapshot(built.profiles,built.summary,(phase,done,total)=>setText('preload-import-status',`${phase==='donors'?'อัปเดตผู้บริจาค':'อัปโหลดประวัติ'} ${done.toLocaleString()}/${total.toLocaleString()}`,'small fw-bold text-primary mt-2'));mem.clear();const current=await refreshSummary();const s=current?.summary||built.summary;alert(`อัปเดตฐานกลางสำเร็จ (เพิ่ม/ปรับปรุงจากฐานเดิม)
 ผู้บริจาคในฐานรวม ${Number(s.donorProfiles||0).toLocaleString()} คน
 Donor Note ${Number(s.donorWithNote||0).toLocaleString()} คน
