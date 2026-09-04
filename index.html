@@ -15,6 +15,9 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="assets/vendor/bootstrap.min.css" rel="stylesheet">
   <script src="assets/vendor/bootstrap.bundle.min.js"></script>
   <script src="assets/vendor/JsBarcode.all.min.js"></script>
@@ -354,9 +357,9 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        /* v15.6.78: restore the same print-font behavior used before v15.6.77.
-           Do not force Leelawadee UI because its Thai metrics make the form look compressed in Chrome print preview. */
-        font-family: 'Sarabun', sans-serif !important;
+        font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
       #a4-template.active-print {
@@ -368,46 +371,49 @@
         height: 297mm;
         background: white;
         z-index: 9999;
+        font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif !important;
+        font-kerning: normal;
       }
 
       .print-data {
         position: absolute;
-        color: black;
-        font-size: 14pt;
+        color: #000;
+        font-size: 13.6pt;
+        font-weight: 400;
+        line-height: 1.08;
+        letter-spacing: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      #p-dn { top: 38mm; left: 140mm; font-weight: bold; font-size: 16pt; }
-      #p-barcode { top: 48mm; left: 140mm; width: 42mm; height: 14mm; }
-      #p-name { top: 38mm; left: 10mm; }
-      #p-id { top: 48mm; left: 10mm; }
-      #p-birth { top: 58mm; left: 10mm; width: 80mm; white-space: nowrap; font-size: 13pt; }
-      #p-age { top: 58mm; left: 92mm; white-space: nowrap; font-size: 13pt; }
-      #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
-      #p-address { top: 68mm; left: 10mm; width: 190mm; font-size: 12.4pt; white-space: nowrap; overflow: hidden; }
+      #p-dn { top: 37.0mm; left: 135.5mm; width: 62mm; font-weight: 700; font-size: 16.6pt; line-height: 1; }
+      #p-barcode { top: 47.2mm; left: 135.8mm; width: 46mm; height: 15mm; }
+      #p-name { top: 37.2mm; left: 10mm; width: 120mm; font-weight: 600; font-size: 13.8pt; }
+      #p-id { top: 47.3mm; left: 10mm; width: 120mm; font-size: 13.4pt; }
+      #p-birth { top: 57.3mm; left: 10mm; width: 62mm; font-size: 12.8pt; }
+      #p-age { top: 57.3mm; left: 89.5mm; width: 22mm; font-size: 12.8pt; }
+      #p-gender { top: 57.3mm; left: 116.5mm; width: 18mm; font-size: 12.8pt; }
+      #p-address { top: 68.0mm; left: 10mm; width: 118mm; font-size: 12.0pt; }
 
-      /* v15.6.78: the six added fields inherit the same print font as the original donor data.
-         Slightly increase size from v15.6.76, but keep enough vertical clearance so the extra row does not collide with birth/address. */
       .p-a4-extra {
         position: absolute;
         color: #000;
-        font-size: 10.3pt;
-        line-height: 1;
+        font-size: 10.8pt;
         font-weight: 400;
+        line-height: 1.08;
+        letter-spacing: 0;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: clip;
+        text-overflow: ellipsis;
       }
-      /* Row 1: between birth/age/gender and address. */
-      #p-donation-date { top: 63.5mm; left: 10mm; width: 93mm; font-size: 10.2pt; }
-      #p-donation-no   { top: 63.5mm; left: 104mm; width: 28mm; font-size: 10.2pt; }
-      #p-donor-id      { top: 63.5mm; left: 133mm; width: 67mm; font-size: 10.2pt; }
-      /* Row 2: below address but still above the first checkbox row. */
-      #p-known-group   { top: 74.2mm; left: 10mm; width: 32mm; font-size: 10.2pt; }
-      #p-phone         { top: 74.2mm; left: 43mm; width: 54mm; font-size: 10.2pt; }
-      #p-occupation    { top: 74.2mm; left: 98mm; width: 102mm; font-size: 10.2pt; }
+      #p-donation-date { top: 62.9mm; left: 10mm; width: 79mm; }
+      #p-donation-no   { top: 62.9mm; left: 91mm; width: 22mm; }
+      #p-donor-id      { top: 62.9mm; left: 117mm; width: 58mm; }
+      #p-known-group   { top: 74.1mm; left: 10mm; width: 22mm; }
+      #p-phone         { top: 74.1mm; left: 37mm; width: 47mm; }
+      #p-occupation    { top: 79.7mm; left: 10mm; width: 160mm; }
 
-      /* Legacy occupation-mark elements are retained in the DOM only for backward compatibility.
-         v15.6.77 deliberately does not print any ✓ into the preprinted occupation section. */
       .p-occ-mark {
         display: none !important;
       }
@@ -6250,10 +6256,14 @@ function getVisitFullAddress(row = {}) {
         pKnownGroup.innerText = "หมู่เลือด: " + compactBloodGroupForA4(knownBloodGroup);
         pPhone.innerText = "โทร: " + (phoneValue || "-");
         pOccupation.innerText = "อาชีพ: " + occupationText;
-        pOccupation.style.fontSize = occupationText.length > 48 ? "9.2pt" : occupationText.length > 36 ? "9.8pt" : "10.5pt";
-        pDonorId.style.fontSize = donorIdValue.length > 18 ? "9.4pt" : "10.6pt";
+        pDonationDate.style.fontSize = "10.8pt";
+        pDonationNo.style.fontSize = "10.8pt";
+        pDonorId.style.fontSize = donorIdValue.length > 24 ? "10.0pt" : "10.8pt";
+        pKnownGroup.style.fontSize = "10.8pt";
+        pPhone.style.fontSize = phoneValue.length > 16 ? "10.4pt" : "10.8pt";
+        pOccupation.style.fontSize = occupationText.length > 52 ? "9.9pt" : occupationText.length > 40 ? "10.3pt" : "10.8pt";
 
-        // v15.6.78: keep occupation checkbox marks disabled on the preprinted form.
+        // v15.6.79: keep occupation checkbox marks disabled on the preprinted form.
         // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
