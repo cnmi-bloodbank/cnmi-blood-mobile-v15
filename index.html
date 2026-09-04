@@ -354,7 +354,9 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        font-family: 'Leelawadee UI', Tahoma, sans-serif !important;
+        /* v15.6.78: restore the same print-font behavior used before v15.6.77.
+           Do not force Leelawadee UI because its Thai metrics make the form look compressed in Chrome print preview. */
+        font-family: 'Sarabun', sans-serif !important;
       }
 
       #a4-template.active-print {
@@ -371,7 +373,6 @@
       .print-data {
         position: absolute;
         color: black;
-        font-family: 'Leelawadee UI', Tahoma, sans-serif;
         font-size: 14pt;
       }
 
@@ -384,13 +385,12 @@
       #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
       #p-address { top: 68mm; left: 10mm; width: 190mm; font-size: 12.4pt; white-space: nowrap; overflow: hidden; }
 
-      /* v15.6.77: keep the six added fields readable while staying inside the original top box.
-         Use Leelawadee UI explicitly because Sarabun is not bundled with the app and could fall back differently by PC. */
+      /* v15.6.78: the six added fields inherit the same print font as the original donor data.
+         Slightly increase size from v15.6.76, but keep enough vertical clearance so the extra row does not collide with birth/address. */
       .p-a4-extra {
         position: absolute;
         color: #000;
-        font-family: 'Leelawadee UI', Tahoma, sans-serif;
-        font-size: 10.8pt;
+        font-size: 10.3pt;
         line-height: 1;
         font-weight: 400;
         white-space: nowrap;
@@ -398,13 +398,13 @@
         text-overflow: clip;
       }
       /* Row 1: between birth/age/gender and address. */
-      #p-donation-date { top: 62.8mm; left: 10mm; width: 93mm; font-size: 10.6pt; }
-      #p-donation-no   { top: 62.8mm; left: 104mm; width: 28mm; font-size: 10.6pt; }
-      #p-donor-id      { top: 62.8mm; left: 133mm; width: 67mm; font-size: 10.6pt; }
+      #p-donation-date { top: 63.5mm; left: 10mm; width: 93mm; font-size: 10.2pt; }
+      #p-donation-no   { top: 63.5mm; left: 104mm; width: 28mm; font-size: 10.2pt; }
+      #p-donor-id      { top: 63.5mm; left: 133mm; width: 67mm; font-size: 10.2pt; }
       /* Row 2: below address but still above the first checkbox row. */
-      #p-known-group   { top: 74.0mm; left: 10mm; width: 32mm; font-size: 10.7pt; }
-      #p-phone         { top: 74.0mm; left: 43mm; width: 54mm; font-size: 10.7pt; }
-      #p-occupation    { top: 74.0mm; left: 98mm; width: 102mm; font-size: 10.5pt; }
+      #p-known-group   { top: 74.2mm; left: 10mm; width: 32mm; font-size: 10.2pt; }
+      #p-phone         { top: 74.2mm; left: 43mm; width: 54mm; font-size: 10.2pt; }
+      #p-occupation    { top: 74.2mm; left: 98mm; width: 102mm; font-size: 10.2pt; }
 
       /* Legacy occupation-mark elements are retained in the DOM only for backward compatibility.
          v15.6.77 deliberately does not print any ✓ into the preprinted occupation section. */
@@ -6253,7 +6253,7 @@ function getVisitFullAddress(row = {}) {
         pOccupation.style.fontSize = occupationText.length > 48 ? "9.2pt" : occupationText.length > 36 ? "9.8pt" : "10.5pt";
         pDonorId.style.fontSize = donorIdValue.length > 18 ? "9.4pt" : "10.6pt";
 
-        // v15.6.77: do not mark the occupation checkboxes on the preprinted form.
+        // v15.6.78: keep occupation checkbox marks disabled on the preprinted form.
         // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
