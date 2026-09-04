@@ -399,7 +399,7 @@
       .p-a4-extra {
         position: absolute;
         color: #000;
-        font-size: 10.2pt;
+        font-size: 11.7pt;
         font-weight: 400;
         line-height: 1.16;
         letter-spacing: 0;
@@ -6256,14 +6256,16 @@ function getVisitFullAddress(row = {}) {
         pKnownGroup.innerText = "หมู่เลือด: " + compactBloodGroupForA4(knownBloodGroup);
         pPhone.innerText = "โทร: " + (phoneValue || "-") + "   อาชีพ: " + occupationText;
         pOccupation.innerText = "";
-        pDonationDate.style.fontSize = "10.2pt";
-        pDonationNo.style.fontSize = "10.2pt";
-        pDonorId.style.fontSize = donorIdValue.length > 24 ? "9.8pt" : "10.2pt";
-        pKnownGroup.style.fontSize = "10.2pt";
-        pPhone.style.fontSize = occupationText.length > 28 ? "9.8pt" : "10.2pt";
-        pOccupation.style.fontSize = "10.0pt";
+        // v15.6.82: make the two compact information rows visually match the two main rows above.
+        // Keep a small adaptive reduction only when a field is unusually long so it still stays inside the preprinted box.
+        pDonationDate.style.fontSize = "11.7pt";
+        pDonationNo.style.fontSize = "11.7pt";
+        pDonorId.style.fontSize = donorIdValue.length > 24 ? "10.6pt" : donorIdValue.length > 16 ? "11.1pt" : "11.7pt";
+        pKnownGroup.style.fontSize = "11.7pt";
+        pPhone.style.fontSize = occupationText.length > 34 ? "10.6pt" : occupationText.length > 24 ? "11.1pt" : "11.7pt";
+        pOccupation.style.fontSize = "11.7pt";
 
-        // v15.6.81: keep occupation checkbox marks disabled on the preprinted form.
+        // v15.6.82: keep occupation checkbox marks disabled on the preprinted form.
         // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
