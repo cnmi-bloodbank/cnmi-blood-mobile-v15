@@ -387,32 +387,32 @@
         text-overflow: ellipsis;
       }
 
-      #p-dn { top: 37.0mm; left: 135.5mm; width: 62mm; font-weight: 700; font-size: 16.6pt; line-height: 1; }
-      #p-barcode { top: 47.2mm; left: 135.8mm; width: 46mm; height: 15mm; }
-      #p-name { top: 37.2mm; left: 10mm; width: 120mm; font-weight: 600; font-size: 13.8pt; }
-      #p-id { top: 47.3mm; left: 10mm; width: 120mm; font-size: 13.4pt; }
-      #p-birth { top: 57.3mm; left: 10mm; width: 62mm; font-size: 12.8pt; }
-      #p-age { top: 57.3mm; left: 89.5mm; width: 22mm; font-size: 12.8pt; }
-      #p-gender { top: 57.3mm; left: 116.5mm; width: 18mm; font-size: 12.8pt; }
-      #p-address { top: 68.0mm; left: 10mm; width: 118mm; font-size: 12.0pt; }
+      #p-dn { top: 36.8mm; left: 136.2mm; width: 60mm; font-weight: 700; font-size: 16.4pt; line-height: 1; }
+      #p-barcode { top: 47.0mm; left: 136.4mm; width: 45mm; height: 15mm; }
+      #p-name { top: 37.0mm; left: 10mm; width: 121mm; font-weight: 600; font-size: 13.8pt; }
+      #p-id { top: 47.1mm; left: 10mm; width: 121mm; font-size: 13.4pt; }
+      #p-birth { top: 57.2mm; left: 10mm; width: 76mm; font-size: 12.7pt; }
+      #p-age { top: 57.2mm; left: 90.5mm; width: 21mm; font-size: 12.7pt; }
+      #p-gender { top: 57.2mm; left: 114.5mm; width: 17mm; font-size: 12.7pt; }
+      #p-address { top: 68.0mm; left: 10mm; width: 121mm; font-size: 12.0pt; }
 
       .p-a4-extra {
         position: absolute;
         color: #000;
         font-size: 10.8pt;
         font-weight: 400;
-        line-height: 1.08;
+        line-height: 1.1;
         letter-spacing: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      #p-donation-date { top: 62.9mm; left: 10mm; width: 79mm; }
-      #p-donation-no   { top: 62.9mm; left: 91mm; width: 22mm; }
-      #p-donor-id      { top: 62.9mm; left: 117mm; width: 58mm; }
-      #p-known-group   { top: 74.1mm; left: 10mm; width: 22mm; }
-      #p-phone         { top: 74.1mm; left: 37mm; width: 47mm; }
-      #p-occupation    { top: 79.7mm; left: 10mm; width: 160mm; }
+      #p-donation-date { top: 62.7mm; left: 10mm; width: 79mm; }
+      #p-donation-no   { top: 62.7mm; left: 91mm; width: 22mm; text-align: left; }
+      #p-donor-id      { top: 62.7mm; left: 116mm; width: 58mm; text-align: left; }
+      #p-known-group   { top: 74.0mm; left: 10mm; width: 23mm; }
+      #p-phone         { top: 74.0mm; left: 38mm; width: 49mm; }
+      #p-occupation    { top: 79.5mm; left: 10mm; width: 164mm; }
 
       .p-occ-mark {
         display: none !important;
@@ -6261,9 +6261,9 @@ function getVisitFullAddress(row = {}) {
         pDonorId.style.fontSize = donorIdValue.length > 24 ? "10.0pt" : "10.8pt";
         pKnownGroup.style.fontSize = "10.8pt";
         pPhone.style.fontSize = phoneValue.length > 16 ? "10.4pt" : "10.8pt";
-        pOccupation.style.fontSize = occupationText.length > 52 ? "9.9pt" : occupationText.length > 40 ? "10.3pt" : "10.8pt";
+        pOccupation.style.fontSize = occupationText.length > 56 ? "9.8pt" : occupationText.length > 44 ? "10.2pt" : "10.8pt";
 
-        // v15.6.79: keep occupation checkbox marks disabled on the preprinted form.
+        // v15.6.80: keep occupation checkbox marks disabled on the preprinted form.
         // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
