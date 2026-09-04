@@ -354,7 +354,7 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        font-family: 'Sarabun', sans-serif !important;
+        font-family: 'Leelawadee UI', Tahoma, sans-serif !important;
       }
 
       #a4-template.active-print {
@@ -371,6 +371,7 @@
       .print-data {
         position: absolute;
         color: black;
+        font-family: 'Leelawadee UI', Tahoma, sans-serif;
         font-size: 14pt;
       }
 
@@ -383,34 +384,32 @@
       #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
       #p-address { top: 68mm; left: 10mm; width: 190mm; font-size: 12.4pt; white-space: nowrap; overflow: hidden; }
 
-      /* v15.6.76: compact visit/donor information inside the existing top box.
-         Two short rows are used so the printed data does not push the preprinted form downward. */
+      /* v15.6.77: keep the six added fields readable while staying inside the original top box.
+         Use Leelawadee UI explicitly because Sarabun is not bundled with the app and could fall back differently by PC. */
       .p-a4-extra {
         position: absolute;
         color: #000;
-        font-size: 10.2pt;
+        font-family: 'Leelawadee UI', Tahoma, sans-serif;
+        font-size: 10.8pt;
         line-height: 1;
+        font-weight: 400;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: clip;
       }
-      /* Row 1 sits in the narrow gap below birth/age/gender + barcode and above address. */
-      #p-donation-date { top: 63.0mm; left: 10mm; width: 93mm; font-size: 9.4pt; }
-      #p-donation-no   { top: 63.0mm; left: 104mm; width: 28mm; font-size: 9.4pt; }
-      #p-donor-id      { top: 63.0mm; left: 133mm; width: 67mm; font-size: 9.4pt; }
-      /* Row 2 uses the remaining blank strip below address, before the first checkbox row. */
-      #p-known-group   { top: 74.1mm; left: 10mm; width: 32mm; font-size: 9.6pt; }
-      #p-phone         { top: 74.1mm; left: 43mm; width: 54mm; font-size: 9.6pt; }
-      #p-occupation    { top: 74.1mm; left: 98mm; width: 102mm; font-size: 9.4pt; }
+      /* Row 1: between birth/age/gender and address. */
+      #p-donation-date { top: 62.8mm; left: 10mm; width: 93mm; font-size: 10.6pt; }
+      #p-donation-no   { top: 62.8mm; left: 104mm; width: 28mm; font-size: 10.6pt; }
+      #p-donor-id      { top: 62.8mm; left: 133mm; width: 67mm; font-size: 10.6pt; }
+      /* Row 2: below address but still above the first checkbox row. */
+      #p-known-group   { top: 74.0mm; left: 10mm; width: 32mm; font-size: 10.7pt; }
+      #p-phone         { top: 74.0mm; left: 43mm; width: 54mm; font-size: 10.7pt; }
+      #p-occupation    { top: 74.0mm; left: 98mm; width: 102mm; font-size: 10.5pt; }
 
-      /* v15.6.11: mark occupation on the preprinted FM-CNBBC-009 form.
-         These are intentionally isolated so alignment can be tuned without touching other A4 fields. */
+      /* Legacy occupation-mark elements are retained in the DOM only for backward compatibility.
+         v15.6.77 deliberately does not print any ✓ into the preprinted occupation section. */
       .p-occ-mark {
-        position: absolute;
-        color: #000;
-        font-size: 12pt;
-        font-weight: 700;
-        line-height: 1;
+        display: none !important;
       }
       #p-occ-student   { top: 101.5mm; left: 15.0mm; }
       #p-occ-gov       { top: 101.5mm; left: 55.0mm; }
@@ -420,8 +419,7 @@
       #p-occ-farmer    { top: 109.5mm; left: 55.0mm; }
       #p-occ-rama      { top: 109.5mm; left: 76.0mm; }
       #p-occ-other     { top: 109.5mm; left: 164.5mm; }
-      #p-occ-rama-detail { top: 108.4mm; left: 122.0mm; width: 38mm; font-size: 10.5pt; white-space: nowrap; overflow: hidden; }
-      #p-occ-other-detail { top: 108.4mm; left: 181.0mm; width: 25mm; font-size: 10.5pt; white-space: nowrap; overflow: hidden; }
+      #p-occ-rama-detail, #p-occ-other-detail { display: none !important; }
 
       #cert-template.active-print {
         display: block !important;
@@ -6252,16 +6250,14 @@ function getVisitFullAddress(row = {}) {
         pKnownGroup.innerText = "หมู่เลือด: " + compactBloodGroupForA4(knownBloodGroup);
         pPhone.innerText = "โทร: " + (phoneValue || "-");
         pOccupation.innerText = "อาชีพ: " + occupationText;
-        pOccupation.style.fontSize = occupationText.length > 48 ? "8.2pt" : occupationText.length > 36 ? "8.8pt" : "9.4pt";
-        pDonorId.style.fontSize = donorIdValue.length > 18 ? "8.6pt" : "9.4pt";
+        pOccupation.style.fontSize = occupationText.length > 48 ? "9.2pt" : occupationText.length > 36 ? "9.8pt" : "10.5pt";
+        pDonorId.style.fontSize = donorIdValue.length > 18 ? "9.4pt" : "10.6pt";
 
+        // v15.6.77: do not mark the occupation checkboxes on the preprinted form.
+        // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
         if (pOccOtherDetail) pOccOtherDetail.innerText = "";
-        const occupation = parseOccupationStored(row.occupation || "");
-        if (occupation.type && occupationMarks[occupation.type]) occupationMarks[occupation.type].innerText = "✓";
-        if (occupation.type === "rama" && pOccRamaDetail) pOccRamaDetail.innerText = occupation.detail || "";
-        if (occupation.type === "other" && pOccOtherDetail) pOccOtherDetail.innerText = occupation.detail || "";
 
         a4.className = "active-print";
 
