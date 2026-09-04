@@ -17,7 +17,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="assets/vendor/bootstrap.min.css" rel="stylesheet">
   <script src="assets/vendor/bootstrap.bundle.min.js"></script>
   <script src="assets/vendor/JsBarcode.all.min.js"></script>
@@ -357,7 +357,7 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif !important;
+        font-family: 'Noto Sans Thai', 'Sarabun', Tahoma, sans-serif !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -371,48 +371,48 @@
         height: 297mm;
         background: white;
         z-index: 9999;
-        font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif !important;
+        font-family: 'Noto Sans Thai', 'Sarabun', Tahoma, sans-serif !important;
         font-kerning: normal;
       }
 
       .print-data {
         position: absolute;
         color: #000;
-        font-size: 13.6pt;
+        font-size: 13.2pt;
         font-weight: 400;
-        line-height: 1.08;
+        line-height: 1.16;
         letter-spacing: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      #p-dn { top: 36.8mm; left: 136.2mm; width: 60mm; font-weight: 700; font-size: 16.4pt; line-height: 1; }
+      #p-dn { top: 36.8mm; left: 136.2mm; width: 60mm; font-weight: 700; font-size: 15.8pt; line-height: 1; }
       #p-barcode { top: 47.0mm; left: 136.4mm; width: 45mm; height: 15mm; }
-      #p-name { top: 37.0mm; left: 10mm; width: 121mm; font-weight: 600; font-size: 13.8pt; }
-      #p-id { top: 47.1mm; left: 10mm; width: 121mm; font-size: 13.4pt; }
-      #p-birth { top: 57.2mm; left: 10mm; width: 76mm; font-size: 12.7pt; }
-      #p-age { top: 57.2mm; left: 90.5mm; width: 21mm; font-size: 12.7pt; }
-      #p-gender { top: 57.2mm; left: 114.5mm; width: 17mm; font-size: 12.7pt; }
-      #p-address { top: 68.0mm; left: 10mm; width: 121mm; font-size: 12.0pt; }
+      #p-name { top: 37.1mm; left: 10mm; width: 121mm; font-weight: 500; font-size: 13.4pt; }
+      #p-id { top: 47.3mm; left: 10mm; width: 121mm; font-size: 13.0pt; }
+      #p-birth { top: 57.4mm; left: 10mm; width: 76mm; font-size: 12.4pt; }
+      #p-age { top: 57.4mm; left: 90.5mm; width: 21mm; font-size: 12.4pt; }
+      #p-gender { top: 57.4mm; left: 114.5mm; width: 18mm; font-size: 12.4pt; }
+      #p-address { top: 68.2mm; left: 10mm; width: 121mm; font-size: 11.7pt; }
 
       .p-a4-extra {
         position: absolute;
         color: #000;
-        font-size: 10.8pt;
+        font-size: 10.2pt;
         font-weight: 400;
-        line-height: 1.1;
+        line-height: 1.16;
         letter-spacing: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      #p-donation-date { top: 62.7mm; left: 10mm; width: 79mm; }
-      #p-donation-no   { top: 62.7mm; left: 91mm; width: 22mm; text-align: left; }
-      #p-donor-id      { top: 62.7mm; left: 116mm; width: 58mm; text-align: left; }
-      #p-known-group   { top: 74.0mm; left: 10mm; width: 23mm; }
-      #p-phone         { top: 74.0mm; left: 38mm; width: 49mm; }
-      #p-occupation    { top: 79.5mm; left: 10mm; width: 164mm; }
+      #p-donation-date { top: 62.9mm; left: 10mm; width: 78mm; }
+      #p-donation-no   { top: 62.9mm; left: 90.5mm; width: 20mm; text-align: left; }
+      #p-donor-id      { top: 62.9mm; left: 114mm; width: 60mm; text-align: left; }
+      #p-known-group   { top: 74.2mm; left: 10mm; width: 23mm; }
+      #p-phone         { top: 74.2mm; left: 36mm; width: 138mm; }
+      #p-occupation    { display: none !important; }
 
       .p-occ-mark {
         display: none !important;
@@ -6254,16 +6254,16 @@ function getVisitFullAddress(row = {}) {
         pDonationNo.innerText = "ครั้งที่: " + (donationNoValue || "-");
         pDonorId.innerText = "Donor ID: " + (donorIdValue || "-");
         pKnownGroup.innerText = "หมู่เลือด: " + compactBloodGroupForA4(knownBloodGroup);
-        pPhone.innerText = "โทร: " + (phoneValue || "-");
-        pOccupation.innerText = "อาชีพ: " + occupationText;
-        pDonationDate.style.fontSize = "10.8pt";
-        pDonationNo.style.fontSize = "10.8pt";
-        pDonorId.style.fontSize = donorIdValue.length > 24 ? "10.0pt" : "10.8pt";
-        pKnownGroup.style.fontSize = "10.8pt";
-        pPhone.style.fontSize = phoneValue.length > 16 ? "10.4pt" : "10.8pt";
-        pOccupation.style.fontSize = occupationText.length > 56 ? "9.8pt" : occupationText.length > 44 ? "10.2pt" : "10.8pt";
+        pPhone.innerText = "โทร: " + (phoneValue || "-") + "   อาชีพ: " + occupationText;
+        pOccupation.innerText = "";
+        pDonationDate.style.fontSize = "10.2pt";
+        pDonationNo.style.fontSize = "10.2pt";
+        pDonorId.style.fontSize = donorIdValue.length > 24 ? "9.8pt" : "10.2pt";
+        pKnownGroup.style.fontSize = "10.2pt";
+        pPhone.style.fontSize = occupationText.length > 28 ? "9.8pt" : "10.2pt";
+        pOccupation.style.fontSize = "10.0pt";
 
-        // v15.6.80: keep occupation checkbox marks disabled on the preprinted form.
+        // v15.6.81: keep occupation checkbox marks disabled on the preprinted form.
         // The occupation is already shown as text in the compact information row above.
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
