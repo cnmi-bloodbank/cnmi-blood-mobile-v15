@@ -21,7 +21,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.75"></script>
+  <script src="js/supabase-backend.js?v=15.6.76"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -381,7 +381,27 @@
       #p-birth { top: 58mm; left: 10mm; width: 80mm; white-space: nowrap; font-size: 13pt; }
       #p-age { top: 58mm; left: 92mm; white-space: nowrap; font-size: 13pt; }
       #p-gender { top: 58mm; left: 119mm; white-space: nowrap; font-size: 13pt; }
-      #p-address { top: 68mm; left: 10mm; width: 190mm; }
+      #p-address { top: 68mm; left: 10mm; width: 190mm; font-size: 12.4pt; white-space: nowrap; overflow: hidden; }
+
+      /* v15.6.76: compact visit/donor information inside the existing top box.
+         Two short rows are used so the printed data does not push the preprinted form downward. */
+      .p-a4-extra {
+        position: absolute;
+        color: #000;
+        font-size: 10.2pt;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+      }
+      /* Row 1 sits in the narrow gap below birth/age/gender + barcode and above address. */
+      #p-donation-date { top: 63.0mm; left: 10mm; width: 93mm; font-size: 9.4pt; }
+      #p-donation-no   { top: 63.0mm; left: 104mm; width: 28mm; font-size: 9.4pt; }
+      #p-donor-id      { top: 63.0mm; left: 133mm; width: 67mm; font-size: 9.4pt; }
+      /* Row 2 uses the remaining blank strip below address, before the first checkbox row. */
+      #p-known-group   { top: 74.1mm; left: 10mm; width: 32mm; font-size: 9.6pt; }
+      #p-phone         { top: 74.1mm; left: 43mm; width: 54mm; font-size: 9.6pt; }
+      #p-occupation    { top: 74.1mm; left: 98mm; width: 102mm; font-size: 9.4pt; }
 
       /* v15.6.11: mark occupation on the preprinted FM-CNBBC-009 form.
          These are intentionally isolated so alignment can be tuned without touching other A4 fields. */
@@ -1933,6 +1953,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
 
 
 /* v15.6.75: cleaner registration text + compact advance banner */
+/* v15.6.76: compact A4 visit details in existing form box */
 #page-register .register-quick-start{font-size:.96rem;padding:9px 12px;gap:8px 10px}
 #page-register .advance-register-banner{font-size:.98rem;padding:10px 12px;line-height:1.45}
 #page-register .advance-register-banner .advance-main-line{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center}
@@ -3356,6 +3377,12 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
     <div id="p-age" class="print-data"></div>
     <div id="p-gender" class="print-data"></div>
     <div id="p-address" class="print-data"></div>
+    <div id="p-donation-date" class="p-a4-extra"></div>
+    <div id="p-donation-no" class="p-a4-extra"></div>
+    <div id="p-donor-id" class="p-a4-extra"></div>
+    <div id="p-known-group" class="p-a4-extra"></div>
+    <div id="p-phone" class="p-a4-extra"></div>
+    <div id="p-occupation" class="p-a4-extra"></div>
     <div id="p-occ-student" class="p-occ-mark"></div>
     <div id="p-occ-gov" class="p-occ-mark"></div>
     <div id="p-occ-employee" class="p-occ-mark"></div>
@@ -3419,7 +3446,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.75 - Clean advance workflow + Donor ID/Birth fix");
+    console.log("CNMI Blood Donation v15.6.76 - Compact A4 donation / donor info");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -4393,6 +4420,83 @@ async function resetPasswordWithOtp() {
       const months = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
       const month = months[Number(m[2])] || m[2];
       return `${Number(m[1])} ${month} ${m[3]}`;
+    }
+
+    function a4CompactDonationDateTime(value) {
+      const months = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      const raw = String(value || "").trim();
+      let day = 0, month = 0, year = 0, hour = "", minute = "";
+      let m = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:[,\sT]+(\d{1,2}):(\d{2}))?/);
+      if (m) {
+        day = Number(m[1]); month = Number(m[2]); year = Number(m[3]); hour = m[4] || ""; minute = m[5] || "";
+      } else {
+        m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s]+(\d{1,2}):(\d{2}))?/);
+        if (m) {
+          year = Number(m[1]); month = Number(m[2]); day = Number(m[3]); hour = m[4] || ""; minute = m[5] || "";
+        }
+      }
+      if (day && month >= 1 && month <= 12 && year) {
+        if (year < 2400) year += 543;
+        const time = hour !== "" && minute !== "" ? ` ${String(hour).padStart(2, "0")}:${minute}` : "";
+        return `${day} ${months[month]} ${year}${time}`;
+      }
+      if (raw) return raw.replace(/:\d{2}(?=\s*$)/, "");
+      const now = new Date();
+      return `${now.getDate()} ${months[now.getMonth() + 1]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    }
+
+    async function resolveA4HistoryProfile(row) {
+      try {
+        if (!window.cnmiPreload) return null;
+        if (row?.identityType === "passport") {
+          const pass = String(row.passportNumber || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+          return pass && window.cnmiPreload.findDonorPassport ? await window.cnmiPreload.findDonorPassport(pass) : null;
+        }
+        const id = String(row?.idCard || row?.identityKey || row?.dbIdCard || "").replace(/\D/g, "");
+        return /^\d{13}$/.test(id) && window.cnmiPreload.findDonor ? await window.cnmiPreload.findDonor(id) : null;
+      } catch (err) {
+        console.warn("A4 history lookup failed", err);
+        return null;
+      }
+    }
+
+    function resolveA4KnownBloodGroup(row, profile) {
+      const direct = String(profile?.bloodGroupHistory || "").trim();
+      if (direct) return direct;
+      const aiLis = (Array.isArray(profile?.donationHistory) ? profile.donationHistory : []).find(x => String(x?.group || "").trim());
+      if (aiLis?.group) return String(aiLis.group).trim();
+      const mobile = (Array.isArray(profile?.mobileVisits) ? profile.mobileVisits : []).find(x => String(x?.group || "").trim());
+      if (mobile?.group) return String(mobile.group).trim();
+      return String(row?.group || "").trim();
+    }
+
+    function compactBloodGroupForA4(value) {
+      const raw = String(value || "").trim();
+      if (!raw || raw === "-") return "-";
+      const up = raw.toUpperCase().replace(/\s+/g, " ");
+      const aboMatch = up.match(/\b(AB|A|B|O)\b/);
+      if (!aboMatch) return raw;
+      const abo = aboMatch[1];
+      const negative = /NEGATIVE|NEG|RH\s*\(D\)\s*-|RHD\s*-|RH\s*-/.test(up) || /-$/.test(up);
+      const positive = /POSITIVE|POS|RH\s*\(D\)\s*\+|RHD\s*\+|RH\s*\+/.test(up) || /\+$/.test(up);
+      return abo + (negative ? "-" : positive ? "+" : "");
+    }
+
+    function compactOccupationForA4(value) {
+      const occ = parseOccupationStored(value || "");
+      if (!occ.type) return "-";
+      const shortLabels = {
+        student: "นักเรียน/นักศึกษา",
+        gov: "ข้าราชการ/ทหาร/ตำรวจ/รัฐวิสาหกิจ",
+        employee: "พนักงานบริษัท/รับจ้าง",
+        religious: "พระภิกษุ/สามเณร/นักบวช",
+        business: "ธุรกิจส่วนตัว/ค้าขาย",
+        farmer: "เกษตรกร",
+        rama: "บุคลากร ร.พ.รามาฯ",
+        other: "อื่นๆ"
+      };
+      const label = shortLabels[occ.type] || occ.text || "-";
+      return occ.detail ? `${label}: ${occ.detail}` : label;
     }
 
     function toggleReason() {
@@ -6087,6 +6191,12 @@ function getVisitFullAddress(row = {}) {
         let pAge = document.getElementById("p-age");
         let pGender = document.getElementById("p-gender");
         let pAddress = document.getElementById("p-address");
+        let pDonationDate = document.getElementById("p-donation-date");
+        let pDonationNo = document.getElementById("p-donation-no");
+        let pDonorId = document.getElementById("p-donor-id");
+        let pKnownGroup = document.getElementById("p-known-group");
+        let pPhone = document.getElementById("p-phone");
+        let pOccupation = document.getElementById("p-occupation");
         const occupationMarkIds = ["student","gov","employee","religious","business","farmer","rama","other"];
         const occupationMarks = Object.fromEntries(occupationMarkIds.map(k => [k, document.getElementById(`p-occ-${k}`)]));
         const pOccRamaDetail = document.getElementById("p-occ-rama-detail");
@@ -6095,7 +6205,7 @@ function getVisitFullAddress(row = {}) {
         let tsc = document.getElementById("tsc-template");
         let cert = document.getElementById("cert-template");
 
-        if (!pDn || !pBarcode || !pName || !pId || !pBirth || !pAge || !pGender || !pAddress || !a4) {
+        if (!pDn || !pBarcode || !pName || !pId || !pBirth || !pAge || !pGender || !pAddress || !pDonationDate || !pDonationNo || !pDonorId || !pKnownGroup || !pPhone || !pOccupation || !a4) {
           alert("ไม่พบ element สำหรับพิมพ์ A4 บางตัว");
           return;
         }
@@ -6118,6 +6228,32 @@ function getVisitFullAddress(row = {}) {
         pAge.innerText = "อายุ: " + age + " ปี";
         pGender.innerText = "เพศ: " + genderToThai(row.gender || "-");
         pAddress.innerText = "ที่อยู่: " + (row.address || "-");
+
+        const historyProfile = await resolveA4HistoryProfile(row);
+        const knownBloodGroup = resolveA4KnownBloodGroup(row, historyProfile);
+        const selectedDate = document.getElementById("table-date")?.value || getLocalDateInputValue();
+        const todayDate = getLocalDateInputValue();
+        let donationDateValue = row.saveTime || row.visitDate || row.donationDate || selectedDate || "";
+        if (!row.saveTime && donationDateValue === todayDate) {
+          const now = new Date();
+          donationDateValue += ` ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        }
+        const donationNoRaw = String(row.donationNo || "").trim().replace(/\.0+$/, "");
+        const lastDonationNo = Number(String(row.lastDonationNo ?? "").replace(/\.0+$/, ""));
+        const donationNoValue = donationNoRaw || (Number.isFinite(lastDonationNo) ? String(lastDonationNo + 1) : "-");
+        const donorIdValue = String(row.donorId || historyProfile?.donorIds?.[0] || historyProfile?.donorIdsAll?.[0] || "").trim().replace(/\.0+$/, "");
+        const phoneValue = String(row.phone || historyProfile?.phone || "").trim();
+        const occupationValue = String(row.occupation || historyProfile?.occupation || "").trim();
+        const occupationText = compactOccupationForA4(occupationValue);
+
+        pDonationDate.innerText = "วันที่บริจาค: " + a4CompactDonationDateTime(donationDateValue);
+        pDonationNo.innerText = "ครั้งที่: " + (donationNoValue || "-");
+        pDonorId.innerText = "Donor ID: " + (donorIdValue || "-");
+        pKnownGroup.innerText = "หมู่เลือด: " + compactBloodGroupForA4(knownBloodGroup);
+        pPhone.innerText = "โทร: " + (phoneValue || "-");
+        pOccupation.innerText = "อาชีพ: " + occupationText;
+        pOccupation.style.fontSize = occupationText.length > 48 ? "8.2pt" : occupationText.length > 36 ? "8.8pt" : "9.4pt";
+        pDonorId.style.fontSize = donorIdValue.length > 18 ? "8.6pt" : "9.4pt";
 
         Object.values(occupationMarks).forEach(el => { if (el) el.innerText = ""; });
         if (pOccRamaDetail) pOccRamaDetail.innerText = "";
@@ -6669,7 +6805,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.75"></script>
+  <script src="js/supabase-history.js?v=15.6.76"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
