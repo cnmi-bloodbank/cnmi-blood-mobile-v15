@@ -73,7 +73,7 @@
         const p=await profile(); if(!p?.active){await sb.auth.signOut();return {status:'error',message:'บัญชีนี้ถูกปิดการใช้งาน'};} startRealtime();
         return {status:'success',user:mapUser(p)};
       }
-      if(action==='logout'){ try{await sb.rpc('write_audit',{p_action:'LOGOUT',p_target_type:'USER',p_target_id:(await profile())?.username||'',p_detail:'ออกจากระบบ',p_user_agent:data.userAgent||ua()});}catch{} await sb.auth.signOut(); return {status:'success'}; }
+      if(action==='logout'){ const detail=data.reason==='desktop_idle_15m'?'ออกจากระบบอัตโนมัติ: ไม่มีการใช้งานบนคอมพิวเตอร์ 15 นาที':'ออกจากระบบ'; try{await sb.rpc('write_audit',{p_action:'LOGOUT',p_target_type:'USER',p_target_id:(await profile())?.username||'',p_detail:detail,p_user_agent:data.userAgent||ua()});}catch{} await sb.auth.signOut(); return {status:'success'}; }
       if(action==='changePassword'){
         const p=await profile(); const {error:re}=await sb.auth.signInWithPassword({email:authEmail(p.username),password:data.currentPassword}); if(re) return {status:'error',message:'รหัสผ่านเดิมไม่ถูกต้อง'};
         const {error}=await sb.auth.updateUser({password:data.newPassword}); if(error) throw error; await sb.rpc('finish_password_change',{p_user_agent:data.userAgent||ua()}); return {status:'success',user:mapUser(await profile())};

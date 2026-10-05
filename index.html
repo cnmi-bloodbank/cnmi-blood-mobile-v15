@@ -24,7 +24,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.76"></script>
+  <script src="js/supabase-backend.js?v=15.6.83"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -3450,7 +3450,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   <div id="tsc-template"></div>
 
   <script>
-    console.log("CNMI Blood Donation v15.6.76 - Compact A4 donation / donor info");
+    console.log("CNMI Blood Donation v15.6.83 - Desktop idle auto logout 15 minutes");
     let currentTablePage = "today";
 
     const BACKEND_NAME = "supabase";
@@ -3458,6 +3458,113 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
     const USER_KEY = "cnmi_donor_user";
     let currentToken = localStorage.getItem(TOKEN_KEY) || "";
     let currentUser = null;
+
+    // v15.6.83 — Security: desktop/computer sessions auto logout after 15 minutes of inactivity.
+    // Phone/mobile devices are deliberately exempt because the device is normally personal to the user.
+    const DESKTOP_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+    const DESKTOP_IDLE_CHECK_MS = 15 * 1000;
+    const DESKTOP_IDLE_ACTIVITY_WRITE_MS = 5 * 1000;
+    const DESKTOP_LAST_ACTIVITY_KEY = "cnmi_donor_desktop_last_activity_v15683";
+    let desktopIdleTimer = null;
+    let desktopIdleLastWriteAt = 0;
+    let desktopIdleLogoutInProgress = false;
+    let desktopIdleListenersInstalled = false;
+
+    function isPersonalMobileDevice() {
+      try {
+        if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+      } catch (_) {}
+      const ua = String(navigator.userAgent || "");
+      if (/iPhone|iPod|Android.*Mobile|Windows Phone|Mobile/i.test(ua)) return true;
+      // iPadOS can report itself as Macintosh. Treat tablets/touch-first small devices as mobile too.
+      if (/Macintosh/i.test(ua) && Number(navigator.maxTouchPoints || 0) > 1) return true;
+      try {
+        const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        if (coarse && Math.min(window.screen?.width || innerWidth, window.screen?.height || innerHeight) <= 900) return true;
+      } catch (_) {}
+      return false;
+    }
+
+    function desktopIdleEnabled() {
+      return !isPersonalMobileDevice();
+    }
+
+    function getDesktopLastActivity() {
+      const value = Number(localStorage.getItem(DESKTOP_LAST_ACTIVITY_KEY) || 0);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function markDesktopActivity(force = false) {
+      if (!desktopIdleEnabled() || !currentToken) return;
+      const now = Date.now();
+      if (!force && now - desktopIdleLastWriteAt < DESKTOP_IDLE_ACTIVITY_WRITE_MS) return;
+      desktopIdleLastWriteAt = now;
+      localStorage.setItem(DESKTOP_LAST_ACTIVITY_KEY, String(now));
+    }
+
+    function desktopIdleExpired() {
+      if (!desktopIdleEnabled() || !currentToken) return false;
+      const last = getDesktopLastActivity();
+      if (!last) return false;
+      return Date.now() - last >= DESKTOP_IDLE_TIMEOUT_MS;
+    }
+
+    async function logoutDueToDesktopInactivity() {
+      if (desktopIdleLogoutInProgress || !currentToken) return;
+      desktopIdleLogoutInProgress = true;
+      try {
+        await apiCall("logout", {
+          data: JSON.stringify({
+            token: currentToken,
+            userAgent: getUserAgentText(),
+            reason: "desktop_idle_15m"
+          })
+        });
+      } catch (err) {
+        console.warn("desktop idle logout remote call failed", err);
+      } finally {
+        clearSession();
+        showLoginScreen();
+        showLoginError("ระบบออกจากบัญชีอัตโนมัติ เนื่องจากไม่มีการใช้งานบนคอมพิวเตอร์เกิน 15 นาที กรุณาเข้าสู่ระบบอีกครั้ง");
+        desktopIdleLogoutInProgress = false;
+      }
+    }
+
+    function checkDesktopIdleLogout() {
+      if (!desktopIdleEnabled() || !currentToken) return;
+      if (desktopIdleExpired()) logoutDueToDesktopInactivity();
+    }
+
+    function installDesktopIdleListeners() {
+      if (desktopIdleListenersInstalled) return;
+      desktopIdleListenersInstalled = true;
+      const activityEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll", "touchstart"];
+      activityEvents.forEach(eventName => {
+        document.addEventListener(eventName, () => markDesktopActivity(false), { passive: true, capture: true });
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkDesktopIdleLogout();
+      });
+      window.addEventListener("pageshow", () => checkDesktopIdleLogout());
+    }
+
+    function startDesktopIdleLogout(resetActivity = false) {
+      installDesktopIdleListeners();
+      if (!desktopIdleEnabled()) {
+        if (desktopIdleTimer) clearInterval(desktopIdleTimer);
+        desktopIdleTimer = null;
+        return;
+      }
+      if (currentToken && (resetActivity || !getDesktopLastActivity())) markDesktopActivity(true);
+      if (!desktopIdleTimer) desktopIdleTimer = setInterval(checkDesktopIdleLogout, DESKTOP_IDLE_CHECK_MS);
+    }
+
+    function stopDesktopIdleLogout() {
+      if (desktopIdleTimer) clearInterval(desktopIdleTimer);
+      desktopIdleTimer = null;
+      desktopIdleLastWriteAt = 0;
+      localStorage.removeItem(DESKTOP_LAST_ACTIVITY_KEY);
+    }
 
     function isAuthErrorMessage(message) {
       const msg = (message || "").toString();
@@ -3808,7 +3915,8 @@ async function logout() {
       await apiCall("logout", {
         data: JSON.stringify({
           token: currentToken,
-          userAgent: getUserAgentText()
+          userAgent: getUserAgentText(),
+          reason: "manual"
         })
       });
     }
@@ -3988,6 +4096,7 @@ function clearSession() {
 
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  stopDesktopIdleLogout();
 
   updateSidebarUser();
 }
@@ -4034,6 +4143,17 @@ async function initAuth() {
     return;
   }
 
+  // If this browser was left signed in and comes back after >15 minutes idle,
+  // do not silently restore the desktop session.
+  if (desktopIdleEnabled()) {
+    const lastActivity = getDesktopLastActivity();
+    if (lastActivity && Date.now() - lastActivity >= DESKTOP_IDLE_TIMEOUT_MS) {
+      await logoutDueToDesktopInactivity();
+      return;
+    }
+    if (!lastActivity) markDesktopActivity(true);
+  }
+
   try {
     const res = await apiCall("getSessionUser", {
       data: JSON.stringify({
@@ -4049,6 +4169,7 @@ async function initAuth() {
 
     currentUser = res.user;
     saveSession(currentToken, currentUser);
+    startDesktopIdleLogout(true);
     showAppScreen();
 
     if (currentUser.mustChangePassword) {
@@ -4092,6 +4213,7 @@ async function login() {
     }
 
     saveSession(res.token, res.user);
+    startDesktopIdleLogout(true);
     showAppScreen();
 
     document.getElementById("login-password").value = "";
@@ -6813,7 +6935,7 @@ function getVisitFullAddress(row = {}) {
     window.addEventListener("afterprint", clearPrintPageSize);
     window.addEventListener("afterprint", resetPrintTemplates);
   </script>
-  <script src="js/supabase-history.js?v=15.6.76"></script>
+  <script src="js/supabase-history.js?v=15.6.83"></script>
   <script src="js/legacy-import.js"></script>
 
 <script>
