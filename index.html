@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- CNMI Blood Mobile v15.6.25: Locked Person LIS workflow + Bag Lot -->
 <!-- CNMI Blood Mobile v15.6.13: required occupation + last donation input -->
-<!-- CNMI Blood Mobile v15.6.87: soft-void duplicate pending visit + audit -->
+<!-- CNMI Blood Mobile v15.6.88: collected blood ABO dashboard + duplicate visit audit -->
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -245,6 +245,17 @@
   margin-top: 6px;
 }
 
+.blood-summary-panel{margin-top:18px;background:#fff;border:1px solid var(--cnmi-blue-border);border-radius:18px;padding:20px;box-shadow:0 8px 20px rgba(47,128,237,.05)}
+.blood-summary-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.blood-summary-heading h2{font-size:19px;font-weight:700;margin:0 0 5px;color:var(--cnmi-blue-dark)}
+.blood-summary-heading p{font-size:13px;color:var(--cnmi-muted);margin:0}
+.blood-summary-total{background:#eaf4ff;color:#234a78;border-radius:12px;padding:9px 14px;white-space:nowrap}
+.blood-summary-total strong{font-size:22px;color:var(--cnmi-blue-dark)}
+.blood-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.blood-group-tile{border:1px solid #cbdff7;background:#f8fbff;border-radius:14px;padding:15px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.blood-group-tile span{font-weight:700;color:#315578;margin-right:auto}.blood-group-tile strong{font-size:29px;color:var(--cnmi-blue-dark)}.blood-group-tile small{color:var(--cnmi-muted)}
+.blood-summary-note{margin-top:12px;color:#855a15;font-size:13px}
+@media(max-width:700px){.blood-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.blood-summary-panel{padding:14px}.blood-group-tile{padding:12px}}
 .sidebar-backdrop {
   display: none;
 }
@@ -2136,6 +2147,16 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <div class="dashboard-card-label">รอคัดกรอง</div>
             <div class="dashboard-card-value" id="dash-pending">-</div>
           </div>
+        </div>
+        <div class="blood-summary-panel" aria-label="สรุปหมู่เลือดที่ได้รับวันนี้">
+          <div class="blood-summary-heading"><div><h2>จำนวนโลหิตที่ได้รับ แยกตามหมู่เลือด</h2><p>เฉพาะผู้ผ่านคัดกรองที่มีเลขถุงเลือดแล้ว · อ้างอิงวันที่ของรายการ</p></div><div class="blood-summary-total">รวม <strong id="dash-blood-total">0</strong> ถุง</div></div>
+          <div class="blood-summary-grid">
+            <div class="blood-group-tile"><span>หมู่ A</span><strong id="dash-blood-a">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile"><span>หมู่ B</span><strong id="dash-blood-b">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile"><span>หมู่ O</span><strong id="dash-blood-o">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile"><span>หมู่ AB</span><strong id="dash-blood-ab">0</strong><small>ถุง</small></div>
+          </div>
+          <div class="blood-summary-note" id="dash-blood-note" hidden></div>
         </div>
       </section>
 
@@ -5430,6 +5451,33 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
       if (passEl) passEl.innerText = pass;
       if (failEl) failEl.innerText = fail;
       if (pendingEl) pendingEl.innerText = pending;
+
+      // Count collected bags, not merely screened donors. Never infer ABO from history.
+      const counts = {A:0,B:0,O:0,AB:0};
+      const seenBags = new Set();
+      let missingGroup = 0;
+      for (const row of data) {
+        if (row.status !== "ผ่าน" || !rowHasBag(row)) continue;
+        const bag = String(row.bag || '').trim().toUpperCase();
+        if (seenBags.has(bag)) continue;
+        seenBags.add(bag);
+        const raw = String(row.group || '').trim().toUpperCase().replace(/\s+/g,'');
+        const match = raw.match(/^(AB|A|B|O)(?:[+-]|POS|NEG|POSITIVE|NEGATIVE)?$/);
+        if (match) counts[match[1]]++;
+        else missingGroup++;
+      }
+      for (const group of ['A','B','O','AB']) {
+        const el = document.getElementById('dash-blood-' + group.toLowerCase());
+        if (el) el.textContent = counts[group];
+      }
+      const sum = Object.values(counts).reduce((a,b)=>a+b,0);
+      const sumEl = document.getElementById('dash-blood-total');
+      if (sumEl) sumEl.textContent = sum;
+      const note = document.getElementById('dash-blood-note');
+      if (note) {
+        note.hidden = !missingGroup;
+        note.textContent = missingGroup ? `มี ${missingGroup} ถุงที่ระบุหมู่เลือดไม่ครบหรือไม่อยู่ในกลุ่ม A/B/O/AB จึงยังไม่รวมในยอดแยกหมู่` : '';
+      }
     }
 
     function getAuditActionBadgeClass(action) {
