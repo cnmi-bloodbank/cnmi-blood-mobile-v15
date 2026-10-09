@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   'use strict';
   const cfg = window.CNMI_SUPABASE_CONFIG || {};
   let client = null, realtime = null, realtimeTimer = null;
@@ -160,6 +160,21 @@
           historyWarning=historyErr?.message||String(historyErr);
         }
         return {...(r||{}),bagLot,screeningAttemptCount:Number(attemptInfo?.attemptCount||0),historyWarning};
+      }
+      if(action==='resetScreeningForCorrection'){
+        const dn=String(params.dn||data.dn||'').trim();
+        const reason=String(data.reason||'').trim();
+        if(!dn) return {status:'error',message:'ไม่พบ DN สำหรับคืนสถานะคัดกรอง'};
+        if(reason.length<5) return {status:'error',message:'กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร'};
+        const {data:r,error}=await sb.rpc('reset_screening_for_correction_v15684',{p_dn:dn,p_reason:reason,p_user_agent:ua()});
+        if(error){
+          const msg=String(error.message||'');
+          if(msg.includes('reset_screening_for_correction_v15684') || String(error.code||'')==='PGRST202') {
+            return {status:'error',message:'กรุณารัน SQL V15_6_84_SCREENING_CORRECTION_NEW_BAG.sql ใน Supabase ก่อนใช้งานเมนูลงผลใหม่'};
+          }
+          throw error;
+        }
+        return r||{status:'error',message:'คืนสถานะคัดกรองไม่สำเร็จ'};
       }
       if(action==='getScreeningAttempts'){
         const dn=String(params.dn||data.dn||'').trim();
