@@ -2195,6 +2195,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-sdp-ab">0</strong><small>รายการ</small></div>
               </div>
               <p class="donation-product-missing" id="dash-sdp-missing" hidden></p>
+              <div class="donation-undercollection"><span>เจาะไม่เต็ม (Undercollection) · แยกออกจากยอด Platelet (SDP)</span><strong id="dash-sdp-undercollection">0</strong></div>
             </section>
           </div>
           <div class="blood-summary-note" id="dash-blood-note" hidden></div>
@@ -3381,9 +3382,9 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
       <label class="form-label" for="dm-kind">ประเภทการบริจาค</label>
       <select id="dm-kind" class="form-select mb-3"><option value="">-- กรุณาเลือก --</option><option value="Whole Blood">Whole Blood</option><option value="Platelet (SDP)">Platelet Apheresis (SDP)</option></select>
       <label class="form-label" for="dm-lot">Bag Lot</label><input id="dm-lot" class="form-control mb-3" maxlength="150" autocomplete="off" placeholder="สแกนหรือกรอก Bag Lot">
-      <label class="form-label" for="dm-collection">ผลการเจาะเก็บ (Whole Blood)</label>
+      <label class="form-label" for="dm-collection">ผลการเจาะเก็บ (Whole Blood / Platelet SDP)</label>
       <select id="dm-collection" class="form-select mb-3"><option value="">ยังไม่ระบุผลการเจาะ</option><option value="complete">เจาะได้ครบ</option><option value="undercollected">เจาะไม่เต็มถุง (Undercollection)</option></select>
-      <div class="form-text mb-3">ถ้าเลือกเจาะไม่เต็ม ระบบจะหักจากยอด Whole Blood และแสดงในแถวเจาะไม่เต็ม โดยไม่ลบเลขถุง (ใช้เฉพาะ Whole Blood)</div>
+      <div class="form-text mb-3">ถ้าเลือกเจาะไม่เต็ม ระบบจะหักออกจากยอดปกติของผลิตภัณฑ์ที่เลือก แล้วแสดงในแถวเจาะไม่เต็มใต้ Whole Blood หรือ Platelet (SDP) โดยไม่ลบเลขถุง</div>
       <label class="form-label" for="dm-reason">เหตุผลที่แก้ไข (อย่างน้อย 5 ตัวอักษร)</label><textarea id="dm-reason" class="form-control" rows="2" maxlength="500" placeholder="เช่น บันทึก Lot ไม่ตรงกับฉลากถุงเลือด"></textarea>
       <div class="small text-muted mt-2">โปรดตรวจสอบหมายเลขบนฉลากจริง และตรวจสอบข้อมูลใน Ai-LIS แยกต่างหาก ระบบนี้ไม่ได้แก้ข้อมูล Ai-LIS โดยอัตโนมัติ</div>
     </div><div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button><button id="dm-save" class="btn btn-primary" onclick="saveDonationMetadataEditor()">บันทึกการแก้ไข</button></div>
@@ -5526,14 +5527,14 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
       let unspecifiedKind = 0;
       let unspecifiedGroup = 0;
       let collectedTotal = 0;
-      let undercollectedTotal = 0;
+      const undercollectedCounts = {'Whole Blood':0, 'Platelet (SDP)':0};
       for (const row of data) {
         if (row.status !== 'ผ่าน' || !rowHasBag(row)) continue;
         const bag = String(row.bag || '').trim().toUpperCase();
         if (!bag || seenBags.has(bag)) continue;
         seenBags.add(bag);
         const kind = String(row.donationKind || '').trim();
-        if(kind==='Whole Blood' && row.collectionStatus==='undercollected') { undercollectedTotal++; continue; }
+        if(row.collectionStatus==='undercollected' && Object.hasOwn(undercollectedCounts,kind)) { undercollectedCounts[kind]++; continue; }
         collectedTotal++;
         const bucket = buckets[kind];
         if (!bucket) { unspecifiedKind++; continue; }
@@ -5544,7 +5545,9 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
         else { bucket.missing++; unspecifiedGroup++; }
       }
       const underEl = document.getElementById('dash-wb-undercollection');
-      if(underEl) underEl.textContent=undercollectedTotal;
+      if(underEl) underEl.textContent=undercollectedCounts['Whole Blood'];
+      const sdpUnderEl = document.getElementById('dash-sdp-undercollection');
+      if(sdpUnderEl) sdpUnderEl.textContent=undercollectedCounts['Platelet (SDP)'];
       const totalEl2 = document.getElementById('dash-blood-total');
       if (totalEl2) totalEl2.textContent = collectedTotal;
       for (const [kind, prefix] of [['Whole Blood','wb'],['Platelet (SDP)','sdp']]) {
@@ -6018,7 +6021,7 @@ async function adminResetPassword(username, fullName) {
               <strong class="text-primary">${escapeHtml(row.bag || "-")}</strong>
               ${row.bagLot ? `<div class="small text-muted mt-1">Lot: ${escapeHtml(row.bagLot)}</div>` : ``}
               ${row.donationKind ? `<div class="small mt-1">${escapeHtml(row.donationKind)}</div>` : `<div class="small text-muted mt-1">ยังไม่ระบุประเภทการบริจาค</div>`}
-              ${row.collectionStatus==='undercollected' ? `<div class="small mt-1 fw-bold text-warning-emphasis">เจาะไม่เต็มถุง · ไม่นับใน Whole Blood</div>` : ''}
+              ${row.collectionStatus==='undercollected' ? `<div class="small mt-1 fw-bold text-warning-emphasis">เจาะไม่เต็มถุง · แยกจากยอดปกติของผลิตภัณฑ์</div>` : ''}
             </td>
             <td>${buildActionButtons(row, rowStr, disableScreen)}</td>
           </tr>`;
@@ -6647,7 +6650,7 @@ function getVisitFullAddress(row = {}) {
       const bagLot=document.getElementById('dm-lot').value.trim();
       const reason=document.getElementById('dm-reason').value.trim();
       const collectionStatus=document.getElementById('dm-collection').value;
-      if(donationKind!=='Whole Blood'&&collectionStatus==='undercollected'){showSuccessPopup('ข้อมูลไม่ถูกต้อง','เจาะไม่เต็มถุงใช้กับ Whole Blood เท่านั้น');return;}
+      
       if(!donationKind){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาเลือก Whole Blood หรือ Platelet (SDP)');return;}
       if(row.status==='ผ่าน'&&!bagLot){showSuccessPopup('ข้อมูลไม่ครบ','ผู้บริจาคที่ผ่านการคัดกรองต้องมี Bag Lot');return;}
       if(reason.length<5){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร');return;}
