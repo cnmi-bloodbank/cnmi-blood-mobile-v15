@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- CNMI Blood Mobile v15.6.25: Locked Person LIS workflow + Bag Lot -->
 <!-- CNMI Blood Mobile v15.6.13: required occupation + last donation input -->
+<!-- CNMI Blood Mobile v15.6.87: soft-void duplicate pending visit + audit -->
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -24,7 +25,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.86"></script>
+  <script src="js/supabase-backend.js?v=15.6.87"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -3241,6 +3242,39 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   </div>
 </div>
 
+<div class="modal fade" id="duplicateVisitVoidModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title">🗑️ ยกเลิกรายการลงทะเบียนซ้ำ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="duplicate-void-row-json">
+        <div class="mb-3">
+          <div class="fw-bold" id="duplicate-void-name">-</div>
+          <div class="small text-muted mt-1" id="duplicate-void-meta">-</div>
+        </div>
+        <div class="alert alert-danger-subtle border-danger py-2 px-3">
+          <div class="fw-bold">รายการนี้จะไม่ถูกลบออกจาก Audit</div>
+          <div class="small mt-1">• DN ที่ยกเลิกจะถูกซ่อนจากงานประจำวัน แต่เก็บประวัติว่าเป็นรายการซ้ำ</div>
+          <div class="small">• เลข DN เดิมจะถือว่าใช้แล้ว และจะไม่ถูกนำกลับมาแจกซ้ำ</div>
+          <div class="small">• ใช้ได้เฉพาะรายการที่ยัง “รอคัดกรอง” และยังไม่มีเลขถุง</div>
+        </div>
+        <label class="form-label fw-bold" for="duplicate-keep-dn">DN ที่ต้องการเก็บไว้ <span class="text-danger">*</span></label>
+        <input id="duplicate-keep-dn" class="form-control mb-3" maxlength="20" inputmode="numeric" placeholder="เช่น 2610090037 หรือพิมพ์แค่ 037">
+        <label class="form-label fw-bold" for="duplicate-void-reason">เหตุผล <span class="text-danger">*</span></label>
+        <textarea id="duplicate-void-reason" class="form-control" rows="3" maxlength="300" placeholder="เช่น ลงทะเบียนซ้ำ ต้องการเก็บ DN 2610090037"></textarea>
+        <div class="form-text">ระบบจะเก็บผู้ดำเนินการ เวลา DN ที่ยกเลิก DN ที่เก็บ และเหตุผลไว้ใน Audit Log</div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" id="duplicate-void-confirm-btn" class="btn btn-danger fw-bold" onclick="submitDuplicateVisitVoid()">🗑️ ยืนยันว่าเป็นรายการซ้ำ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="screeningCorrectionModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-warning">
@@ -3775,6 +3809,14 @@ function canResetScreeningForCorrection(row) {
   return ["admin", "sup_manager", "manager"].includes(role) && status === "ผ่าน" && rowHasBag(row);
 }
 
+function canVoidDuplicateVisit(row) {
+  const role = String(currentUser?.role || "").trim();
+  return ["admin", "sup_manager", "manager"].includes(role)
+    && rowIsPending(row)
+    && !rowHasBag(row)
+    && row?.source !== 'lis-import';
+}
+
 function filterByCurrentTableMode(data) {
   const mode = currentTableMode || "today";
 
@@ -3847,6 +3889,7 @@ function buildActionButtons(row, rowStr, disableScreen) {
           onclick="event.stopPropagation(); prepareEdit('${rowStr}')">
           ✏️ แก้ไขข้อมูล
         </button>
+        ${canVoidDuplicateVisit(row) ? `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDuplicateVisitVoid('${rowStr}')" title="ยกเลิกรายการลงทะเบียนซ้ำโดยเก็บ Audit ไว้">🗑️ รายการซ้ำ</button>` : ''}
         ${canRescreen ? `<button class="btn btn-sm btn-outline-warning fw-bold" onclick="event.stopPropagation(); openScreening('${rowStr}', true)">🔄 ตรวจซ้ำ</button>` : ''}
         ${canResetScreeningForCorrection(row) ? `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openScreeningCorrection('${rowStr}')" title="คืนสถานะเป็นรอคัดกรองและออกเลขถุงใหม่เมื่อผ่านอีกครั้ง">↩️ แก้ผล/ออกเลขใหม่</button>` : ''}
         <button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDonorReaction('${rowStr}')">🩹 Reaction</button>
@@ -5700,6 +5743,7 @@ async function adminResetPassword(username, fullName) {
     const VISIT_CACHE_TTL_MS = 20000;
     const visitDataCache = new Map();
     let visitLoadSeq = 0;
+    let currentVisitRows = [];
 
     function invalidateVisitCache(dateInput = "") {
       if (dateInput) visitDataCache.delete(dateInput);
@@ -5790,6 +5834,7 @@ async function adminResetPassword(username, fullName) {
 
     function renderVisitTable(data, dateInput, dnQuery) {
       const tbody = document.getElementById("visit-table-body");
+      currentVisitRows = Array.isArray(data) ? data : [];
       updateDashboard(data || []);
       if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">ไม่พบข้อมูลของวันที่ ' + escapeHtml(dateInput) + '</td></tr>';
@@ -5932,6 +5977,91 @@ async function adminResetPassword(username, fullName) {
       if (preloadStatus) { preloadStatus.textContent = ""; preloadStatus.className = "register-status-line text-muted"; }
       setRegisterIdentityType('thai',{clear:false});
       document.getElementById("id_card").focus();
+    }
+
+    function normalizeDuplicateKeyText(value) {
+      return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    }
+
+    function suggestDuplicateKeepDn(row) {
+      const nameKey = normalizeDuplicateKeyText(row?.name);
+      const birthKey = normalizeDuplicateKeyText(row?.birth);
+      const candidates = (currentVisitRows || []).filter(x => {
+        if (!x || x.dn === row?.dn || x.source === 'lis-import') return false;
+        if (birthKey && normalizeDuplicateKeyText(x.birth) !== birthKey) return false;
+        return nameKey && normalizeDuplicateKeyText(x.name) === nameKey;
+      });
+      if (!candidates.length) return '';
+      candidates.sort((a,b) => String(b.dn||'').localeCompare(String(a.dn||''), undefined, {numeric:true}));
+      return String(candidates[0]?.dn || '');
+    }
+
+    function openDuplicateVisitVoid(encodedRow) {
+      let row = {};
+      try { row = JSON.parse(decodeURIComponent(encodedRow)); } catch { row = {}; }
+      if (!canVoidDuplicateVisit(row)) {
+        showSuccessPopup('ยกเลิกรายการซ้ำไม่ได้', 'ใช้ได้เฉพาะ Admin / ผู้จัดการ และเฉพาะรายการที่ยังรอคัดกรองและไม่มีเลขถุง');
+        return;
+      }
+      const keepSuggested = suggestDuplicateKeepDn(row);
+      const hidden = document.getElementById('duplicate-void-row-json');
+      const nameEl = document.getElementById('duplicate-void-name');
+      const metaEl = document.getElementById('duplicate-void-meta');
+      const keepEl = document.getElementById('duplicate-keep-dn');
+      const reasonEl = document.getElementById('duplicate-void-reason');
+      if (hidden) hidden.value = encodedRow || '';
+      if (nameEl) nameEl.textContent = row.name || '-';
+      if (metaEl) metaEl.textContent = `กำลังยกเลิก DN ${row.dn || '-'} · สถานะ ${row.status || 'รอคัดกรอง'}`;
+      if (keepEl) { keepEl.value = keepSuggested; keepEl.classList.remove('is-invalid'); }
+      if (reasonEl) {
+        reasonEl.value = keepSuggested ? `ลงทะเบียนซ้ำ ต้องการเก็บ DN ${keepSuggested}` : 'ลงทะเบียนซ้ำ';
+        reasonEl.classList.remove('is-invalid');
+      }
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('duplicateVisitVoidModal')).show();
+      setTimeout(() => (keepSuggested ? reasonEl : keepEl)?.focus(), 250);
+    }
+
+    async function submitDuplicateVisitVoid() {
+      const hidden = document.getElementById('duplicate-void-row-json');
+      const keepEl = document.getElementById('duplicate-keep-dn');
+      const reasonEl = document.getElementById('duplicate-void-reason');
+      const keepDn = String(keepEl?.value || '').trim();
+      const reason = String(reasonEl?.value || '').trim();
+      let row = {};
+      try { row = JSON.parse(decodeURIComponent(hidden?.value || '')); } catch { row = {}; }
+      keepEl?.classList.remove('is-invalid');
+      reasonEl?.classList.remove('is-invalid');
+      if (!keepDn) { keepEl?.classList.add('is-invalid'); keepEl?.focus(); return; }
+      if (reason.length < 5) { reasonEl?.classList.add('is-invalid'); reasonEl?.focus(); return; }
+      if (!row.dn) { showSuccessPopup('ยกเลิกรายการซ้ำไม่ได้', 'ไม่พบ DN ของรายการนี้'); return; }
+
+      const ok = await showConfirmPopup(
+        'ยืนยันยกเลิกรายการซ้ำ?',
+        `จะยกเลิก DN ${row.dn}\nและเก็บ DN ${keepDn} ไว้ใช้งานต่อ\n\nDN ${row.dn} จะไม่ถูกนำกลับมาใช้ซ้ำ และยังมี Audit Log อยู่`,
+        'ยืนยันยกเลิก DN นี้'
+      );
+      if (!ok) return;
+
+      try {
+        setButtonBusy('duplicate-void-confirm-btn', true, '⏳ กำลังยกเลิก...');
+        const res = await apiCall('voidDuplicateVisit', {
+          dn: row.dn,
+          data: JSON.stringify({ keepDn, reason })
+        });
+        if (!res || res.status === 'error') {
+          showSuccessPopup('ยกเลิกรายการซ้ำไม่สำเร็จ', res?.message || 'เกิดข้อผิดพลาด');
+          return;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('duplicateVisitVoidModal'))?.hide();
+        invalidateVisitCache();
+        await loadTable(true);
+        showSuccessPopup('ยกเลิกรายการซ้ำแล้ว', `DN ${row.dn} ถูกซ่อนจากงานประจำวันแล้ว · ใช้ DN ${res.keepDn || keepDn} ต่อ · เลข DN เดิมจะไม่ถูกนำกลับมาใช้ซ้ำ`);
+      } catch (err) {
+        console.error('void duplicate visit error', err);
+        showSuccessPopup('ยกเลิกรายการซ้ำไม่สำเร็จ', err?.message || String(err));
+      } finally {
+        setButtonBusy('duplicate-void-confirm-btn', false);
+      }
     }
 
     function openScreeningCorrection(encodedRow) {
