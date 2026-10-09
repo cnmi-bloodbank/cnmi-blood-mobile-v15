@@ -169,8 +169,11 @@
         const {data:r,error}=await sb.rpc('reset_screening_for_correction_v15684',{p_dn:dn,p_reason:reason,p_user_agent:ua()});
         if(error){
           const msg=String(error.message||'');
+          if(msg.includes('visits_bag_number_key') || (String(error.code||'')==='23505' && msg.includes('bag_number'))) {
+            return {status:'error',message:'ฐานข้อมูลยังเป็น logic รุ่น v15.6.84 กรุณารัน SQL V15_6_85_SCREENING_CORRECTION_NULL_BAG_FIX.sql แล้วลองอีกครั้ง'};
+          }
           if(msg.includes('reset_screening_for_correction_v15684') || String(error.code||'')==='PGRST202') {
-            return {status:'error',message:'กรุณารัน SQL V15_6_84_SCREENING_CORRECTION_NEW_BAG.sql ใน Supabase ก่อนใช้งานเมนูลงผลใหม่'};
+            return {status:'error',message:'กรุณารัน SQL V15_6_85_SCREENING_CORRECTION_NULL_BAG_FIX.sql ใน Supabase ก่อนใช้งานเมนูลงผลใหม่'};
           }
           throw error;
         }
