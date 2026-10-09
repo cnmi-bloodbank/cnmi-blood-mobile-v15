@@ -3006,6 +3006,8 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <div class="col-md-4"><div class="detail-label">เบอร์โทร</div><div id="vd-phone" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">หมู่เลือด</div><div id="vd-group" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">ประเภท</div><div id="vd-type" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">ประเภทการบริจาค</div><div id="vd-donation-kind" class="detail-value"></div></div>
+                <div class="col-md-4"><div class="detail-label">Bag Lot</div><div id="vd-bag-lot" class="detail-value"></div></div>
                 <div class="col-md-4"><div class="detail-label">น้ำหนัก</div><div id="vd-weight" class="detail-value"></div></div>
                 <div class="col-md-3"><div class="detail-label">Hb</div><div id="vd-hb" class="detail-value"></div></div>
                 <div class="col-md-3"><div class="detail-label">BP</div><div id="vd-bp" class="detail-value"></div></div>
@@ -3029,6 +3031,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               <div class="detail-label mt-2">⚠ ประวัติ Donor Reaction</div>
               <div id="vd-reaction-history" class="reaction-history-wrap"></div>
             </div>
+            <div class="col-md-12"><button type="button" class="btn btn-outline-primary" onclick="openDonationMetadataEditorFromDetail()">แก้ไขประเภทการบริจาค / Bag Lot</button><div id="vd-metadata-history" class="small mt-2"></div></div>
             <div class="col-md-12 d-flex justify-content-end">
               <button type="button" class="btn btn-outline-danger fw-bold" onclick="openDonorReactionFromDetail()">🩹 บันทึก Donor Reaction</button>
             </div>
@@ -3333,6 +3336,21 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
   </div>
 </div>
 
+<div class="modal fade" id="donationMetadataModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">แก้ไขประเภทการบริจาค / Bag Lot</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="alert alert-info small">แก้ไขเฉพาะข้อมูล Visit นี้ ไม่เปลี่ยน DN หรือเลขถุงเลือด และเก็บประวัติการแก้ไขไว้ตรวจสอบย้อนหลัง</div>
+      <div id="dm-dn-label" class="fw-bold mb-3"></div>
+      <label class="form-label" for="dm-kind">ประเภทการบริจาค</label>
+      <select id="dm-kind" class="form-select mb-3"><option value="">-- กรุณาเลือก --</option><option value="Whole Blood">Whole Blood</option><option value="Platelet (SDP)">Platelet Apheresis (SDP)</option></select>
+      <label class="form-label" for="dm-lot">Bag Lot</label><input id="dm-lot" class="form-control mb-3" maxlength="150" autocomplete="off" placeholder="สแกนหรือกรอก Bag Lot">
+      <label class="form-label" for="dm-reason">เหตุผลที่แก้ไข (อย่างน้อย 5 ตัวอักษร)</label><textarea id="dm-reason" class="form-control" rows="2" maxlength="500" placeholder="เช่น บันทึก Lot ไม่ตรงกับฉลากถุงเลือด"></textarea>
+      <div class="small text-muted mt-2">โปรดตรวจสอบหมายเลขบนฉลากจริง และตรวจสอบข้อมูลใน Ai-LIS แยกต่างหาก ระบบนี้ไม่ได้แก้ข้อมูล Ai-LIS โดยอัตโนมัติ</div>
+    </div><div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button><button id="dm-save" class="btn btn-primary" onclick="saveDonationMetadataEditor()">บันทึกการแก้ไข</button></div>
+  </div></div>
+</div>
+
 <div class="modal fade" id="screeningModal" tabindex="-1" aria-hidden="true">
     
     <div class="modal-dialog modal-lg">
@@ -3363,6 +3381,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
               </select>
             </div>
 
+            <div class="col-md-6"><label for="sc-donation-kind">ประเภทการบริจาค</label><select id="sc-donation-kind" class="form-select"><option value="">-- กรุณาเลือก --</option><option value="Whole Blood">Whole Blood</option><option value="Platelet (SDP)">Platelet Apheresis (SDP)</option></select></div>
             <div class="col-md-6">
               <label>หมู่เลือด</label>
               <select id="sc-group" class="form-select">
@@ -3916,6 +3935,7 @@ function buildActionButtons(row, rowStr, disableScreen) {
           ✏️ แก้ไขข้อมูล
         </button>
         ${canVoidDuplicateVisit(row) ? `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDuplicateVisitVoid('${rowStr}')" title="ยกเลิกรายการลงทะเบียนซ้ำโดยเก็บ Audit ไว้">🗑️ รายการซ้ำ</button>` : ''}
+        <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); openDonationMetadataEditor('${rowStr}')">🩸 ประเภท / Lot</button>
         ${canRescreen ? `<button class="btn btn-sm btn-outline-warning fw-bold" onclick="event.stopPropagation(); openScreening('${rowStr}', true)">🔄 ตรวจซ้ำ</button>` : ''}
         ${canResetScreeningForCorrection(row) ? `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openScreeningCorrection('${rowStr}')" title="คืนสถานะเป็นรอคัดกรองและออกเลขถุงใหม่เมื่อผ่านอีกครั้ง">↩️ แก้ผล/ออกเลขใหม่</button>` : ''}
         <button class="btn btn-sm btn-outline-danger fw-bold" onclick="event.stopPropagation(); openDonorReaction('${rowStr}')">🩹 Reaction</button>
@@ -5934,6 +5954,7 @@ async function adminResetPassword(username, fullName) {
             <td>
               <strong class="text-primary">${escapeHtml(row.bag || "-")}</strong>
               ${row.bagLot ? `<div class="small text-muted mt-1">Lot: ${escapeHtml(row.bagLot)}</div>` : ``}
+              ${row.donationKind ? `<div class="small mt-1">${escapeHtml(row.donationKind)}</div>` : `<div class="small text-muted mt-1">ยังไม่ระบุประเภทการบริจาค</div>`}
             </td>
             <td>${buildActionButtons(row, rowStr, disableScreen)}</td>
           </tr>`;
@@ -6283,6 +6304,7 @@ async function adminResetPassword(username, fullName) {
 
       // เลือก New / Recent อัตโนมัติจากประวัติจริง แต่ค่าตรวจรอบใหม่ไม่ดึงของเดิมมาใส่
       autoSelectDonorType(row);
+      document.getElementById('sc-donation-kind').value=row.donationKind||'';
 
       new bootstrap.Modal(document.getElementById("screeningModal")).show();
     }
@@ -6294,6 +6316,7 @@ async function adminResetPassword(username, fullName) {
 
       let sData = {
         type: document.getElementById("sc-type").value,
+        donationKind: document.getElementById("sc-donation-kind").value,
         group: document.getElementById("sc-group").value,
         weight: document.getElementById("sc-weight").value,
         bp: document.getElementById("sc-bp").value,
@@ -6320,6 +6343,7 @@ async function adminResetPassword(username, fullName) {
       }
 
       if (sData.status === "ผ่าน") {
+        if (!sData.donationKind) { alert('กรุณาเลือกประเภทการบริจาค Whole Blood หรือ Platelet (SDP)');document.getElementById('sc-donation-kind').focus();return; }
         if (!sData.type) {
           alert("กรุณาเลือกประเภทผู้บริจาค");
           document.getElementById("sc-type").focus();
@@ -6369,12 +6393,25 @@ async function adminResetPassword(username, fullName) {
           return;
         }
 
+        if (sData.status==='ผ่าน' && sData.donationKind) {
+          try {
+            const kindSave=await apiCall('saveDonationMetadataV15690',{data:JSON.stringify({dn,donationKind:sData.donationKind,bagLot:sData.bagLot,reason:'บันทึกประเภทการบริจาคพร้อมผลคัดกรอง'})});
+            if(kindSave?.status!=='success') throw new Error(kindSave?.message||'บันทึกประเภทการบริจาคไม่สำเร็จ');
+          } catch(kindError) {
+            bootstrap.Modal.getInstance(document.getElementById('screeningModal'))?.hide();
+            invalidateVisitCache(getLocalDateInputValue());
+            loadTable(true);
+            showSuccessPopup('บันทึกผลคัดกรองแล้ว แต่ประเภทการบริจาคยังไม่บันทึก', (kindError.message||String(kindError))+' · กรุณาใช้ปุ่ม ประเภท / Lot เพื่อบันทึกเพิ่มเติม ห้ามกดคัดกรองซ้ำ');
+            return;
+          }
+        }
         if (res.historyWarning) {
           showSuccessPopup('บันทึกผลแล้ว', 'ผลคัดกรองถูกบันทึกแล้ว แต่ประวัติการตรวจซ้ำมีคำเตือน: ' + res.historyWarning);
         }
 
         bootstrap.Modal.getInstance(document.getElementById("screeningModal")).hide();
         resetScreeningForm();
+        document.getElementById('sc-donation-kind').value='';
 
         let printRow = {
           ...baseRow,
@@ -6523,6 +6560,50 @@ function getVisitFullAddress(row = {}) {
       }
     }
 
+    let donationMetadataEditingRow = null;
+    function openDonationMetadataEditorFromDetail(){
+      if(!currentVisitDetailRow) return;
+      bootstrap.Modal.getInstance(document.getElementById('visitDetailModal'))?.hide();
+      openDonationMetadataEditor(encodeURIComponent(JSON.stringify(currentVisitDetailRow)));
+    }
+    function openDonationMetadataEditor(encodedRow){
+      const row=JSON.parse(decodeURIComponent(encodedRow));
+      if(row.source==='lis-import'){showSuccessPopup('ไม่รองรับ','รายการนำเข้าจาก AI-LIS อย่างเดียวต้องแก้จากระบบต้นทาง');return;}
+      donationMetadataEditingRow=row;
+      document.getElementById('dm-dn-label').textContent=`DN ${row.dn} · ${row.name||''}`;
+      document.getElementById('dm-kind').value=['Whole Blood','Platelet (SDP)'].includes(row.donationKind)?row.donationKind:'';
+      document.getElementById('dm-lot').value=row.bagLot||'';
+      document.getElementById('dm-reason').value='';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('donationMetadataModal')).show();
+    }
+    async function saveDonationMetadataEditor(){
+      const row=donationMetadataEditingRow;if(!row)return;
+      const donationKind=document.getElementById('dm-kind').value;
+      const bagLot=document.getElementById('dm-lot').value.trim();
+      const reason=document.getElementById('dm-reason').value.trim();
+      if(!donationKind){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาเลือก Whole Blood หรือ Platelet (SDP)');return;}
+      if(row.status==='ผ่าน'&&!bagLot){showSuccessPopup('ข้อมูลไม่ครบ','ผู้บริจาคที่ผ่านการคัดกรองต้องมี Bag Lot');return;}
+      if(reason.length<5){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร');return;}
+      if(donationKind===row.donationKind&&bagLot===(row.bagLot||'')){showSuccessPopup('ไม่มีการเปลี่ยนแปลง','ข้อมูลใหม่ตรงกับข้อมูลเดิม');return;}
+      if(!confirm(`ยืนยันแก้ไขข้อมูล DN ${row.dn}\nประเภท: ${row.donationKind||'ยังไม่ระบุ'} → ${donationKind}\nBag Lot: ${row.bagLot||'-'} → ${bagLot||'-'}\nตรวจสอบฉลากจริงก่อนบันทึก`))return;
+      const button=document.getElementById('dm-save');button.disabled=true;
+      try{
+        const res=await apiCall('saveDonationMetadataV15690',{data:JSON.stringify({dn:row.dn,donationKind,bagLot,reason})});
+        if(res?.status!=='success')throw new Error(res?.message||'บันทึกไม่สำเร็จ');
+        bootstrap.Modal.getInstance(document.getElementById('donationMetadataModal'))?.hide();
+        if(typeof invalidateVisitCache==='function')invalidateVisitCache();
+        await loadTable(true);
+        showSuccessPopup('บันทึกสำเร็จ','แก้ไขข้อมูลและบันทึก Audit แล้ว');
+      }catch(err){showSuccessPopup('แก้ไขไม่สำเร็จ',err.message||String(err));}
+      finally{button.disabled=false;}
+    }
+    async function showDonationMetadataHistory(dn){
+      const target=document.getElementById('vd-metadata-history');if(!target)return;
+      target.textContent='';if(!dn)return;
+      try{const res=await apiCall('getDonationMetadataHistoryV15690',{dn});if(res.status!=='success')return;
+      target.innerHTML=(res.items||[]).length?'<strong>ประวัติการแก้ไข</strong>'+res.items.map(x=>`<div class="border-bottom py-1">${escapeHtml(x.changed_at||'')} · ${escapeHtml(x.old_donation_kind||'-')} → ${escapeHtml(x.new_donation_kind||'-')} · Lot ${escapeHtml(x.old_bag_lot||'-')} → ${escapeHtml(x.new_bag_lot||'-')} · ${escapeHtml(x.reason||'')}</div>`).join(''):'';
+      }catch(e){console.warn(e);}
+    }
     async function openVisitDetail(encodedRow) {
       let row = JSON.parse(decodeURIComponent(encodedRow));
       currentVisitDetailRow = row;
@@ -6538,6 +6619,9 @@ function getVisitFullAddress(row = {}) {
       document.getElementById('vd-phone').innerText = row.phone || '-';
       document.getElementById("vd-group").innerText = row.group || "-";
       document.getElementById("vd-type").innerText = row.type || "-";
+      document.getElementById("vd-donation-kind").innerText = row.donationKind || "ยังไม่ระบุ";
+      document.getElementById("vd-bag-lot").innerText = row.bagLot || "-";
+      showDonationMetadataHistory(row.dn).catch(()=>{});
       document.getElementById("vd-weight").innerText = row.weight || "-";
       document.getElementById("vd-hb").innerText = row.hb || "-";
       document.getElementById("vd-bp").innerText = row.bp || "-";

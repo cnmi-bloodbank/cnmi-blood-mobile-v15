@@ -49,9 +49,9 @@
   }
   async function visitsForDate(date){
     const sb=init();
-    const {data,error}=await sb.from('visits').select('dn,bag_number,bag_lot,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,screening_attempt_count,c1,c2,e1,e2,location,source,donation_history_source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,address_line,subdistrict,district,province,postal_code,phone,occupation,legacy_identity,identity_type,passport_number,nationality,photo_data,photo_updated_at)').eq('visit_date',date).is('voided_at',null).order('created_at',{ascending:false});
+    const {data,error}=await sb.from('visits').select('dn,bag_number,bag_lot,donation_kind,id_card,donor_type,weight,bp,pulse,temp,hb,blood_group,screening_status,reason,screened_at,screening_attempt_count,c1,c2,e1,e2,location,source,donation_history_source,lis_donor_id,lis_component,lis_donation_no,lis_blood_group,lis_match_method,mobile_donor_id,mobile_donation_no,donors!inner(prefix,fname,lname,birth,gender,address,address_line,subdistrict,district,province,postal_code,phone,occupation,legacy_identity,identity_type,passport_number,nationality,photo_data,photo_updated_at)').eq('visit_date',date).is('voided_at',null).order('created_at',{ascending:false});
     if(error) throw error;
-    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim(),kind=String(d.identity_type||'').trim()||(String(r.id_card||'').startsWith('LEGACY:')?'legacy':'thai'),isPassport=kind==='passport';return {dn:r.dn,identityKey:r.id_card,idCard:isPassport?'':(kind==='thai'?r.id_card:(d.legacy_identity||r.id_card)),dbIdCard:r.id_card,identityType:kind,passportNumber:isPassport?(d.passport_number||d.legacy_identity||''):'',nationality:isPassport?(d.nationality||''):'',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'-',phone:d.phone||'-',occupation:d.occupation||'',photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||'',bag:r.bag_number||'-',bagLot:r.bag_lot||'',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),screeningAttemptCount:Number(r.screening_attempt_count||0),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),historySource:r.donation_history_source||'',donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
+    return (data||[]).map(r=>{const d=r.donors||{},matched=!!String(r.lis_donor_id||'').trim(),kind=String(d.identity_type||'').trim()||(String(r.id_card||'').startsWith('LEGACY:')?'legacy':'thai'),isPassport=kind==='passport';return {dn:r.dn,identityKey:r.id_card,idCard:isPassport?'':(kind==='thai'?r.id_card:(d.legacy_identity||r.id_card)),dbIdCard:r.id_card,identityType:kind,passportNumber:isPassport?(d.passport_number||d.legacy_identity||''):'',nationality:isPassport?(d.nationality||''):'',prefix:d.prefix||'',fname:d.fname||'',lname:d.lname||'',name:`${d.prefix||''}${d.fname||''} ${d.lname||''}`.trim(),birth:d.birth||'-',gender:d.gender||'-',addressLine:d.address_line||'',subdistrict:cleanArea(d.subdistrict,'subdistrict'),district:cleanArea(d.district,'district'),province:cleanArea(d.province,'province'),postalCode:d.postal_code||'',address:joinAddressParts(d)||d.address||'-',phone:d.phone||'-',occupation:d.occupation||'',photoData:d.photo_data||'',photoUpdatedAt:d.photo_updated_at||'',bag:r.bag_number||'-',bagLot:r.bag_lot||'',donationKind:r.donation_kind||'',status:r.screening_status||'รอคัดกรอง',reason:r.reason||'',type:r.donor_type||r.lis_component||'',group:r.blood_group||r.lis_blood_group||'',weight:r.weight||'',bp:r.bp||'',pulse:r.pulse||'',temp:r.temp||'',hb:r.hb||'',saveTime:thaiTime(r.screened_at),screeningAttemptCount:Number(r.screening_attempt_count||0),c1:r.c1||'',c2:r.c2||'',e1:r.e1||'',e2:r.e2||'',location:r.location||'',source:matched?'mobile+lis':(r.source||'mobile'),historySource:r.donation_history_source||'',donorId:r.lis_donor_id||r.mobile_donor_id||'',donationNo:r.lis_donation_no||r.mobile_donation_no||'',mobileDonorId:r.mobile_donor_id||'',mobileDonationNo:r.mobile_donation_no||'',lisMatchMethod:r.lis_match_method||''};});
   }
   async function call(action, params={}){
     const sb=init(); const data=parse(params.data);
@@ -160,6 +160,23 @@
           historyWarning=historyErr?.message||String(historyErr);
         }
         return {...(r||{}),bagLot,screeningAttemptCount:Number(attemptInfo?.attemptCount||0),historyWarning};
+      }
+      if(action==='saveDonationMetadataV15690'){
+        const dn=String(data.dn||params.dn||'').trim();
+        const kind=String(data.donationKind||'').trim();
+        const lot=String(data.bagLot||'').trim();
+        const reason=String(data.reason||'').trim();
+        if(!dn || !['Whole Blood','Platelet (SDP)'].includes(kind)) return {status:'error',message:'กรุณาเลือกประเภทการบริจาคให้ถูกต้อง'};
+        if(reason.length<5) return {status:'error',message:'กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร'};
+        const {data:r,error}=await sb.rpc('correct_donation_metadata_v15690',{p_dn:dn,p_donation_kind:kind,p_bag_lot:lot,p_reason:reason,p_user_agent:ua()});
+        if(error){if(String(error.code||'')==='PGRST202'||String(error.message||'').includes('correct_donation_metadata_v15690'))return {status:'error',message:'กรุณารัน SQL V15_6_90_DONATION_KIND_BAG_LOT_CORRECTION.sql ก่อนใช้งาน'};throw error;}
+        return r||{status:'error',message:'แก้ไขข้อมูลไม่สำเร็จ'};
+      }
+      if(action==='getDonationMetadataHistoryV15690'){
+        const dn=String(params.dn||data.dn||'').trim();
+        const {data:rows,error}=await sb.from('donation_metadata_audit_v15690').select('old_donation_kind,new_donation_kind,old_bag_lot,new_bag_lot,reason,changed_at,changed_by').eq('dn',dn).order('changed_at',{ascending:false}).limit(30);
+        if(error) return {status:'error',message:'กรุณารัน SQL v15.6.90 เพื่อเปิดประวัติการแก้ไข'};
+        return {status:'success',items:(rows||[]).map(r=>({...r,changed_at:thaiTime(r.changed_at)}))};
       }
       if(action==='resetScreeningForCorrection'){
         const dn=String(params.dn||data.dn||'').trim();
