@@ -253,6 +253,11 @@
 .blood-summary-total strong{font-size:22px;color:var(--cnmi-blue-dark)}
 .blood-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .blood-group-tile{border:1px solid #cbdff7;background:#f8fbff;border-radius:14px;padding:15px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+/* v15.6.89: pastel ABO card backgrounds; keep text contrast legible. */
+.blood-group-tile.group-a{background:#fff3bd;border-color:#ecd783}
+.blood-group-tile.group-b{background:#ffe0eb;border-color:#efb5ca}
+.blood-group-tile.group-o{background:#dcefff;border-color:#a9d5f5}
+.blood-group-tile.group-ab{background:#ffffff;border-color:#cbd7e6}
 .blood-group-tile span{font-weight:700;color:#315578;margin-right:auto}.blood-group-tile strong{font-size:29px;color:var(--cnmi-blue-dark)}.blood-group-tile small{color:var(--cnmi-muted)}
 .blood-summary-note{margin-top:12px;color:#855a15;font-size:13px}
 @media(max-width:700px){.blood-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.blood-summary-panel{padding:14px}.blood-group-tile{padding:12px}}
@@ -2151,10 +2156,10 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
         <div class="blood-summary-panel" aria-label="สรุปหมู่เลือดที่ได้รับวันนี้">
           <div class="blood-summary-heading"><div><h2>จำนวนโลหิตที่ได้รับ แยกตามหมู่เลือด</h2><p>เฉพาะผู้ผ่านคัดกรองที่มีเลขถุงเลือดแล้ว · อ้างอิงวันที่ของรายการ</p></div><div class="blood-summary-total">รวม <strong id="dash-blood-total">0</strong> ถุง</div></div>
           <div class="blood-summary-grid">
-            <div class="blood-group-tile"><span>หมู่ A</span><strong id="dash-blood-a">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile"><span>หมู่ B</span><strong id="dash-blood-b">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile"><span>หมู่ O</span><strong id="dash-blood-o">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile"><span>หมู่ AB</span><strong id="dash-blood-ab">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile group-a"><span>หมู่ A</span><strong id="dash-blood-a">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile group-b"><span>หมู่ B</span><strong id="dash-blood-b">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile group-o"><span>หมู่ O</span><strong id="dash-blood-o">0</strong><small>ถุง</small></div>
+            <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-blood-ab">0</strong><small>ถุง</small></div>
           </div>
           <div class="blood-summary-note" id="dash-blood-note" hidden></div>
         </div>
