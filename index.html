@@ -25,7 +25,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="assets/config.js"></script>
-  <script src="js/supabase-backend.js?v=15.6.87"></script>
+  <script src="js/supabase-backend.js?v=15.6.92"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -262,6 +262,9 @@
 .blood-summary-note{margin-top:12px;color:#855a15;font-size:13px}
 @media(max-width:700px){.blood-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.blood-summary-panel{padding:14px}.blood-group-tile{padding:12px}}
 
+/* v15.6.92: undercollection is excluded from Whole Blood totals and shown separately. */
+.donation-undercollection{margin-top:13px;padding:12px 14px;background:#fff4e6;border:1px solid #f0ce97;border-radius:12px;color:#7f4b16;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.donation-undercollection strong{font-size:24px;color:#8a4d16}
 /* v15.6.91: separated Whole Blood / Platelet (SDP) by ABO; responsive. */
 .donation-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .donation-product-card{border:1px solid #cbdff7;border-radius:16px;padding:16px;background:#f9fcff;min-width:0}
@@ -2170,7 +2173,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
           </div>
         </div>
         <div class="blood-summary-panel" aria-label="สรุปจำนวนการบริจาคตามผลิตภัณฑ์และหมู่เลือด">
-          <div class="blood-summary-heading"><div><h2>จำนวนผลิตภัณฑ์ที่ได้รับวันนี้</h2><p>แยกตามประเภทการบริจาคและหมู่เลือด · เฉพาะรายการผ่านคัดกรองและมีเลขถุง · นับเลขถุงไม่ซ้ำ</p></div><div class="blood-summary-total">ทั้งหมด <strong id="dash-blood-total">0</strong> รายการ</div></div>
+          <div class="blood-summary-heading"><div><h2>จำนวนผลิตภัณฑ์ที่ได้รับวันนี้</h2><p>แยกตามประเภทการบริจาคและหมู่เลือด · เฉพาะรายการผ่านคัดกรองและมีเลขถุง · นับเลขถุงไม่ซ้ำ · เจาะไม่เต็มแยกต่างหาก</p></div><div class="blood-summary-total">ทั้งหมด <strong id="dash-blood-total">0</strong> รายการ</div></div>
           <div class="donation-product-grid">
             <section class="donation-product-card" aria-label="Whole Blood">
               <div class="donation-product-title"><div><h3>Whole Blood</h3><p>โลหิตรวม</p></div><div class="donation-product-count"><strong id="dash-wb-total">0</strong><small>รายการ</small></div></div>
@@ -2181,6 +2184,7 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
                 <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-wb-ab">0</strong><small>รายการ</small></div>
               </div>
               <p class="donation-product-missing" id="dash-wb-missing" hidden></p>
+              <div class="donation-undercollection"><span>เจาะไม่เต็ม (Undercollection) · แยกออกจากยอด Whole Blood</span><strong id="dash-wb-undercollection">0</strong></div>
             </section>
             <section class="donation-product-card" aria-label="Platelet (SDP)">
               <div class="donation-product-title"><div><h3>Platelet (SDP)</h3><p>เกล็ดเลือดจากเครื่อง Apheresis</p></div><div class="donation-product-count"><strong id="dash-sdp-total">0</strong><small>รายการ</small></div></div>
@@ -3370,13 +3374,16 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
 
 <div class="modal fade" id="donationMetadataModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">แก้ไขประเภทการบริจาค / Bag Lot</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-header"><h5 class="modal-title">แก้ไขประเภท / Bag Lot / ผลการเจาะ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
       <div class="alert alert-info small">แก้ไขเฉพาะข้อมูล Visit นี้ ไม่เปลี่ยน DN หรือเลขถุงเลือด และเก็บประวัติการแก้ไขไว้ตรวจสอบย้อนหลัง</div>
       <div id="dm-dn-label" class="fw-bold mb-3"></div>
       <label class="form-label" for="dm-kind">ประเภทการบริจาค</label>
       <select id="dm-kind" class="form-select mb-3"><option value="">-- กรุณาเลือก --</option><option value="Whole Blood">Whole Blood</option><option value="Platelet (SDP)">Platelet Apheresis (SDP)</option></select>
       <label class="form-label" for="dm-lot">Bag Lot</label><input id="dm-lot" class="form-control mb-3" maxlength="150" autocomplete="off" placeholder="สแกนหรือกรอก Bag Lot">
+      <label class="form-label" for="dm-collection">ผลการเจาะเก็บ (Whole Blood)</label>
+      <select id="dm-collection" class="form-select mb-3"><option value="">ยังไม่ระบุผลการเจาะ</option><option value="complete">เจาะได้ครบ</option><option value="undercollected">เจาะไม่เต็มถุง (Undercollection)</option></select>
+      <div class="form-text mb-3">ถ้าเลือกเจาะไม่เต็ม ระบบจะหักจากยอด Whole Blood และแสดงในแถวเจาะไม่เต็ม โดยไม่ลบเลขถุง (ใช้เฉพาะ Whole Blood)</div>
       <label class="form-label" for="dm-reason">เหตุผลที่แก้ไข (อย่างน้อย 5 ตัวอักษร)</label><textarea id="dm-reason" class="form-control" rows="2" maxlength="500" placeholder="เช่น บันทึก Lot ไม่ตรงกับฉลากถุงเลือด"></textarea>
       <div class="small text-muted mt-2">โปรดตรวจสอบหมายเลขบนฉลากจริง และตรวจสอบข้อมูลใน Ai-LIS แยกต่างหาก ระบบนี้ไม่ได้แก้ข้อมูล Ai-LIS โดยอัตโนมัติ</div>
     </div><div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button><button id="dm-save" class="btn btn-primary" onclick="saveDonationMetadataEditor()">บันทึกการแก้ไข</button></div>
@@ -5519,13 +5526,15 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
       let unspecifiedKind = 0;
       let unspecifiedGroup = 0;
       let collectedTotal = 0;
+      let undercollectedTotal = 0;
       for (const row of data) {
         if (row.status !== 'ผ่าน' || !rowHasBag(row)) continue;
         const bag = String(row.bag || '').trim().toUpperCase();
         if (!bag || seenBags.has(bag)) continue;
         seenBags.add(bag);
-        collectedTotal++;
         const kind = String(row.donationKind || '').trim();
+        if(kind==='Whole Blood' && row.collectionStatus==='undercollected') { undercollectedTotal++; continue; }
+        collectedTotal++;
         const bucket = buckets[kind];
         if (!bucket) { unspecifiedKind++; continue; }
         bucket.total++;
@@ -5534,6 +5543,8 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
         if (match) bucket.groups[match[1]]++;
         else { bucket.missing++; unspecifiedGroup++; }
       }
+      const underEl = document.getElementById('dash-wb-undercollection');
+      if(underEl) underEl.textContent=undercollectedTotal;
       const totalEl2 = document.getElementById('dash-blood-total');
       if (totalEl2) totalEl2.textContent = collectedTotal;
       for (const [kind, prefix] of [['Whole Blood','wb'],['Platelet (SDP)','sdp']]) {
@@ -6007,6 +6018,7 @@ async function adminResetPassword(username, fullName) {
               <strong class="text-primary">${escapeHtml(row.bag || "-")}</strong>
               ${row.bagLot ? `<div class="small text-muted mt-1">Lot: ${escapeHtml(row.bagLot)}</div>` : ``}
               ${row.donationKind ? `<div class="small mt-1">${escapeHtml(row.donationKind)}</div>` : `<div class="small text-muted mt-1">ยังไม่ระบุประเภทการบริจาค</div>`}
+              ${row.collectionStatus==='undercollected' ? `<div class="small mt-1 fw-bold text-warning-emphasis">เจาะไม่เต็มถุง · ไม่นับใน Whole Blood</div>` : ''}
             </td>
             <td>${buildActionButtons(row, rowStr, disableScreen)}</td>
           </tr>`;
@@ -6625,6 +6637,7 @@ function getVisitFullAddress(row = {}) {
       document.getElementById('dm-dn-label').textContent=`DN ${row.dn} · ${row.name||''}`;
       document.getElementById('dm-kind').value=['Whole Blood','Platelet (SDP)'].includes(row.donationKind)?row.donationKind:'';
       document.getElementById('dm-lot').value=row.bagLot||'';
+      document.getElementById('dm-collection').value=row.collectionStatus||'';
       document.getElementById('dm-reason').value='';
       bootstrap.Modal.getOrCreateInstance(document.getElementById('donationMetadataModal')).show();
     }
@@ -6633,14 +6646,16 @@ function getVisitFullAddress(row = {}) {
       const donationKind=document.getElementById('dm-kind').value;
       const bagLot=document.getElementById('dm-lot').value.trim();
       const reason=document.getElementById('dm-reason').value.trim();
+      const collectionStatus=document.getElementById('dm-collection').value;
+      if(donationKind!=='Whole Blood'&&collectionStatus==='undercollected'){showSuccessPopup('ข้อมูลไม่ถูกต้อง','เจาะไม่เต็มถุงใช้กับ Whole Blood เท่านั้น');return;}
       if(!donationKind){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาเลือก Whole Blood หรือ Platelet (SDP)');return;}
       if(row.status==='ผ่าน'&&!bagLot){showSuccessPopup('ข้อมูลไม่ครบ','ผู้บริจาคที่ผ่านการคัดกรองต้องมี Bag Lot');return;}
       if(reason.length<5){showSuccessPopup('ข้อมูลไม่ครบ','กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร');return;}
-      if(donationKind===row.donationKind&&bagLot===(row.bagLot||'')){showSuccessPopup('ไม่มีการเปลี่ยนแปลง','ข้อมูลใหม่ตรงกับข้อมูลเดิม');return;}
-      if(!confirm(`ยืนยันแก้ไขข้อมูล DN ${row.dn}\nประเภท: ${row.donationKind||'ยังไม่ระบุ'} → ${donationKind}\nBag Lot: ${row.bagLot||'-'} → ${bagLot||'-'}\nตรวจสอบฉลากจริงก่อนบันทึก`))return;
+      if(donationKind===row.donationKind&&bagLot===(row.bagLot||'')&&collectionStatus===(row.collectionStatus||'')){showSuccessPopup('ไม่มีการเปลี่ยนแปลง','ข้อมูลใหม่ตรงกับข้อมูลเดิม');return;}
+      if(!confirm(`ยืนยันแก้ไขข้อมูล DN ${row.dn}\nประเภท: ${row.donationKind||'ยังไม่ระบุ'} → ${donationKind}\nBag Lot: ${row.bagLot||'-'} → ${bagLot||'-'}\nผลการเจาะ: ${collectionStatus||'ไม่ระบุ'}\nตรวจสอบข้อมูลจริงก่อนบันทึก`))return;
       const button=document.getElementById('dm-save');button.disabled=true;
       try{
-        const res=await apiCall('saveDonationMetadataV15690',{data:JSON.stringify({dn:row.dn,donationKind,bagLot,reason})});
+        const res=await apiCall('saveDonationMetadataV15690',{data:JSON.stringify({dn:row.dn,donationKind,bagLot,collectionStatus,reason})});
         if(res?.status!=='success')throw new Error(res?.message||'บันทึกไม่สำเร็จ');
         bootstrap.Modal.getInstance(document.getElementById('donationMetadataModal'))?.hide();
         if(typeof invalidateVisitCache==='function')invalidateVisitCache();
