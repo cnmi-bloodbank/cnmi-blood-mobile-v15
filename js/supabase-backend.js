@@ -172,8 +172,11 @@
           if(msg.includes('visits_bag_number_key') || (String(error.code||'')==='23505' && msg.includes('bag_number'))) {
             return {status:'error',message:'ฐานข้อมูลยังเป็น logic รุ่น v15.6.84 กรุณารัน SQL V15_6_85_SCREENING_CORRECTION_NULL_BAG_FIX.sql แล้วลองอีกครั้ง'};
           }
+          if(String(error.code||'')==='23502' && /column \"(c1|c2|e1|e2|bag_lot)\"/.test(msg)) {
+            return {status:'error',message:'ฐานข้อมูลยังใช้ reset logic รุ่น v15.6.85 ที่ใส่ NULL ในช่องที่ห้ามว่าง กรุณารัน SQL V15_6_86_SCREENING_CORRECTION_NOT_NULL_FIELDS_FIX.sql แล้วลองอีกครั้ง'};
+          }
           if(msg.includes('reset_screening_for_correction_v15684') || String(error.code||'')==='PGRST202') {
-            return {status:'error',message:'กรุณารัน SQL V15_6_85_SCREENING_CORRECTION_NULL_BAG_FIX.sql ใน Supabase ก่อนใช้งานเมนูลงผลใหม่'};
+            return {status:'error',message:'ไม่พบฟังก์ชันคืนผลคัดกรอง กรุณารัน SQL V15_6_84_SCREENING_CORRECTION_NEW_BAG.sql, V15_6_85_SCREENING_CORRECTION_NULL_BAG_FIX.sql และ V15_6_86_SCREENING_CORRECTION_NOT_NULL_FIELDS_FIX.sql ตามลำดับ'};
           }
           throw error;
         }
