@@ -261,6 +261,22 @@
 .blood-group-tile span{font-weight:700;color:#315578;margin-right:auto}.blood-group-tile strong{font-size:29px;color:var(--cnmi-blue-dark)}.blood-group-tile small{color:var(--cnmi-muted)}
 .blood-summary-note{margin-top:12px;color:#855a15;font-size:13px}
 @media(max-width:700px){.blood-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.blood-summary-panel{padding:14px}.blood-group-tile{padding:12px}}
+
+/* v15.6.91: separated Whole Blood / Platelet (SDP) by ABO; responsive. */
+.donation-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.donation-product-card{border:1px solid #cbdff7;border-radius:16px;padding:16px;background:#f9fcff;min-width:0}
+.donation-product-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.donation-product-title h3{font-size:18px;color:#204e7d;font-weight:800;margin:0 0 4px}
+.donation-product-title p{font-size:12px;margin:0;color:#617d97}
+.donation-product-count{background:#e6f2ff;border-radius:12px;padding:7px 12px;display:flex;align-items:baseline;gap:5px;white-space:nowrap;color:#234a78}
+.donation-product-count strong{font-size:25px}
+.donation-product-count small{font-size:12px}
+.donation-product-card .blood-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.donation-product-card .blood-group-tile{padding:12px;gap:6px}
+.donation-product-card .blood-group-tile strong{font-size:25px}
+.donation-product-missing{font-size:12px;margin:10px 0 0;color:#855a15}
+@media(max-width:850px){.donation-product-grid{grid-template-columns:1fr}}
+@media(max-width:420px){.donation-product-card{padding:11px}.donation-product-card .blood-group-tile{padding:9px}.donation-product-title h3{font-size:16px}}
 .sidebar-backdrop {
   display: none;
 }
@@ -2153,13 +2169,29 @@ button.advance-summary-chip.active{ outline:2px solid #84adff; outline-offset:1p
             <div class="dashboard-card-value" id="dash-pending">-</div>
           </div>
         </div>
-        <div class="blood-summary-panel" aria-label="สรุปหมู่เลือดที่ได้รับวันนี้">
-          <div class="blood-summary-heading"><div><h2>จำนวนโลหิตที่ได้รับ แยกตามหมู่เลือด</h2><p>เฉพาะผู้ผ่านคัดกรองที่มีเลขถุงเลือดแล้ว · อ้างอิงวันที่ของรายการ</p></div><div class="blood-summary-total">รวม <strong id="dash-blood-total">0</strong> ถุง</div></div>
-          <div class="blood-summary-grid">
-            <div class="blood-group-tile group-a"><span>หมู่ A</span><strong id="dash-blood-a">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile group-b"><span>หมู่ B</span><strong id="dash-blood-b">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile group-o"><span>หมู่ O</span><strong id="dash-blood-o">0</strong><small>ถุง</small></div>
-            <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-blood-ab">0</strong><small>ถุง</small></div>
+        <div class="blood-summary-panel" aria-label="สรุปจำนวนการบริจาคตามผลิตภัณฑ์และหมู่เลือด">
+          <div class="blood-summary-heading"><div><h2>จำนวนผลิตภัณฑ์ที่ได้รับวันนี้</h2><p>แยกตามประเภทการบริจาคและหมู่เลือด · เฉพาะรายการผ่านคัดกรองและมีเลขถุง · นับเลขถุงไม่ซ้ำ</p></div><div class="blood-summary-total">ทั้งหมด <strong id="dash-blood-total">0</strong> รายการ</div></div>
+          <div class="donation-product-grid">
+            <section class="donation-product-card" aria-label="Whole Blood">
+              <div class="donation-product-title"><div><h3>Whole Blood</h3><p>โลหิตรวม</p></div><div class="donation-product-count"><strong id="dash-wb-total">0</strong><small>รายการ</small></div></div>
+              <div class="blood-summary-grid">
+                <div class="blood-group-tile group-a"><span>หมู่ A</span><strong id="dash-wb-a">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-b"><span>หมู่ B</span><strong id="dash-wb-b">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-o"><span>หมู่ O</span><strong id="dash-wb-o">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-wb-ab">0</strong><small>รายการ</small></div>
+              </div>
+              <p class="donation-product-missing" id="dash-wb-missing" hidden></p>
+            </section>
+            <section class="donation-product-card" aria-label="Platelet (SDP)">
+              <div class="donation-product-title"><div><h3>Platelet (SDP)</h3><p>เกล็ดเลือดจากเครื่อง Apheresis</p></div><div class="donation-product-count"><strong id="dash-sdp-total">0</strong><small>รายการ</small></div></div>
+              <div class="blood-summary-grid">
+                <div class="blood-group-tile group-a"><span>หมู่ A</span><strong id="dash-sdp-a">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-b"><span>หมู่ B</span><strong id="dash-sdp-b">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-o"><span>หมู่ O</span><strong id="dash-sdp-o">0</strong><small>รายการ</small></div>
+                <div class="blood-group-tile group-ab"><span>หมู่ AB</span><strong id="dash-sdp-ab">0</strong><small>รายการ</small></div>
+              </div>
+              <p class="donation-product-missing" id="dash-sdp-missing" hidden></p>
+            </section>
           </div>
           <div class="blood-summary-note" id="dash-blood-note" hidden></div>
         </div>
@@ -5477,31 +5509,51 @@ Donor ID: ${res.donorId || "รอเติมจาก AI-LIS"}
       if (failEl) failEl.innerText = fail;
       if (pendingEl) pendingEl.innerText = pending;
 
-      // Count collected bags, not merely screened donors. Never infer ABO from history.
-      const counts = {A:0,B:0,O:0,AB:0};
+      // Product and ABO breakdown: count unique recorded bags only, not screening visits.
+      // Legacy rows with no donation kind must not be assumed to be Whole Blood.
+      const buckets = {
+        'Whole Blood': {total:0, missing:0, groups:{A:0,B:0,O:0,AB:0}},
+        'Platelet (SDP)': {total:0, missing:0, groups:{A:0,B:0,O:0,AB:0}}
+      };
       const seenBags = new Set();
-      let missingGroup = 0;
+      let unspecifiedKind = 0;
+      let unspecifiedGroup = 0;
+      let collectedTotal = 0;
       for (const row of data) {
-        if (row.status !== "ผ่าน" || !rowHasBag(row)) continue;
+        if (row.status !== 'ผ่าน' || !rowHasBag(row)) continue;
         const bag = String(row.bag || '').trim().toUpperCase();
-        if (seenBags.has(bag)) continue;
+        if (!bag || seenBags.has(bag)) continue;
         seenBags.add(bag);
+        collectedTotal++;
+        const kind = String(row.donationKind || '').trim();
+        const bucket = buckets[kind];
+        if (!bucket) { unspecifiedKind++; continue; }
+        bucket.total++;
         const raw = String(row.group || '').trim().toUpperCase().replace(/\s+/g,'');
         const match = raw.match(/^(AB|A|B|O)(?:[+-]|POS|NEG|POSITIVE|NEGATIVE)?$/);
-        if (match) counts[match[1]]++;
-        else missingGroup++;
+        if (match) bucket.groups[match[1]]++;
+        else { bucket.missing++; unspecifiedGroup++; }
       }
-      for (const group of ['A','B','O','AB']) {
-        const el = document.getElementById('dash-blood-' + group.toLowerCase());
-        if (el) el.textContent = counts[group];
+      const totalEl2 = document.getElementById('dash-blood-total');
+      if (totalEl2) totalEl2.textContent = collectedTotal;
+      for (const [kind, prefix] of [['Whole Blood','wb'],['Platelet (SDP)','sdp']]) {
+        const bucket = buckets[kind];
+        const totalNode = document.getElementById('dash-' + prefix + '-total');
+        if (totalNode) totalNode.textContent = bucket.total;
+        for (const group of ['A','B','O','AB']) {
+          const el = document.getElementById('dash-' + prefix + '-' + group.toLowerCase());
+          if (el) el.textContent = bucket.groups[group];
+        }
+        const missingNode = document.getElementById('dash-' + prefix + '-missing');
+        if (missingNode) {
+          missingNode.hidden = !bucket.missing;
+          missingNode.textContent = bucket.missing ? `ยังไม่ระบุหมู่เลือด ${bucket.missing} รายการ (นับในยอดรวมผลิตภัณฑ์)` : '';
+        }
       }
-      const sum = Object.values(counts).reduce((a,b)=>a+b,0);
-      const sumEl = document.getElementById('dash-blood-total');
-      if (sumEl) sumEl.textContent = sum;
       const note = document.getElementById('dash-blood-note');
       if (note) {
-        note.hidden = !missingGroup;
-        note.textContent = missingGroup ? `มี ${missingGroup} ถุงที่ระบุหมู่เลือดไม่ครบหรือไม่อยู่ในกลุ่ม A/B/O/AB จึงยังไม่รวมในยอดแยกหมู่` : '';
+        note.hidden = !unspecifiedKind;
+        note.textContent = unspecifiedKind ? `อีก ${unspecifiedKind} รายการยังไม่ระบุประเภทการบริจาค จึงไม่นำไปเดาเป็น Whole Blood หรือ Platelet กรุณาแก้ประเภท/ Lot ในรายละเอียดผู้บริจาค (รวมอยู่ในยอดทั้งหมด)` : '';
       }
     }
 
